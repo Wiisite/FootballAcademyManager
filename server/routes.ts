@@ -8,6 +8,7 @@ import {
   insertTurmaSchema,
   insertMatriculaSchema,
   insertPagamentoSchema,
+  insertFilialSchema,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -313,6 +314,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting pagamento:", error);
       res.status(500).json({ message: "Failed to delete pagamento" });
+    }
+  });
+
+  // Filiais routes
+  app.get("/api/filiais", isAuthenticated, async (req, res) => {
+    try {
+      const filiais = await storage.getFiliais();
+      res.json(filiais);
+    } catch (error) {
+      console.error("Error fetching filiais:", error);
+      res.status(500).json({ message: "Failed to fetch filiais" });
+    }
+  });
+
+  app.get("/api/filiais/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const filial = await storage.getFilial(id);
+      if (!filial) {
+        return res.status(404).json({ message: "Filial not found" });
+      }
+      res.json(filial);
+    } catch (error) {
+      console.error("Error fetching filial:", error);
+      res.status(500).json({ message: "Failed to fetch filial" });
+    }
+  });
+
+  app.post("/api/filiais", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertFilialSchema.parse(req.body);
+      const filial = await storage.createFilial(validatedData);
+      res.status(201).json(filial);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating filial:", error);
+      res.status(500).json({ message: "Failed to create filial" });
+    }
+  });
+
+  app.put("/api/filiais/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertFilialSchema.partial().parse(req.body);
+      const filial = await storage.updateFilial(id, validatedData);
+      res.json(filial);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating filial:", error);
+      res.status(500).json({ message: "Failed to update filial" });
+    }
+  });
+
+  app.delete("/api/filiais/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteFilial(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting filial:", error);
+      res.status(500).json({ message: "Failed to delete filial" });
     }
   });
 

@@ -12,6 +12,7 @@ import Professores from "@/pages/Professores";
 import Turmas from "@/pages/Turmas";
 import Financeiro from "@/pages/Financeiro";
 import Relatorios from "@/pages/Relatorios";
+import Filiais from "@/pages/Filiais";
 import Layout from "@/components/Layout";
 
 function Router() {
