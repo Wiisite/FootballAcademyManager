@@ -88,14 +88,13 @@ export default function PagamentoForm({ onSuccess }: PagamentoFormProps) {
   const getMonthOptions = () => {
     const months = [];
     const current = new Date();
+    const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                       "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+    
     for (let i = -2; i <= 3; i++) {
       const date = new Date(current.getFullYear(), current.getMonth() + i, 1);
       const value = format(date, "yyyy-MM");
-      const label = format(date, "MMMM yyyy", { locale: { localize: { month: (n: number) => {
-        const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-                       "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-        return months[n];
-      }}}});
+      const label = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
       months.push({ value, label });
     }
     return months;
@@ -125,7 +124,12 @@ export default function PagamentoForm({ onSuccess }: PagamentoFormProps) {
                       <SelectItem key={aluno.id} value={aluno.id.toString()}>
                         {aluno.nome}
                       </SelectItem>
-                    ))}
+                    )) || []}
+                    {(!alunos || alunos.filter(a => a.ativo).length === 0) && (
+                      <SelectItem value="no-students" disabled>
+                        Nenhum aluno ativo encontrado
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -230,7 +234,11 @@ export default function PagamentoForm({ onSuccess }: PagamentoFormProps) {
                 <Textarea 
                   placeholder="Observações adicionais sobre o pagamento"
                   className="min-h-[80px]"
-                  {...field} 
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
+                  value={field.value || ""}
                 />
               </FormControl>
               <FormMessage />
