@@ -56,7 +56,7 @@ export default function Financeiro() {
     const aluno = alunos?.find(a => a.id === pagamento.alunoId);
     const matchesSearch = aluno?.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          pagamento.formaPagamento.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesMonth = !filterMonth || pagamento.mesReferencia === filterMonth;
+    const matchesMonth = !filterMonth || filterMonth === "all" || pagamento.mesReferencia === filterMonth;
     return matchesSearch && matchesMonth;
   }) || [];
 
@@ -217,7 +217,7 @@ export default function Financeiro() {
                 <SelectValue placeholder="Filtrar por mês" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os meses</SelectItem>
+                <SelectItem value="all">Todos os meses</SelectItem>
                 {getMonthOptions().map((month) => (
                   <SelectItem key={month.value} value={month.value}>
                     {month.label}
