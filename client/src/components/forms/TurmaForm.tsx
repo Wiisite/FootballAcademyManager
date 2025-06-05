@@ -60,7 +60,7 @@ export default function TurmaForm({ turma, onSuccess }: TurmaFormProps) {
       diasSemana: turma?.diasSemana || "",
       capacidadeMaxima: turma?.capacidadeMaxima || 20,
       valorMensalidade: turma?.valorMensalidade || "",
-      ativo: turma?.ativo ?? true,
+      ativo: Boolean(turma?.ativo ?? true),
     },
   });
 
@@ -336,7 +336,7 @@ export default function TurmaForm({ turma, onSuccess }: TurmaFormProps) {
               </div>
               <FormControl>
                 <Switch
-                  checked={field.value}
+                  checked={Boolean(field.value)}
                   onCheckedChange={field.onChange}
                 />
               </FormControl>

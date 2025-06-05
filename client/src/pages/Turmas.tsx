@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, Search, Edit, Trash2, Clock, DollarSign, SquareUser } from "lucide-react";
+import { Users, Search, Edit, Trash2, Clock, DollarSign, SquareUser, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { TurmaWithProfessor } from "@shared/schema";
@@ -193,6 +193,7 @@ export default function Turmas() {
                   <TableRow>
                     <TableHead>Turma</TableHead>
                     <TableHead>Professor</TableHead>
+                    <TableHead>Filial</TableHead>
                     <TableHead>Alunos</TableHead>
                     <TableHead>Horário</TableHead>
                     <TableHead>Mensalidade</TableHead>
@@ -219,6 +220,16 @@ export default function Turmas() {
                           </div>
                         ) : (
                           <span className="text-neutral-400">Sem professor</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {turma.filial ? (
+                          <div className="flex items-center">
+                            <Building2 className="w-4 h-4 mr-2 text-neutral-400" />
+                            <span>{turma.filial.nome}</span>
+                          </div>
+                        ) : (
+                          <span className="text-neutral-400">Sem filial</span>
                         )}
                       </TableCell>
                       <TableCell>
