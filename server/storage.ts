@@ -63,6 +63,13 @@ export interface IStorage {
   createPagamento(pagamento: InsertPagamento): Promise<Pagamento>;
   deletePagamento(id: number): Promise<void>;
 
+  // Filiais operations
+  getFiliais(): Promise<Filial[]>;
+  getFilial(id: number): Promise<Filial | undefined>;
+  createFilial(filial: InsertFilial): Promise<Filial>;
+  updateFilial(id: number, filial: Partial<InsertFilial>): Promise<Filial>;
+  deleteFilial(id: number): Promise<void>;
+
   // Dashboard metrics
   getDashboardMetrics(): Promise<{
     totalAlunos: number;
@@ -185,18 +192,21 @@ export class DatabaseStorage implements IStorage {
       .select({
         turma: turmas,
         professor: professores,
+        filial: filiais,
         matriculasCount: count(matriculas.id),
       })
       .from(turmas)
       .leftJoin(professores, eq(turmas.professorId, professores.id))
+      .leftJoin(filiais, eq(turmas.filialId, filiais.id))
       .leftJoin(matriculas, and(eq(matriculas.turmaId, turmas.id), eq(matriculas.ativo, true)))
       .where(eq(turmas.ativo, true))
-      .groupBy(turmas.id, professores.id)
+      .groupBy(turmas.id, professores.id, filiais.id)
       .orderBy(desc(turmas.createdAt));
 
     return turmasData.map((item) => ({
       ...item.turma,
       professor: item.professor,
+      filial: item.filial,
       _count: {
         matriculas: item.matriculasCount,
       },
@@ -208,9 +218,11 @@ export class DatabaseStorage implements IStorage {
       .select({
         turma: turmas,
         professor: professores,
+        filial: filiais,
       })
       .from(turmas)
       .leftJoin(professores, eq(turmas.professorId, professores.id))
+      .leftJoin(filiais, eq(turmas.filialId, filiais.id))
       .where(and(eq(turmas.id, id), eq(turmas.ativo, true)));
 
     if (!turmaData) return undefined;
@@ -218,6 +230,7 @@ export class DatabaseStorage implements IStorage {
     return {
       ...turmaData.turma,
       professor: turmaData.professor,
+      filial: turmaData.filial,
     };
   }
 
@@ -308,6 +321,34 @@ export class DatabaseStorage implements IStorage {
       totalTurmas: turmasCount.count,
       receitaMensal: Number(receitaResult.total),
     };
+  }
+
+  // Filiais operations
+  async getFiliais(): Promise<Filial[]> {
+    return await db.select().from(filiais).where(eq(filiais.ativa, true)).orderBy(desc(filiais.createdAt));
+  }
+
+  async getFilial(id: number): Promise<Filial | undefined> {
+    const [filial] = await db.select().from(filiais).where(and(eq(filiais.id, id), eq(filiais.ativa, true)));
+    return filial;
+  }
+
+  async createFilial(filial: InsertFilial): Promise<Filial> {
+    const [newFilial] = await db.insert(filiais).values(filial).returning();
+    return newFilial;
+  }
+
+  async updateFilial(id: number, filial: Partial<InsertFilial>): Promise<Filial> {
+    const [updatedFilial] = await db
+      .update(filiais)
+      .set({ ...filial, updatedAt: new Date() })
+      .where(eq(filiais.id, id))
+      .returning();
+    return updatedFilial;
+  }
+
+  async deleteFilial(id: number): Promise<void> {
+    await db.update(filiais).set({ ativa: false }).where(eq(filiais.id, id));
   }
 }
 
