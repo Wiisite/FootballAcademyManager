@@ -5,6 +5,7 @@ import {
   turmas,
   matriculas,
   pagamentos,
+  filiais,
   type User,
   type UpsertUser,
   type Aluno,
@@ -19,6 +20,8 @@ import {
   type Pagamento,
   type InsertPagamento,
   type AlunoWithTurmas,
+  type Filial,
+  type InsertFilial,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, count } from "drizzle-orm";

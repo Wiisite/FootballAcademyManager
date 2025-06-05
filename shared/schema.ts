@@ -65,12 +65,25 @@ export const professores = pgTable("professores", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Filiais table
+export const filiais = pgTable("filiais", {
+  id: serial("id").primaryKey(),
+  nome: varchar("nome", { length: 100 }).notNull(),
+  endereco: text("endereco").notNull(),
+  telefone: varchar("telefone", { length: 20 }),
+  responsavel: varchar("responsavel", { length: 100 }),
+  ativa: boolean("ativa").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Turmas table
 export const turmas = pgTable("turmas", {
   id: serial("id").primaryKey(),
   nome: varchar("nome", { length: 255 }).notNull(),
   categoria: varchar("categoria", { length: 100 }).notNull(), // Infantil, Juvenil, Adulto
   professorId: integer("professor_id").references(() => professores.id),
+  filialId: integer("filial_id").references(() => filiais.id),
   horario: varchar("horario", { length: 100 }),
   diasSemana: varchar("dias_semana", { length: 50 }), // "Segunda,Quarta,Sexta"
   capacidadeMaxima: integer("capacidade_maxima").default(20),
@@ -114,10 +127,18 @@ export const professoresRelations = relations(professores, ({ many }) => ({
   turmas: many(turmas),
 }));
 
+export const filiaisRelations = relations(filiais, ({ many }) => ({
+  turmas: many(turmas),
+}));
+
 export const turmasRelations = relations(turmas, ({ one, many }) => ({
   professor: one(professores, {
     fields: [turmas.professorId],
     references: [professores.id],
+  }),
+  filial: one(filiais, {
+    fields: [turmas.filialId],
+    references: [filiais.id],
   }),
   matriculas: many(matriculas),
 }));
@@ -171,6 +192,12 @@ export const insertPagamentoSchema = createInsertSchema(pagamentos).omit({
   updatedAt: true,
 });
 
+export const insertFilialSchema = createInsertSchema(filiais).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -190,9 +217,13 @@ export type Matricula = typeof matriculas.$inferSelect;
 export type InsertPagamento = z.infer<typeof insertPagamentoSchema>;
 export type Pagamento = typeof pagamentos.$inferSelect;
 
+export type InsertFilial = z.infer<typeof insertFilialSchema>;
+export type Filial = typeof filiais.$inferSelect;
+
 // Combined types for API responses
 export type TurmaWithProfessor = Turma & {
   professor: Professor | null;
+  filial: Filial | null;
   _count?: {
     matriculas: number;
   };
