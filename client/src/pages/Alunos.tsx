@@ -7,17 +7,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar } from "lucide-react";
+import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
 import type { Aluno } from "@shared/schema";
 import AlunoForm from "@/components/forms/AlunoForm";
+import CadastroResponsavelForm from "@/components/forms/CadastroResponsavelForm";
 
 export default function Alunos() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isResponsavelDialogOpen, setIsResponsavelDialogOpen] = useState(false);
   const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -67,6 +69,10 @@ export default function Alunos() {
     setEditingAluno(null);
   };
 
+  const handleResponsavelSuccess = () => {
+    setIsResponsavelDialogOpen(false);
+  };
+
   const calculateAge = (birthDate: string | null) => {
     if (!birthDate) return "-";
     const today = new Date();
@@ -88,25 +94,42 @@ export default function Alunos() {
           <h2 className="text-3xl font-bold text-neutral-800">Gestão de Alunos</h2>
           <p className="text-neutral-600">Cadastre e gerencie os alunos da escola</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary hover:bg-primary/90">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Novo Aluno
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>
-                {editingAluno ? "Editar Aluno" : "Cadastrar Novo Aluno"}
-              </DialogTitle>
-            </DialogHeader>
-            <AlunoForm 
-              aluno={editingAluno} 
-              onSuccess={handleDialogClose}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex space-x-3">
+          <Dialog open={isResponsavelDialogOpen} onOpenChange={setIsResponsavelDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
+                <Users className="w-4 h-4 mr-2" />
+                Cadastro por Responsável
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Cadastro de Alunos por Responsável</DialogTitle>
+              </DialogHeader>
+              <CadastroResponsavelForm onSuccess={handleResponsavelSuccess} />
+            </DialogContent>
+          </Dialog>
+          
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Novo Aluno
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingAluno ? "Editar Aluno" : "Cadastrar Novo Aluno"}
+                </DialogTitle>
+              </DialogHeader>
+              <AlunoForm 
+                aluno={editingAluno} 
+                onSuccess={handleDialogClose}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Search and Summary */}
