@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { insertTurmaSchema, type TurmaWithProfessor, type InsertTurma, type Professor } from "@shared/schema";
+import { insertTurmaSchema, type TurmaWithProfessor, type InsertTurma, type Professor, type Filial } from "@shared/schema";
 import { z } from "zod";
 
 const formSchema = insertTurmaSchema.extend({
   professorId: z.number().optional(),
+  filialId: z.number().optional(),
   valorMensalidade: z.string().optional(),
   capacidadeMaxima: z.number().optional(),
 });
@@ -44,12 +45,17 @@ export default function TurmaForm({ turma, onSuccess }: TurmaFormProps) {
     queryKey: ["/api/professores"],
   });
 
+  const { data: filiais } = useQuery<Filial[]>({
+    queryKey: ["/api/filiais"],
+  });
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       nome: turma?.nome || "",
       categoria: turma?.categoria || "",
       professorId: turma?.professorId || undefined,
+      filialId: turma?.filialId || undefined,
       horario: turma?.horario || "",
       diasSemana: turma?.diasSemana || "",
       capacidadeMaxima: turma?.capacidadeMaxima || 20,
@@ -209,12 +215,40 @@ export default function TurmaForm({ turma, onSuccess }: TurmaFormProps) {
 
           <FormField
             control={form.control}
+            name="filialId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Filial</FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
+                  defaultValue={field.value?.toString()}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma filial" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {filiais?.filter(f => f.ativa).map((filial) => (
+                      <SelectItem key={filial.id} value={filial.id.toString()}>
+                        {filial.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="horario"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Horário</FormLabel>
                 <FormControl>
-                  <Input placeholder="Ex: 14:00 - 15:30" {...field} />
+                  <Input placeholder="Ex: 14:00 - 15:30" onChange={field.onChange} onBlur={field.onBlur} name={field.name} ref={field.ref} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
