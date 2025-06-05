@@ -28,6 +28,7 @@ function Router() {
           <Route path="/alunos" component={Alunos} />
           <Route path="/professores" component={Professores} />
           <Route path="/turmas" component={Turmas} />
+          <Route path="/filiais" component={Filiais} />
           <Route path="/financeiro" component={Financeiro} />
           <Route path="/relatorios" component={Relatorios} />
         </Layout>

@@ -11,7 +11,8 @@ import {
   DollarSign, 
   FileText, 
   Settings, 
-  LogOut 
+  LogOut,
+  Building2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +44,12 @@ export default function Sidebar() {
       href: "/turmas",
       icon: UsersIcon,
       active: location === "/turmas",
+    },
+    {
+      name: "Filiais",
+      href: "/filiais",
+      icon: Building2,
+      active: location === "/filiais",
     },
     {
       name: "Financeiro",

@@ -28,7 +28,7 @@ export default function FilialForm({ filial, onSuccess }: FilialFormProps) {
       endereco: filial?.endereco || "",
       telefone: filial?.telefone || "",
       responsavel: filial?.responsavel || "",
-      ativa: filial?.ativa !== null ? filial.ativa : true,
+      ativa: Boolean(filial?.ativa ?? true),
     },
   });
 
