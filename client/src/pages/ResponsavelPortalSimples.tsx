@@ -7,9 +7,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useResponsavel, logoutResponsavel } from "@/hooks/useResponsavel";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -40,8 +37,6 @@ export default function ResponsavelPortal() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showAlunoForm, setShowAlunoForm] = useState(false);
   const [editingAluno, setEditingAluno] = useState<AlunoWithFilial | null>(null);
-  const [isCapturing, setIsCapturing] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
   const { responsavel, isLoading, isAuthenticated } = useResponsavel();
   const { toast } = useToast();
   const queryClient = useQueryClient();
