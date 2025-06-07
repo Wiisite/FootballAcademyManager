@@ -164,7 +164,6 @@ export class DatabaseStorage implements IStorage {
       })
       .from(alunos)
       .leftJoin(filiais, eq(alunos.filialId, filiais.id))
-      .where(eq(alunos.ativo, true))
       .orderBy(desc(alunos.createdAt));
 
     // Calcular status de pagamento para cada aluno
@@ -412,8 +411,7 @@ export class DatabaseStorage implements IStorage {
 
     const [alunosCount] = await db
       .select({ count: count() })
-      .from(alunos)
-      .where(eq(alunos.ativo, true));
+      .from(alunos);
 
     const [professoresCount] = await db
       .select({ count: count() })
@@ -518,7 +516,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(alunos)
       .leftJoin(filiais, eq(alunos.filialId, filiais.id))
-      .where(and(eq(alunos.responsavelId, id), eq(alunos.ativo, true)));
+      .where(eq(alunos.responsavelId, id));
 
     // Calcular status de pagamento para cada aluno
     const alunosComStatus = await Promise.all(
