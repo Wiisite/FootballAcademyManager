@@ -590,6 +590,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Presenças routes
+  app.get("/api/presencas/:turmaId/:data", isAuthenticated, async (req, res) => {
+    try {
+      const turmaId = parseInt(req.params.turmaId);
+      const data = req.params.data;
+      const presencas = await storage.getPresencasByTurmaData(turmaId, data);
+      res.json(presencas);
+    } catch (error) {
+      console.error("Error fetching presenças:", error);
+      res.status(500).json({ message: "Failed to fetch presenças" });
+    }
+  });
+
+  app.post("/api/presencas/lote", isAuthenticated, async (req, res) => {
+    try {
+      const { presencas } = req.body;
+      if (!Array.isArray(presencas)) {
+        return res.status(400).json({ message: "Presencas must be an array" });
+      }
+      const novasPresencas = await storage.registrarPresencas(presencas);
+      res.status(201).json(novasPresencas);
+    } catch (error) {
+      console.error("Error registering presenças:", error);
+      res.status(500).json({ message: "Failed to register presenças" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

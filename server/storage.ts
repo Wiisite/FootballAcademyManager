@@ -12,6 +12,7 @@ import {
   notificacoes,
   inscricoesEventos,
   comprasUniformes,
+  presencas,
   type User,
   type UpsertUser,
   type Aluno,
@@ -43,6 +44,8 @@ import {
   type InsertInscricaoEvento,
   type CompraUniforme,
   type InsertCompraUniforme,
+  type Presenca,
+  type InsertPresenca,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, count } from "drizzle-orm";

@@ -10,6 +10,7 @@ import Dashboard from "@/pages/Dashboard";
 import Alunos from "@/pages/AlunosFixed";
 import Professores from "@/pages/Professores";
 import Turmas from "@/pages/Turmas";
+import GestaoTurmas from "@/pages/GestaoTurmas";
 import Financeiro from "@/pages/Financeiro";
 import Relatorios from "@/pages/Relatorios";
 import Filiais from "@/pages/Filiais";
@@ -40,6 +41,7 @@ function Router() {
           <Route path="/alunos" component={Alunos} />
           <Route path="/professores" component={Professores} />
           <Route path="/turmas" component={Turmas} />
+          <Route path="/gestao-turmas" component={GestaoTurmas} />
           <Route path="/filiais" component={Filiais} />
           <Route path="/dashboard-unidades" component={DashboardUnidades} />
           <Route path="/financeiro" component={Financeiro} />
