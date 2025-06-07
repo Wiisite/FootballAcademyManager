@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SquareUser, Search, Edit, Trash2, Phone, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Professor } from "@shared/schema";
+import type { Professor, ProfessorWithFilial } from "@shared/schema";
 import ProfessorForm from "@/components/forms/ProfessorForm";
 
 export default function Professores() {
@@ -20,7 +20,7 @@ export default function Professores() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: professores, isLoading } = useQuery<Professor[]>({
+  const { data: professores, isLoading } = useQuery<ProfessorWithFilial[]>({
     queryKey: ["/api/professores"],
   });
 
@@ -47,7 +47,8 @@ export default function Professores() {
   const filteredProfessores = professores?.filter((professor) =>
     professor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     professor.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    professor.especialidade?.toLowerCase().includes(searchTerm.toLowerCase())
+    professor.especialidade?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    professor.filial?.nome.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const handleEdit = (professor: Professor) => {
@@ -173,6 +174,7 @@ export default function Professores() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Contato</TableHead>
                     <TableHead>Especialidade</TableHead>
+                    <TableHead>Unidade</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -209,7 +211,13 @@ export default function Professores() {
                           <span className="text-neutral-400">-</span>
                         )}
                       </TableCell>
-
+                      <TableCell>
+                        {professor.filial ? (
+                          <Badge variant="secondary">{professor.filial.nome}</Badge>
+                        ) : (
+                          <span className="text-neutral-400">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant={professor.ativo ? "default" : "secondary"}>
                           {professor.ativo ? "Ativo" : "Inativo"}

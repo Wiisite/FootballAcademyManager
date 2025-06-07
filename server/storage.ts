@@ -60,7 +60,7 @@ export interface IStorage {
   deleteAluno(id: number): Promise<void>;
 
   // Professores operations
-  getProfessores(): Promise<Professor[]>;
+  getProfessores(): Promise<ProfessorWithFilial[]>;
   getProfessor(id: number): Promise<Professor | undefined>;
   createProfessor(professor: InsertProfessor): Promise<Professor>;
   updateProfessor(id: number, professor: Partial<InsertProfessor>): Promise<Professor>;
@@ -279,7 +279,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Professores operations
-  async getProfessores(): Promise<Professor[]> {
+  async getProfessores(): Promise<ProfessorWithFilial[]> {
     return await db
       .select()
       .from(professores)
