@@ -104,7 +104,7 @@ export class DatabaseStorage implements IStorage {
 
   // Alunos operations
   async getAlunos(): Promise<AlunoWithFilial[]> {
-    return await db
+    const alunosData = await db
       .select({
         id: alunos.id,
         nome: alunos.nome,
@@ -124,6 +124,61 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(filiais, eq(alunos.filialId, filiais.id))
       .where(eq(alunos.ativo, true))
       .orderBy(desc(alunos.createdAt));
+
+    // Calcular status de pagamento para cada aluno
+    const alunosComStatus = await Promise.all(
+      alunosData.map(async (aluno) => {
+        const statusPagamento = await this.calcularStatusPagamento(aluno.id);
+        return {
+          ...aluno,
+          statusPagamento,
+        };
+      })
+    );
+
+    return alunosComStatus;
+  }
+
+  private async calcularStatusPagamento(alunoId: number) {
+    // Buscar o último pagamento do aluno
+    const ultimoPagamento = await db
+      .select()
+      .from(pagamentos)
+      .where(eq(pagamentos.alunoId, alunoId))
+      .orderBy(desc(pagamentos.mesReferencia))
+      .limit(1);
+
+    if (ultimoPagamento.length === 0) {
+      // Aluno nunca fez pagamento
+      return {
+        emDia: false,
+        ultimoPagamento: undefined,
+        diasAtraso: undefined,
+      };
+    }
+
+    const ultimoMesReferencia = ultimoPagamento[0].mesReferencia;
+    const agora = new Date();
+    const mesAtual = `${agora.getFullYear()}-${String(agora.getMonth() + 1).padStart(2, '0')}`;
+    
+    // Verificar se o último pagamento é do mês atual
+    const emDia = ultimoMesReferencia === mesAtual;
+    
+    // Calcular dias de atraso se não estiver em dia
+    let diasAtraso = 0;
+    if (!emDia) {
+      const [anoUltimo, mesUltimo] = ultimoMesReferencia.split('-').map(Number);
+      const dataUltimoPagamento = new Date(anoUltimo, mesUltimo - 1, 1);
+      const proximoMesDevido = new Date(anoUltimo, mesUltimo, 1);
+      const diffTempo = agora.getTime() - proximoMesDevido.getTime();
+      diasAtraso = Math.floor(diffTempo / (1000 * 60 * 60 * 24));
+    }
+
+    return {
+      emDia,
+      ultimoPagamento: ultimoMesReferencia,
+      diasAtraso: !emDia ? diasAtraso : undefined,
+    };
   }
 
   async getAluno(id: number): Promise<AlunoWithTurmas | undefined> {

@@ -212,6 +212,11 @@ export type InsertAluno = z.infer<typeof insertAlunoSchema>;
 export type Aluno = typeof alunos.$inferSelect;
 export type AlunoWithFilial = Aluno & {
   filial: Filial | null;
+  statusPagamento?: {
+    emDia: boolean;
+    ultimoPagamento?: string; // mes/ano do último pagamento
+    diasAtraso?: number;
+  };
 };
 
 export type InsertProfessor = z.infer<typeof insertProfessorSchema>;

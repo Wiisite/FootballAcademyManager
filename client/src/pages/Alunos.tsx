@@ -156,6 +156,18 @@ export default function Alunos() {
                 </p>
                 <p className="text-neutral-500">Ativos</p>
               </div>
+              <div className="text-center">
+                <p className="font-semibold text-lg text-green-600">
+                  {filteredAlunos.filter(a => a.statusPagamento?.emDia).length}
+                </p>
+                <p className="text-neutral-500">Em Dia</p>
+              </div>
+              <div className="text-center">
+                <p className="font-semibold text-lg text-red-600">
+                  {filteredAlunos.filter(a => a.statusPagamento && !a.statusPagamento.emDia).length}
+                </p>
+                <p className="text-neutral-500">Atrasados</p>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -210,6 +222,7 @@ export default function Alunos() {
                     <TableHead>Filial</TableHead>
                     <TableHead>Idade</TableHead>
                     <TableHead>Responsável</TableHead>
+                    <TableHead>Status Pagamento</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -268,6 +281,35 @@ export default function Alunos() {
                             <p className="text-xs text-neutral-500">{aluno.telefoneResponsavel}</p>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {aluno.statusPagamento ? (
+                          <div className="space-y-1">
+                            <Badge 
+                              variant={aluno.statusPagamento.emDia ? "default" : "destructive"}
+                              className={aluno.statusPagamento.emDia ? "bg-green-600 hover:bg-green-700" : ""}
+                            >
+                              {aluno.statusPagamento.emDia ? "Em Dia" : "Atrasado"}
+                            </Badge>
+                            {!aluno.statusPagamento.emDia && (
+                              <div className="text-xs text-red-600">
+                                {aluno.statusPagamento.diasAtraso !== undefined 
+                                  ? `${aluno.statusPagamento.diasAtraso} dias`
+                                  : "Sem pagamentos"
+                                }
+                              </div>
+                            )}
+                            {aluno.statusPagamento.ultimoPagamento && (
+                              <div className="text-xs text-neutral-500">
+                                Último: {aluno.statusPagamento.ultimoPagamento}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <Badge variant="secondary">
+                            Sem dados
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={aluno.ativo ? "default" : "secondary"}>
