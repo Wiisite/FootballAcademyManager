@@ -14,7 +14,9 @@ import Financeiro from "@/pages/Financeiro";
 import Relatorios from "@/pages/Relatorios";
 import Filiais from "@/pages/Filiais";
 import DashboardUnidades from "@/pages/DashboardUnidades";
+import ResponsavelEntrada from "@/pages/ResponsavelEntrada";
 import ResponsavelLogin from "@/pages/ResponsavelLogin";
+import ResponsavelCadastro from "@/pages/ResponsavelCadastro";
 import ResponsavelPortal from "@/pages/ResponsavelPortal";
 import Layout from "@/components/Layout";
 
@@ -24,6 +26,8 @@ function Router() {
   return (
     <Switch>
       {/* Portal do Responsável - Rotas independentes */}
+      <Route path="/responsavel" component={ResponsavelEntrada} />
+      <Route path="/responsavel/cadastro" component={ResponsavelCadastro} />
       <Route path="/responsavel/login" component={ResponsavelLogin} />
       <Route path="/portal" component={ResponsavelPortal} />
       

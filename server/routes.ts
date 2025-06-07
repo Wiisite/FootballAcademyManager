@@ -9,6 +9,12 @@ import {
   insertMatriculaSchema,
   insertPagamentoSchema,
   insertFilialSchema,
+  insertResponsavelSchema,
+  insertEventoSchema,
+  insertUniformeSchema,
+  insertInscricaoEventoSchema,
+  insertCompraUniformeSchema,
+  insertNotificacaoSchema,
 } from "@shared/schema";
 import { z } from "zod";
 
