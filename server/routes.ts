@@ -25,6 +25,21 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// Middleware para verificar se usuário admin ou responsável está autenticado
+const isAuthenticatedOrResponsavel = async (req: any, res: any, next: any) => {
+  // Verificar se é usuário administrativo autenticado
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
+  }
+  
+  // Verificar se é responsável autenticado via sessão
+  if (req.session && req.session.responsavelId) {
+    return next();
+  }
+  
+  return res.status(401).json({ message: "Unauthorized" });
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -53,7 +68,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Alunos routes
-  app.get("/api/alunos", isAuthenticated, async (req, res) => {
+  app.get("/api/alunos", isAuthenticatedOrResponsavel, async (req, res) => {
     try {
       const alunos = await storage.getAlunos();
       res.json(alunos);
@@ -77,7 +92,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/alunos", isAuthenticated, async (req, res) => {
+  app.post("/api/alunos", isAuthenticatedOrResponsavel, async (req, res) => {
     try {
       const validatedData = insertAlunoSchema.parse(req.body);
       const aluno = await storage.createAluno(validatedData);
@@ -91,7 +106,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/alunos/:id", isAuthenticated, async (req, res) => {
+  app.patch("/api/alunos/:id", isAuthenticatedOrResponsavel, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertAlunoSchema.partial().parse(req.body);
@@ -331,7 +346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Filiais routes
-  app.get("/api/filiais", isAuthenticated, async (req, res) => {
+  app.get("/api/filiais", isAuthenticatedOrResponsavel, async (req, res) => {
     try {
       const filiais = await storage.getFiliais();
       res.json(filiais);
