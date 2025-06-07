@@ -300,9 +300,11 @@ export default function Alunos() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
+                  <TableHead>Aluno</TableHead>
+                  <TableHead>CPF</TableHead>
                   <TableHead>Idade</TableHead>
                   <TableHead>Unidade</TableHead>
+                  <TableHead>Matrícula</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Pagamento</TableHead>
                   <TableHead>Contato</TableHead>
@@ -313,12 +315,29 @@ export default function Alunos() {
                 {filteredAlunos.map((aluno) => (
                   <TableRow key={aluno.id}>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{aluno.nome}</p>
-                        {aluno.email && (
-                          <p className="text-sm text-neutral-500">{aluno.email}</p>
+                      <div className="flex items-center space-x-3">
+                        {aluno.fotoUrl && (
+                          <img 
+                            src={aluno.fotoUrl} 
+                            alt={aluno.nome}
+                            className="w-10 h-10 rounded-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                            }}
+                          />
                         )}
+                        <div>
+                          <p className="font-medium">{aluno.nome}</p>
+                          {aluno.email && (
+                            <p className="text-sm text-neutral-500">{aluno.email}</p>
+                          )}
+                        </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className="font-mono text-sm">
+                        {aluno.cpf || "Não informado"}
+                      </span>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
@@ -330,6 +349,14 @@ export default function Alunos() {
                       <div className="flex items-center space-x-2">
                         <Building2 className="w-4 h-4 text-neutral-400" />
                         <span>{aluno.filial?.nome || "Não informada"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm">
+                        {aluno.dataMatricula ? 
+                          format(new Date(aluno.dataMatricula), "dd/MM/yyyy", { locale: ptBR }) :
+                          "Não informada"
+                        }
                       </div>
                     </TableCell>
                     <TableCell>

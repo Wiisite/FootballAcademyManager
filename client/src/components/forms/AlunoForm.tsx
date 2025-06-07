@@ -137,6 +137,24 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
 
           <FormField
             control={form.control}
+            name="cpf"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CPF do Aluno</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Digite apenas números (11 dígitos)" 
+                    maxLength={11}
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="dataNascimento"
             render={({ field }) => (
               <FormItem>
@@ -151,17 +169,48 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
 
           <FormField
             control={form.control}
+            name="dataMatricula"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Data de Matrícula</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="fotoUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Foto do Aluno (URL)</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="URL da foto do aluno" 
+                    {...field} 
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="filialId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Filial</FormLabel>
+                <FormLabel>Unidade</FormLabel>
                 <Select 
                   onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
                   defaultValue={field.value?.toString()}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma filial" />
+                      <SelectValue placeholder="Selecione uma unidade" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>

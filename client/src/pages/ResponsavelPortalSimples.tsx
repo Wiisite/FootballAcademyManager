@@ -149,11 +149,28 @@ export default function ResponsavelPortal() {
                   <Card key={aluno.id}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle className="text-base">{aluno.nome}</CardTitle>
-                          <p className="text-sm text-gray-600">
-                            {aluno.filial?.nome || "Filial não informada"}
-                          </p>
+                        <div className="flex items-center space-x-3">
+                          {aluno.fotoUrl && (
+                            <img 
+                              src={aluno.fotoUrl} 
+                              alt={aluno.nome}
+                              className="w-12 h-12 rounded-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <div>
+                            <CardTitle className="text-base">{aluno.nome}</CardTitle>
+                            <p className="text-sm text-gray-600">
+                              {aluno.filial?.nome || "Unidade não informada"}
+                            </p>
+                            {aluno.cpf && (
+                              <p className="text-xs text-gray-500 font-mono">
+                                CPF: {aluno.cpf}
+                              </p>
+                            )}
+                          </div>
                         </div>
                         <Badge 
                           variant={aluno.statusPagamento?.emDia ? "default" : "destructive"}
@@ -170,6 +187,12 @@ export default function ResponsavelPortal() {
                             {aluno.ativo ? "Ativo" : "Inativo"}
                           </span>
                         </div>
+                        {aluno.dataMatricula && (
+                          <div className="flex justify-between text-sm">
+                            <span>Data de matrícula:</span>
+                            <span>{new Date(aluno.dataMatricula).toLocaleDateString('pt-BR')}</span>
+                          </div>
+                        )}
                         {aluno.statusPagamento?.ultimoPagamento && (
                           <div className="flex justify-between text-sm">
                             <span>Último pagamento:</span>
