@@ -349,22 +349,15 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {/* Campo de URL manual */}
-                        <Input 
-                          placeholder="URL da foto do aluno (opcional)" 
-                          {...field}
-                          value={field.value || ""}
-                        />
-                        
                         {/* Botões de opções */}
-                        <div className="flex flex-col sm:flex-row gap-2">
+                        <div className="flex flex-col sm:flex-row gap-3">
                           <Button
                             type="button"
                             variant="outline"
                             onClick={selectFile}
-                            className="flex items-center space-x-2 flex-1"
+                            className="flex items-center justify-center space-x-2 flex-1 h-12"
                           >
-                            <ImageIcon className="w-4 h-4" />
+                            <ImageIcon className="w-5 h-5" />
                             <span>Anexar Imagem</span>
                           </Button>
                           
@@ -372,9 +365,9 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                             type="button"
                             variant="outline"
                             onClick={startCapture}
-                            className="flex items-center space-x-2 flex-1"
+                            className="flex items-center justify-center space-x-2 flex-1 h-12"
                           >
-                            <Camera className="w-4 h-4" />
+                            <Camera className="w-5 h-5" />
                             <span>Tirar Foto</span>
                           </Button>
                         </div>
@@ -404,11 +397,9 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                         <div className="flex-1">
                           <p className="text-sm font-medium">Foto do aluno</p>
                           <p className="text-xs text-gray-500">
-                            {field.value.startsWith('data:image') 
-                              ? (field.value.includes('jpeg') || field.value.includes('jpg') || field.value.includes('png'))
-                                ? 'Imagem anexada do dispositivo'
-                                : 'Foto capturada pela câmera'
-                              : 'Foto via URL'
+                            {field.value.includes('canvas') || field.value.includes('video')
+                              ? 'Foto capturada pela câmera'
+                              : 'Imagem anexada do dispositivo'
                             }
                           </p>
                         </div>
