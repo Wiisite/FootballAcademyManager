@@ -12,7 +12,8 @@ import {
   FileText, 
   Settings, 
   LogOut,
-  Building2
+  Building2,
+  ClipboardList
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,12 @@ export default function Sidebar() {
       href: "/turmas",
       icon: UsersIcon,
       active: location === "/turmas",
+    },
+    {
+      name: "Gestão de Turmas",
+      href: "/gestao-turmas",
+      icon: Users,
+      active: location === "/gestao-turmas",
     },
     {
       name: "Unidades",
