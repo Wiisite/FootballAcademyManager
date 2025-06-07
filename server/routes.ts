@@ -2,6 +2,13 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+
+// Extend session type for responsavel
+declare module "express-session" {
+  interface SessionData {
+    responsavelId?: number;
+  }
+}
 import {
   insertAlunoSchema,
   insertProfessorSchema,
@@ -385,6 +392,186 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting filial:", error);
       res.status(500).json({ message: "Failed to delete filial" });
+    }
+  });
+
+  // Portal de Responsáveis - Endpoints independentes
+  app.post("/api/responsaveis/cadastro", async (req, res) => {
+    try {
+      const validatedData = insertResponsavelSchema.parse(req.body);
+      
+      // Verificar se email já existe
+      const existingResponsavel = await storage.getResponsavelByEmail(validatedData.email);
+      if (existingResponsavel) {
+        return res.status(400).json({ message: "Email já está em uso" });
+      }
+
+      const responsavel = await storage.createResponsavel(validatedData);
+      res.status(201).json({ id: responsavel.id, nome: responsavel.nome, email: responsavel.email });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Error creating responsavel:", error);
+      res.status(500).json({ message: "Erro ao criar conta" });
+    }
+  });
+
+  app.post("/api/responsaveis/login", async (req, res) => {
+    try {
+      const { email, senha } = req.body;
+      
+      if (!email || !senha) {
+        return res.status(400).json({ message: "Email e senha são obrigatórios" });
+      }
+
+      const responsavel = await storage.authenticateResponsavel(email, senha);
+      if (!responsavel) {
+        return res.status(401).json({ message: "Email ou senha incorretos" });
+      }
+
+      // Configurar sessão
+      req.session.responsavelId = responsavel.id;
+      res.json({ id: responsavel.id, nome: responsavel.nome, email: responsavel.email });
+    } catch (error) {
+      console.error("Error authenticating responsavel:", error);
+      res.status(500).json({ message: "Erro no login" });
+    }
+  });
+
+  app.get("/api/responsaveis/me", async (req, res) => {
+    try {
+      const responsavelId = req.session?.responsavelId;
+      if (!responsavelId) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+
+      const responsavelComAlunos = await storage.getResponsavelWithAlunos(responsavelId);
+      if (!responsavelComAlunos) {
+        return res.status(404).json({ message: "Responsável não encontrado" });
+      }
+
+      res.json(responsavelComAlunos);
+    } catch (error) {
+      console.error("Error fetching responsavel:", error);
+      res.status(500).json({ message: "Erro ao buscar dados" });
+    }
+  });
+
+  app.post("/api/responsaveis/logout", async (req, res) => {
+    try {
+      req.session.destroy((err) => {
+        if (err) {
+          return res.status(500).json({ message: "Erro ao fazer logout" });
+        }
+        res.json({ message: "Logout realizado com sucesso" });
+      });
+    } catch (error) {
+      console.error("Error logging out responsavel:", error);
+      res.status(500).json({ message: "Erro ao fazer logout" });
+    }
+  });
+
+  // Endpoints para eventos no portal
+  app.get("/api/portal/eventos", async (req, res) => {
+    try {
+      const eventos = await storage.getEventos();
+      res.json(eventos);
+    } catch (error) {
+      console.error("Error fetching eventos:", error);
+      res.status(500).json({ message: "Erro ao buscar eventos" });
+    }
+  });
+
+  app.post("/api/portal/eventos/:id/inscricao", async (req, res) => {
+    try {
+      const responsavelId = req.session?.responsavelId;
+      if (!responsavelId) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+
+      const eventoId = parseInt(req.params.id);
+      const { alunoId, observacoes } = req.body;
+
+      const inscricao = await storage.inscreveAlunoEvento({
+        eventoId,
+        alunoId,
+        observacoes,
+      });
+
+      res.status(201).json(inscricao);
+    } catch (error) {
+      console.error("Error creating inscricao:", error);
+      res.status(500).json({ message: "Erro ao inscrever no evento" });
+    }
+  });
+
+  // Endpoints para uniformes no portal
+  app.get("/api/portal/uniformes", async (req, res) => {
+    try {
+      const uniformes = await storage.getUniformes();
+      res.json(uniformes);
+    } catch (error) {
+      console.error("Error fetching uniformes:", error);
+      res.status(500).json({ message: "Erro ao buscar uniformes" });
+    }
+  });
+
+  app.post("/api/portal/uniformes/:id/comprar", async (req, res) => {
+    try {
+      const responsavelId = req.session?.responsavelId;
+      if (!responsavelId) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+
+      const uniformeId = parseInt(req.params.id);
+      const { alunoId, tamanho, cor, quantidade, preco } = req.body;
+
+      const compra = await storage.comprarUniforme({
+        uniformeId,
+        alunoId,
+        tamanho,
+        cor,
+        quantidade,
+        preco,
+      });
+
+      res.status(201).json(compra);
+    } catch (error) {
+      console.error("Error creating compra uniforme:", error);
+      res.status(500).json({ message: "Erro ao comprar uniforme" });
+    }
+  });
+
+  // Endpoints para notificações no portal
+  app.get("/api/portal/notificacoes", async (req, res) => {
+    try {
+      const responsavelId = req.session?.responsavelId;
+      if (!responsavelId) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+
+      const notificacoes = await storage.getNotificacoesByResponsavel(responsavelId);
+      res.json(notificacoes);
+    } catch (error) {
+      console.error("Error fetching notificacoes:", error);
+      res.status(500).json({ message: "Erro ao buscar notificações" });
+    }
+  });
+
+  app.patch("/api/portal/notificacoes/:id/lida", async (req, res) => {
+    try {
+      const responsavelId = req.session?.responsavelId;
+      if (!responsavelId) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+
+      const notificacaoId = parseInt(req.params.id);
+      await storage.marcarNotificacaoLida(notificacaoId);
+      res.json({ message: "Notificação marcada como lida" });
+    } catch (error) {
+      console.error("Error marking notificacao as read:", error);
+      res.status(500).json({ message: "Erro ao marcar notificação como lida" });
     }
   });
 
