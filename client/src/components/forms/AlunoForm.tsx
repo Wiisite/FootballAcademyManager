@@ -14,7 +14,9 @@ import { z } from "zod";
 
 const formSchema = insertAlunoSchema.extend({
   dataNascimento: z.string().optional(),
+  dataMatricula: z.string().optional(),
   filialId: z.number().optional(),
+  cpf: z.string().regex(/^\d{11}$/, "CPF deve ter 11 dígitos").optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -36,9 +38,12 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       nome: aluno?.nome || "",
+      cpf: aluno?.cpf || "",
       email: aluno?.email || "",
       telefone: aluno?.telefone || "",
       dataNascimento: aluno?.dataNascimento || "",
+      dataMatricula: aluno?.dataMatricula || new Date().toISOString().split('T')[0],
+      fotoUrl: aluno?.fotoUrl || "",
       endereco: aluno?.endereco || "",
       nomeResponsavel: aluno?.nomeResponsavel || "",
       telefoneResponsavel: aluno?.telefoneResponsavel || "",

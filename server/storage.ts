@@ -149,9 +149,12 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: alunos.id,
         nome: alunos.nome,
+        cpf: alunos.cpf,
         email: alunos.email,
         telefone: alunos.telefone,
         dataNascimento: alunos.dataNascimento,
+        dataMatricula: alunos.dataMatricula,
+        fotoUrl: alunos.fotoUrl,
         endereco: alunos.endereco,
         responsavelId: alunos.responsavelId,
         nomeResponsavel: alunos.nomeResponsavel,
