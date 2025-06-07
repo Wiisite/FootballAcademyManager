@@ -64,9 +64,11 @@ export default function ResponsavelPortal() {
     return null; // Will redirect to login
   }
 
+  const responsavelData = responsavel as ResponsavelWithAlunos;
+
   // Fetch notifications
   const { data: notificacoes, isLoading: loadingNotificacoes } = useQuery<Notificacao[]>({
-    queryKey: ["/api/responsavel/notificacoes"],
+    queryKey: ["/api/portal/notificacoes"],
   });
 
   // Fetch available events
