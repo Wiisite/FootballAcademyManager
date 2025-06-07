@@ -216,6 +216,18 @@ export const notificacoes = pgTable("notificacoes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Presenças table (lista de chamada)
+export const presencas = pgTable("presencas", {
+  id: serial("id").primaryKey(),
+  alunoId: integer("aluno_id").references(() => alunos.id).notNull(),
+  turmaId: integer("turma_id").references(() => turmas.id).notNull(),
+  data: date("data").notNull(),
+  presente: boolean("presente").notNull(),
+  observacoes: text("observacoes"),
+  registradoPor: integer("registrado_por").references(() => professores.id),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Relations
 export const responsaveisRelations = relations(responsaveis, ({ many }) => ({
   alunos: many(alunos),
@@ -235,6 +247,7 @@ export const alunosRelations = relations(alunos, ({ one, many }) => ({
   pagamentos: many(pagamentos),
   inscricoesEventos: many(inscricoesEventos),
   comprasUniformes: many(comprasUniformes),
+  presencas: many(presencas),
 }));
 
 export const professoresRelations = relations(professores, ({ one, many }) => ({
@@ -243,6 +256,7 @@ export const professoresRelations = relations(professores, ({ one, many }) => ({
     fields: [professores.filialId],
     references: [filiais.id],
   }),
+  presencasRegistradas: many(presencas),
 }));
 
 export const filiaisRelations = relations(filiais, ({ many }) => ({
@@ -261,6 +275,7 @@ export const turmasRelations = relations(turmas, ({ one, many }) => ({
     references: [filiais.id],
   }),
   matriculas: many(matriculas),
+  presencas: many(presencas),
 }));
 
 export const matriculasRelations = relations(matriculas, ({ one }) => ({
@@ -319,6 +334,21 @@ export const notificacoesRelations = relations(notificacoes, ({ one }) => ({
   responsavel: one(responsaveis, {
     fields: [notificacoes.responsavelId],
     references: [responsaveis.id],
+  }),
+}));
+
+export const presencasRelations = relations(presencas, ({ one }) => ({
+  aluno: one(alunos, {
+    fields: [presencas.alunoId],
+    references: [alunos.id],
+  }),
+  turma: one(turmas, {
+    fields: [presencas.turmaId],
+    references: [turmas.id],
+  }),
+  professor: one(professores, {
+    fields: [presencas.registradoPor],
+    references: [professores.id],
   }),
 }));
 
