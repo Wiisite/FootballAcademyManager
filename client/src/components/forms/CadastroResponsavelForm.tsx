@@ -17,6 +17,11 @@ const alunoFormSchema = insertAlunoSchema.extend({
   dataNascimento: z.string().optional(),
   email: z.string().optional(),
   telefone: z.string().optional(),
+  endereco: z.string().optional(),
+  bairro: z.string().optional(),
+  cep: z.string().optional(),
+  cidade: z.string().optional(),
+  estado: z.string().optional(),
 });
 
 const responsavelFormSchema = z.object({
@@ -130,7 +135,11 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
         dataNascimento: aluno.dataNascimento || null,
         email: aluno.email || null,
         telefone: aluno.telefone || null,
-        endereco: data.endereco || null,
+        endereco: aluno.endereco || null,
+        bairro: aluno.bairro || null,
+        cep: aluno.cep || null,
+        cidade: aluno.cidade || null,
+        estado: aluno.estado || null,
         nomeResponsavel: data.nomeResponsavel,
         telefoneResponsavel: data.telefoneResponsavel,
       }));
