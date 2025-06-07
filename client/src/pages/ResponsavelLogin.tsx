@@ -34,30 +34,31 @@ export default function ResponsavelLogin() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      const endpoint = isLogin ? "/api/responsavel/login" : "/api/responsavel/register";
-      const response = await apiRequest("POST", endpoint, data);
+      const endpoint = isLogin ? "/api/responsaveis/login" : "/api/responsaveis/cadastro";
+      const result = await apiRequest("POST", endpoint, data);
       
-      if (response.ok) {
-        const result = await response.json();
-        
-        if (isLogin) {
-          // Login successful - redirect to portal
-          localStorage.setItem("responsavelToken", result.token);
+      if (isLogin) {
+        // Login successful - redirect to portal
+        toast({
+          title: "Login realizado com sucesso!",
+          description: `Bem-vindo, ${result.nome}!`,
+        });
+        setTimeout(() => {
           window.location.href = "/portal";
-        } else {
-          // Registration successful
-          toast({
-            title: "Cadastro realizado com sucesso!",
-            description: "Agora você pode fazer login com suas credenciais.",
-          });
-          setIsLogin(true);
-          reset();
-        }
+        }, 1000);
+      } else {
+        // Registration successful
+        toast({
+          title: "Cadastro realizado com sucesso!",
+          description: "Agora você pode fazer login com suas credenciais.",
+        });
+        setIsLogin(true);
+        reset();
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Erro",
-        description: isLogin ? "Email ou senha incorretos." : "Erro ao criar conta. Tente novamente.",
+        description: error.message || (isLogin ? "Email ou senha incorretos." : "Erro ao criar conta. Tente novamente."),
         variant: "destructive",
       });
     }

@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useResponsavel, logoutResponsavel } from "@/hooks/useResponsavel";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Bell, 
   User, 
@@ -17,7 +19,8 @@ import {
   Clock,
   Users,
   DollarSign,
-  Gift
+  Gift,
+  Loader2
 } from "lucide-react";
 import type { 
   ResponsavelWithAlunos, 
@@ -29,11 +32,37 @@ import type {
 
 export default function ResponsavelPortal() {
   const [activeTab, setActiveTab] = useState("dashboard");
+  const { responsavel, isLoading, isAuthenticated } = useResponsavel();
+  const { toast } = useToast();
 
-  // Fetch responsável data with children
-  const { data: responsavel, isLoading: loadingResponsavel } = useQuery<ResponsavelWithAlunos>({
-    queryKey: ["/api/responsavel/me"],
-  });
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Acesso restrito",
+        description: "Você precisa fazer login para acessar o portal.",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/responsavel/login";
+      }, 1000);
+    }
+  }, [isAuthenticated, isLoading, toast]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-green-600" />
+          <p className="text-gray-600">Carregando portal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !responsavel) {
+    return null; // Will redirect to login
+  }
 
   // Fetch notifications
   const { data: notificacoes, isLoading: loadingNotificacoes } = useQuery<Notificacao[]>({
