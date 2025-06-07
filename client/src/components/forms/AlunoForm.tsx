@@ -190,7 +190,8 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                 <FormControl>
                   <Input 
                     placeholder="URL da foto do aluno" 
-                    {...field} 
+                    {...field}
+                    value={field.value || ""}
                   />
                 </FormControl>
                 <FormMessage />
@@ -233,7 +234,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
               <FormItem>
                 <FormLabel>E-mail</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="email@exemplo.com" {...field} />
+                  <Input type="email" placeholder="email@exemplo.com" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
