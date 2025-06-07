@@ -47,6 +47,7 @@ export const alunos = pgTable("alunos", {
   endereco: text("endereco"),
   nomeResponsavel: varchar("nome_responsavel", { length: 255 }),
   telefoneResponsavel: varchar("telefone_responsavel", { length: 20 }),
+  filialId: integer("filial_id").references(() => filiais.id),
   ativo: boolean("ativo").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -118,7 +119,11 @@ export const pagamentos = pgTable("pagamentos", {
 });
 
 // Relations
-export const alunosRelations = relations(alunos, ({ many }) => ({
+export const alunosRelations = relations(alunos, ({ one, many }) => ({
+  filial: one(filiais, {
+    fields: [alunos.filialId],
+    references: [filiais.id],
+  }),
   matriculas: many(matriculas),
   pagamentos: many(pagamentos),
 }));

@@ -1,18 +1,20 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { insertAlunoSchema, type Aluno, type InsertAluno } from "@shared/schema";
+import { insertAlunoSchema, type Aluno, type InsertAluno, type Filial } from "@shared/schema";
 import { z } from "zod";
 
 const formSchema = insertAlunoSchema.extend({
   dataNascimento: z.string().optional(),
+  filialId: z.number().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -26,6 +28,10 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const { data: filiais } = useQuery<Filial[]>({
+    queryKey: ["/api/filiais"],
+  });
+
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -36,7 +42,8 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
       endereco: aluno?.endereco || "",
       nomeResponsavel: aluno?.nomeResponsavel || "",
       telefoneResponsavel: aluno?.telefoneResponsavel || "",
-      ativo: aluno?.ativo ?? true,
+      filialId: aluno?.filialId || undefined,
+      ativo: Boolean(aluno?.ativo ?? true),
     },
   });
 
@@ -132,6 +139,34 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                 <FormControl>
                   <Input type="date" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="filialId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Filial</FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
+                  defaultValue={field.value?.toString()}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione uma filial" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {filiais?.filter(f => f.ativa).map((filial) => (
+                      <SelectItem key={filial.id} value={filial.id.toString()}>
+                        {filial.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
