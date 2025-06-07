@@ -248,7 +248,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
               <FormItem>
                 <FormLabel>Telefone</FormLabel>
                 <FormControl>
-                  <Input placeholder="(11) 99999-9999" {...field} />
+                  <Input placeholder="(11) 99999-9999" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -262,7 +262,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
               <FormItem>
                 <FormLabel>Nome do Responsável</FormLabel>
                 <FormControl>
-                  <Input placeholder="Digite o nome do responsável" {...field} />
+                  <Input placeholder="Digite o nome do responsável" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -276,7 +276,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
               <FormItem>
                 <FormLabel>Telefone do Responsável</FormLabel>
                 <FormControl>
-                  <Input placeholder="(11) 99999-9999" {...field} />
+                  <Input placeholder="(11) 99999-9999" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -294,7 +294,8 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                 <Textarea 
                   placeholder="Digite o endereço completo"
                   className="min-h-[80px]"
-                  {...field} 
+                  {...field}
+                  value={field.value || ""}
                 />
               </FormControl>
               <FormMessage />
@@ -315,7 +316,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
               </div>
               <FormControl>
                 <Switch
-                  checked={field.value}
+                  checked={field.value ?? true}
                   onCheckedChange={field.onChange}
                 />
               </FormControl>
