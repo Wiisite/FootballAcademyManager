@@ -20,11 +20,11 @@ export default function Alunos() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isResponsavelDialogOpen, setIsResponsavelDialogOpen] = useState(false);
-  const [editingAluno, setEditingAluno] = useState<Aluno | null>(null);
+  const [editingAluno, setEditingAluno] = useState<AlunoWithFilial | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: alunos, isLoading } = useQuery<Aluno[]>({
+  const { data: alunos, isLoading } = useQuery<AlunoWithFilial[]>({
     queryKey: ["/api/alunos"],
   });
 
@@ -53,7 +53,7 @@ export default function Alunos() {
     aluno.email?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
-  const handleEdit = (aluno: Aluno) => {
+  const handleEdit = (aluno: AlunoWithFilial) => {
     setEditingAluno(aluno);
     setIsDialogOpen(true);
   };

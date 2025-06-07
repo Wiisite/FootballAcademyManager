@@ -20,6 +20,7 @@ import {
   type Pagamento,
   type InsertPagamento,
   type AlunoWithTurmas,
+  type AlunoWithFilial,
   type Filial,
   type InsertFilial,
 } from "@shared/schema";
@@ -32,7 +33,7 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
 
   // Alunos operations
-  getAlunos(): Promise<Aluno[]>;
+  getAlunos(): Promise<AlunoWithFilial[]>;
   getAluno(id: number): Promise<AlunoWithTurmas | undefined>;
   createAluno(aluno: InsertAluno): Promise<Aluno>;
   updateAluno(id: number, aluno: Partial<InsertAluno>): Promise<Aluno>;
@@ -102,8 +103,27 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Alunos operations
-  async getAlunos(): Promise<Aluno[]> {
-    return await db.select().from(alunos).where(eq(alunos.ativo, true)).orderBy(desc(alunos.createdAt));
+  async getAlunos(): Promise<AlunoWithFilial[]> {
+    return await db
+      .select({
+        id: alunos.id,
+        nome: alunos.nome,
+        email: alunos.email,
+        telefone: alunos.telefone,
+        dataNascimento: alunos.dataNascimento,
+        endereco: alunos.endereco,
+        nomeResponsavel: alunos.nomeResponsavel,
+        telefoneResponsavel: alunos.telefoneResponsavel,
+        filialId: alunos.filialId,
+        ativo: alunos.ativo,
+        createdAt: alunos.createdAt,
+        updatedAt: alunos.updatedAt,
+        filial: filiais,
+      })
+      .from(alunos)
+      .leftJoin(filiais, eq(alunos.filialId, filiais.id))
+      .where(eq(alunos.ativo, true))
+      .orderBy(desc(alunos.createdAt));
   }
 
   async getAluno(id: number): Promise<AlunoWithTurmas | undefined> {
