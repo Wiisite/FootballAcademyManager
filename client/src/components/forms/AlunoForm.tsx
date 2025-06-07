@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertAlunoSchema, type Aluno, type InsertAluno, type Filial } from "@shared/schema";
 import { z } from "zod";
-import { Camera, Download, Upload } from "lucide-react";
+import { Camera, Download, Upload, ImageIcon } from "lucide-react";
 import { useRef, useState } from "react";
 
 const formSchema = insertAlunoSchema.extend({
@@ -33,6 +33,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
   const queryClient = useQueryClient();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
@@ -95,6 +96,50 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
       setStream(null);
     }
     setIsCapturing(false);
+  };
+
+  // Função para processar arquivo de imagem anexado
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Verificar se é uma imagem
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Erro",
+          description: "Por favor, selecione apenas arquivos de imagem.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verificar tamanho do arquivo (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Erro",
+          description: "A imagem deve ter no máximo 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Converter para base64
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        form.setValue('fotoUrl', result);
+        
+        toast({
+          title: "Sucesso",
+          description: "Imagem anexada com sucesso!",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Função para abrir seletor de arquivos
+  const selectFile = () => {
+    fileInputRef.current?.click();
   };
 
   const { data: filiais } = useQuery<Filial[]>({
@@ -306,21 +351,42 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                       <div className="space-y-3">
                         {/* Campo de URL manual */}
                         <Input 
-                          placeholder="URL da foto do aluno" 
+                          placeholder="URL da foto do aluno (opcional)" 
                           {...field}
                           value={field.value || ""}
                         />
                         
-                        {/* Botão para iniciar captura */}
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={startCapture}
-                          className="flex items-center space-x-2"
-                        >
-                          <Camera className="w-4 h-4" />
-                          <span>Tirar Foto com Câmera</span>
-                        </Button>
+                        {/* Botões de opções */}
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={selectFile}
+                            className="flex items-center space-x-2 flex-1"
+                          >
+                            <ImageIcon className="w-4 h-4" />
+                            <span>Anexar Imagem</span>
+                          </Button>
+                          
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={startCapture}
+                            className="flex items-center space-x-2 flex-1"
+                          >
+                            <Camera className="w-4 h-4" />
+                            <span>Tirar Foto</span>
+                          </Button>
+                        </div>
+                        
+                        {/* Input de arquivo oculto */}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                        />
                       </div>
                     )}
 
@@ -338,7 +404,12 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                         <div className="flex-1">
                           <p className="text-sm font-medium">Foto do aluno</p>
                           <p className="text-xs text-gray-500">
-                            {field.value.startsWith('data:') ? 'Foto capturada pela câmera' : 'Foto via URL'}
+                            {field.value.startsWith('data:image') 
+                              ? (field.value.includes('jpeg') || field.value.includes('jpg') || field.value.includes('png'))
+                                ? 'Imagem anexada do dispositivo'
+                                : 'Foto capturada pela câmera'
+                              : 'Foto via URL'
+                            }
                           </p>
                         </div>
                         <Button
