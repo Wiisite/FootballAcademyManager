@@ -21,8 +21,14 @@ const alunoFormSchema = insertAlunoSchema.extend({
 
 const responsavelFormSchema = z.object({
   nomeResponsavel: z.string().min(1, "Nome do responsável é obrigatório"),
+  cpfResponsavel: z.string().optional(),
+  emailResponsavel: z.string().email("Email inválido").optional().or(z.literal("")),
   telefoneResponsavel: z.string().min(1, "Telefone do responsável é obrigatório"),
   endereco: z.string().optional(),
+  bairroResponsavel: z.string().optional(),
+  cepResponsavel: z.string().optional(),
+  cidadeResponsavel: z.string().optional(),
+  estadoResponsavel: z.string().optional(),
   alunos: z.array(alunoFormSchema).min(1, "Pelo menos um aluno deve ser cadastrado"),
 });
 
@@ -41,8 +47,14 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
     resolver: zodResolver(responsavelFormSchema),
     defaultValues: {
       nomeResponsavel: "",
+      cpfResponsavel: "",
+      emailResponsavel: "",
       telefoneResponsavel: "",
       endereco: "",
+      bairroResponsavel: "",
+      cepResponsavel: "",
+      cidadeResponsavel: "",
+      estadoResponsavel: "",
       alunos: [
         {
           nome: "",
@@ -50,6 +62,10 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
           telefone: "",
           dataNascimento: "",
           endereco: "",
+          bairro: "",
+          cep: "",
+          cidade: "",
+          estado: "",
           nomeResponsavel: "",
           telefoneResponsavel: "",
           ativo: true,
