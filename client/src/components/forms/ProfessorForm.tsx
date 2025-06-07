@@ -12,7 +12,8 @@ import { insertProfessorSchema, type Professor, type InsertProfessor } from "@sh
 import { z } from "zod";
 
 const formSchema = insertProfessorSchema.extend({
-  salario: z.string().optional(),
+  calendarioSemanal: z.string().optional(),
+  horariosTrabalho: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -23,13 +24,9 @@ interface ProfessorFormProps {
 }
 
 const especialidades = [
-  "Futebol de Campo",
-  "Futsal",
-  "Futebol Infantil",
-  "Preparação Física",
-  "Técnica Individual",
-  "Tática",
-  "Goleiro",
+  "Professor",
+  "Estagiário", 
+  "Treinador de goleiro",
 ];
 
 export default function ProfessorForm({ professor, onSuccess }: ProfessorFormProps) {
@@ -42,8 +39,13 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
       nome: professor?.nome || "",
       email: professor?.email || "",
       telefone: professor?.telefone || "",
+      cpf: professor?.cpf || "",
+      rg: professor?.rg || "",
+      dataAdmissao: professor?.dataAdmissao || "",
       especialidade: professor?.especialidade || "",
-      salario: professor?.salario || "",
+      calendarioSemanal: professor?.calendarioSemanal || "",
+      horariosTrabalho: professor?.horariosTrabalho || "",
+      filialId: professor?.filialId || undefined,
       ativo: professor?.ativo ?? true,
     },
   });
@@ -98,8 +100,13 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
       ...data,
       email: data.email || null,
       telefone: data.telefone || null,
+      cpf: data.cpf || null,
+      rg: data.rg || null,
+      dataAdmissao: data.dataAdmissao || null,
       especialidade: data.especialidade || null,
-      salario: data.salario || null,
+      calendarioSemanal: data.calendarioSemanal || null,
+      horariosTrabalho: data.horariosTrabalho || null,
+      filialId: data.filialId || null,
     };
 
     if (professor) {

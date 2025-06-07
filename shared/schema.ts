@@ -85,8 +85,13 @@ export const professores = pgTable("professores", {
   nome: varchar("nome", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).unique(),
   telefone: varchar("telefone", { length: 20 }),
+  cpf: varchar("cpf", { length: 14 }),
+  rg: varchar("rg", { length: 20 }),
+  dataAdmissao: date("data_admissao"),
   especialidade: varchar("especialidade", { length: 100 }),
-  salario: decimal("salario", { precision: 10, scale: 2 }),
+  calendarioSemanal: text("calendario_semanal"), // JSON com dias e horários
+  horariosTrabalho: text("horarios_trabalho"), // JSON com horários detalhados
+  filialId: integer("filial_id").references(() => filiais.id),
   ativo: boolean("ativo").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -233,13 +238,18 @@ export const alunosRelations = relations(alunos, ({ one, many }) => ({
   comprasUniformes: many(comprasUniformes),
 }));
 
-export const professoresRelations = relations(professores, ({ many }) => ({
+export const professoresRelations = relations(professores, ({ one, many }) => ({
   turmas: many(turmas),
+  filial: one(filiais, {
+    fields: [professores.filialId],
+    references: [filiais.id],
+  }),
 }));
 
 export const filiaisRelations = relations(filiais, ({ many }) => ({
   turmas: many(turmas),
   alunos: many(alunos),
+  professores: many(professores),
 }));
 
 export const turmasRelations = relations(turmas, ({ one, many }) => ({
