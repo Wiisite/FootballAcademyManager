@@ -6,6 +6,12 @@ import {
   matriculas,
   pagamentos,
   filiais,
+  responsaveis,
+  eventos,
+  uniformes,
+  notificacoes,
+  inscricoesEventos,
+  comprasUniformes,
   type User,
   type UpsertUser,
   type Aluno,
@@ -23,6 +29,20 @@ import {
   type AlunoWithFilial,
   type Filial,
   type InsertFilial,
+  type Responsavel,
+  type InsertResponsavel,
+  type ResponsavelWithAlunos,
+  type Evento,
+  type InsertEvento,
+  type EventoWithFilial,
+  type Uniforme,
+  type InsertUniforme,
+  type Notificacao,
+  type InsertNotificacao,
+  type InscricaoEvento,
+  type InsertInscricaoEvento,
+  type CompraUniforme,
+  type InsertCompraUniforme,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, count } from "drizzle-orm";
@@ -78,6 +98,27 @@ export interface IStorage {
     totalTurmas: number;
     receitaMensal: number;
   }>;
+
+  // Responsáveis operations
+  getResponsavel(id: number): Promise<Responsavel | undefined>;
+  getResponsavelByEmail(email: string): Promise<Responsavel | undefined>;
+  createResponsavel(responsavel: InsertResponsavel): Promise<Responsavel>;
+  authenticateResponsavel(email: string, senha: string): Promise<Responsavel | null>;
+  getResponsavelWithAlunos(id: number): Promise<ResponsavelWithAlunos | undefined>;
+
+  // Eventos operations
+  getEventos(): Promise<EventoWithFilial[]>;
+  createEvento(evento: InsertEvento): Promise<Evento>;
+  inscreveAlunoEvento(inscricao: InsertInscricaoEvento): Promise<InscricaoEvento>;
+
+  // Uniformes operations
+  getUniformes(): Promise<Uniforme[]>;
+  comprarUniforme(compra: InsertCompraUniforme): Promise<CompraUniforme>;
+
+  // Notificações operations
+  getNotificacoesByResponsavel(responsavelId: number): Promise<Notificacao[]>;
+  createNotificacao(notificacao: InsertNotificacao): Promise<Notificacao>;
+  marcarNotificacaoLida(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -112,6 +153,7 @@ export class DatabaseStorage implements IStorage {
         telefone: alunos.telefone,
         dataNascimento: alunos.dataNascimento,
         endereco: alunos.endereco,
+        responsavelId: alunos.responsavelId,
         nomeResponsavel: alunos.nomeResponsavel,
         telefoneResponsavel: alunos.telefoneResponsavel,
         filialId: alunos.filialId,
