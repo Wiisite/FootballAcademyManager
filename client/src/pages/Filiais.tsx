@@ -32,7 +32,7 @@ export default function Filiais() {
       queryClient.invalidateQueries({ queryKey: ["/api/filiais"] });
       toast({
         title: "Sucesso",
-        description: "Filial removida com sucesso.",
+        description: "Unidade removida com sucesso.",
       });
     },
     onError: (error) => {

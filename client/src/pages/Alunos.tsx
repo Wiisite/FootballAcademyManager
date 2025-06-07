@@ -235,7 +235,7 @@ export default function Alunos() {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Contato</TableHead>
-                    <TableHead>Filial</TableHead>
+                    <TableHead>Unidade</TableHead>
                     <TableHead>Idade</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Status Pagamento</TableHead>
@@ -280,7 +280,7 @@ export default function Alunos() {
                             <span>{aluno.filial.nome}</span>
                           </div>
                         ) : (
-                          <span className="text-neutral-400">Sem filial</span>
+                          <span className="text-neutral-400">Sem unidade</span>
                         )}
                       </TableCell>
                       <TableCell>

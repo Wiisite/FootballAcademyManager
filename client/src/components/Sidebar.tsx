@@ -46,7 +46,7 @@ export default function Sidebar() {
       active: location === "/turmas",
     },
     {
-      name: "Filiais",
+      name: "Unidades",
       href: "/filiais",
       icon: Building2,
       active: location === "/filiais",

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, CreditCard, Receipt, ArrowLeft, Download } from "lucide-react";
+import { Calendar, CreditCard, Receipt, ArrowLeft, Download, DollarSign } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Pagamento, AlunoWithFilial } from "@shared/schema";
@@ -58,10 +58,16 @@ export default function ExtratoAluno({ aluno, onBack }: ExtratoAlunoProps) {
             <p className="text-neutral-600">{aluno.nome}</p>
           </div>
         </div>
-        <Button variant="outline">
-          <Download className="w-4 h-4 mr-2" />
-          Exportar PDF
-        </Button>
+        <div className="flex space-x-3">
+          <Button variant="outline" onClick={() => window.location.href = '/financeiro'}>
+            <DollarSign className="w-4 h-4 mr-2" />
+            Ir para Financeiro
+          </Button>
+          <Button variant="outline">
+            <Download className="w-4 h-4 mr-2" />
+            Exportar PDF
+          </Button>
+        </div>
       </div>
 
       {/* Informações do Aluno */}
@@ -79,7 +85,7 @@ export default function ExtratoAluno({ aluno, onBack }: ExtratoAlunoProps) {
               <p className="font-medium">{aluno.nome}</p>
             </div>
             <div>
-              <p className="text-sm text-neutral-500">Filial</p>
+              <p className="text-sm text-neutral-500">Unidade</p>
               <p className="font-medium">{aluno.filial?.nome || 'Não informado'}</p>
             </div>
             <div>
