@@ -113,13 +113,12 @@ export const filiais = pgTable("filiais", {
 export const turmas = pgTable("turmas", {
   id: serial("id").primaryKey(),
   nome: varchar("nome", { length: 255 }).notNull(),
-  categoria: varchar("categoria", { length: 100 }).notNull(), // Infantil, Juvenil, Adulto
+  categoria: varchar("categoria", { length: 100 }).notNull(), // Baby fut, Sub 07/08, Sub 09/10, Sub 11/12, Sub 13/14, Sub 15 á 17
   professorId: integer("professor_id").references(() => professores.id),
   filialId: integer("filial_id").references(() => filiais.id),
   horario: varchar("horario", { length: 100 }),
   diasSemana: varchar("dias_semana", { length: 50 }), // "Segunda,Quarta,Sexta"
   capacidadeMaxima: integer("capacidade_maxima").default(20),
-  valorMensalidade: decimal("valor_mensalidade", { precision: 10, scale: 2 }),
   ativo: boolean("ativo").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

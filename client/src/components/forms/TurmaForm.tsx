@@ -15,7 +15,6 @@ import { z } from "zod";
 const formSchema = insertTurmaSchema.extend({
   professorId: z.number().optional(),
   filialId: z.number().optional(),
-  valorMensalidade: z.string().optional(),
   capacidadeMaxima: z.number().optional(),
 });
 
@@ -26,7 +25,14 @@ interface TurmaFormProps {
   onSuccess: () => void;
 }
 
-const categorias = ["Infantil", "Juvenil", "Adulto"];
+const categorias = [
+  "Baby fut", 
+  "Sub 07/08", 
+  "Sub 09/10", 
+  "Sub 11/12", 
+  "Sub 13/14", 
+  "Sub 15 á 17"
+];
 const diasSemana = [
   { id: "Segunda", label: "Segunda-feira" },
   { id: "Terça", label: "Terça-feira" },
@@ -59,7 +65,6 @@ export default function TurmaForm({ turma, onSuccess }: TurmaFormProps) {
       horario: turma?.horario || "",
       diasSemana: turma?.diasSemana || "",
       capacidadeMaxima: turma?.capacidadeMaxima || 20,
-      valorMensalidade: turma?.valorMensalidade || "",
       ativo: Boolean(turma?.ativo ?? true),
     },
   });
@@ -130,7 +135,6 @@ export default function TurmaForm({ turma, onSuccess }: TurmaFormProps) {
       professorId: data.professorId || null,
       horario: data.horario || null,
       diasSemana: data.diasSemana || null,
-      valorMensalidade: data.valorMensalidade || null,
     };
 
     if (turma) {
@@ -218,14 +222,14 @@ export default function TurmaForm({ turma, onSuccess }: TurmaFormProps) {
             name="filialId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Filial</FormLabel>
+                <FormLabel>Unidades</FormLabel>
                 <Select 
                   onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
                   defaultValue={field.value?.toString()}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma filial" />
+                      <SelectValue placeholder="Selecione uma unidade" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -268,25 +272,6 @@ export default function TurmaForm({ turma, onSuccess }: TurmaFormProps) {
                     placeholder="20" 
                     value={field.value || ""}
                     onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="valorMensalidade"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Valor da Mensalidade</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01"
-                    placeholder="0.00" 
-                    {...field} 
                   />
                 </FormControl>
                 <FormMessage />
