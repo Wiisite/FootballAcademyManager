@@ -214,6 +214,41 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="cpfResponsavel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CPF do Responsável</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="000.000.000-00" 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="emailResponsavel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email do Responsável</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="email"
+                        placeholder="email@exemplo.com" 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <FormField
@@ -237,6 +272,77 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
                 </FormItem>
               )}
             />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <FormField
+                control={form.control}
+                name="bairroResponsavel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Bairro</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Digite o bairro" 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cepResponsavel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CEP</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="00000-000" 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="cidadeResponsavel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Cidade</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Digite a cidade" 
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="estadoResponsavel"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Estado</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="SP" 
+                        maxLength={2}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -323,6 +429,64 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
                         <FormLabel>Telefone do Aluno</FormLabel>
                         <FormControl>
                           <Input placeholder="(11) 99999-9999" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+                  <FormField
+                    control={form.control}
+                    name={`alunos.${index}.bairro`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Bairro</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Digite o bairro" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`alunos.${index}.cep`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>CEP</FormLabel>
+                        <FormControl>
+                          <Input placeholder="00000-000" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`alunos.${index}.cidade`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cidade</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Digite a cidade" {...field} value={field.value || ""} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name={`alunos.${index}.estado`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Estado</FormLabel>
+                        <FormControl>
+                          <Input placeholder="SP" maxLength={2} {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
