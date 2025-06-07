@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertProfessorSchema, type Professor, type InsertProfessor, type Filial } from "@shared/schema";
@@ -14,6 +15,7 @@ import { z } from "zod";
 const formSchema = insertProfessorSchema.extend({
   calendarioSemanal: z.string().optional(),
   horariosTrabalho: z.string().optional(),
+  diasSemana: z.array(z.string()).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -27,6 +29,15 @@ const especialidades = [
   "Professor",
   "Estagiário", 
   "Treinador de goleiro",
+];
+
+const diasDaSemana = [
+  { id: "segunda", label: "Segunda-feira" },
+  { id: "terca", label: "Terça-feira" },
+  { id: "quarta", label: "Quarta-feira" },
+  { id: "quinta", label: "Quinta-feira" },
+  { id: "sexta", label: "Sexta-feira" },
+  { id: "sabado", label: "Sábado" },
 ];
 
 export default function ProfessorForm({ professor, onSuccess }: ProfessorFormProps) {
@@ -50,6 +61,7 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
       calendarioSemanal: professor?.calendarioSemanal || "",
       horariosTrabalho: professor?.horariosTrabalho || "",
       filialId: professor?.filialId || undefined,
+      diasSemana: professor?.calendarioSemanal ? professor.calendarioSemanal.split(',') : [],
       ativo: professor?.ativo ?? true,
     },
   });
@@ -108,7 +120,7 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
       rg: data.rg || null,
       dataAdmissao: data.dataAdmissao || null,
       especialidade: data.especialidade || null,
-      calendarioSemanal: data.calendarioSemanal || null,
+      calendarioSemanal: data.diasSemana ? data.diasSemana.join(',') : null,
       horariosTrabalho: data.horariosTrabalho || null,
       filialId: data.filialId || null,
     };
@@ -263,17 +275,34 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
           <div className="md:col-span-2">
             <FormField
               control={form.control}
-              name="calendarioSemanal"
+              name="diasSemana"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Calendário Semanal</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Ex: Segunda, Terça, Quinta (7h-11h e 14h-18h)" 
-                      {...field} 
-                      value={field.value || ""} 
-                    />
-                  </FormControl>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 p-4 border rounded-lg">
+                    {diasDaSemana.map((dia) => (
+                      <div key={dia.id} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={dia.id}
+                          checked={field.value?.includes(dia.id) || false}
+                          onCheckedChange={(checked) => {
+                            const currentValue = field.value || [];
+                            if (checked) {
+                              field.onChange([...currentValue, dia.id]);
+                            } else {
+                              field.onChange(currentValue.filter((v) => v !== dia.id));
+                            }
+                          }}
+                        />
+                        <label 
+                          htmlFor={dia.id}
+                          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        >
+                          {dia.label}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
