@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SquareUser, Search, Edit, Trash2, Phone, Mail, DollarSign } from "lucide-react";
+import { SquareUser, Search, Edit, Trash2, Phone, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Professor } from "@shared/schema";
@@ -66,13 +66,7 @@ export default function Professores() {
     setEditingProfessor(null);
   };
 
-  const formatCurrency = (value: string | null) => {
-    if (!value) return "-";
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(Number(value));
-  };
+
 
   return (
     <div className="space-y-6">
@@ -179,7 +173,6 @@ export default function Professores() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Contato</TableHead>
                     <TableHead>Especialidade</TableHead>
-                    <TableHead>Salário</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -216,14 +209,7 @@ export default function Professores() {
                           <span className="text-neutral-400">-</span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center">
-                          <DollarSign className="w-3 h-3 mr-1 text-neutral-400" />
-                          <span className="font-medium">
-                            {formatCurrency(professor.salario)}
-                          </span>
-                        </div>
-                      </TableCell>
+
                       <TableCell>
                         <Badge variant={professor.ativo ? "default" : "secondary"}>
                           {professor.ativo ? "Ativo" : "Inativo"}
