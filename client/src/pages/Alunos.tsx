@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Users, Building2 } from "lucide-react";
+import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Users, Building2, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -15,12 +15,14 @@ import { apiRequest } from "@/lib/queryClient";
 import type { AlunoWithFilial } from "@shared/schema";
 import AlunoForm from "@/components/forms/AlunoForm";
 import CadastroResponsavelForm from "@/components/forms/CadastroResponsavelForm";
+import ExtratoAluno from "@/components/ExtratoAluno";
 
 export default function Alunos() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isResponsavelDialogOpen, setIsResponsavelDialogOpen] = useState(false);
   const [editingAluno, setEditingAluno] = useState<AlunoWithFilial | null>(null);
+  const [viewingExtrato, setViewingExtrato] = useState<AlunoWithFilial | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -58,6 +60,10 @@ export default function Alunos() {
     setIsDialogOpen(true);
   };
 
+  const handleViewExtrato = (aluno: AlunoWithFilial) => {
+    setViewingExtrato(aluno);
+  };
+
   const handleDelete = (id: number) => {
     if (confirm("Tem certeza que deseja remover este aluno?")) {
       deleteAlunoMutation.mutate(id);
@@ -85,6 +91,16 @@ export default function Alunos() {
     }
     return age;
   };
+
+  // Se estiver visualizando extrato, mostrar o componente de extrato
+  if (viewingExtrato) {
+    return (
+      <ExtratoAluno 
+        aluno={viewingExtrato} 
+        onBack={() => setViewingExtrato(null)} 
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -318,6 +334,14 @@ export default function Alunos() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleViewExtrato(aluno)}
+                            title="Ver extrato de pagamentos"
+                          >
+                            <Receipt className="w-4 h-4" />
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
