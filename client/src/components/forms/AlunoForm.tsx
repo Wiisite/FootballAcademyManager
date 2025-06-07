@@ -316,7 +316,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
               </div>
               <FormControl>
                 <Switch
-                  checked={field.value ?? true}
+                  checked={Boolean(field.value ?? true)}
                   onCheckedChange={field.onChange}
                 />
               </FormControl>
