@@ -147,7 +147,7 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
               <FormItem>
                 <FormLabel>E-mail</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="email@exemplo.com" {...field} />
+                  <Input type="email" placeholder="email@exemplo.com" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -161,7 +161,7 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
               <FormItem>
                 <FormLabel>Telefone</FormLabel>
                 <FormControl>
-                  <Input placeholder="(11) 99999-9999" {...field} />
+                  <Input placeholder="(11) 99999-9999" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
