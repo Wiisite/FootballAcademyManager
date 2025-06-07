@@ -13,6 +13,7 @@ import Turmas from "@/pages/Turmas";
 import Financeiro from "@/pages/Financeiro";
 import Relatorios from "@/pages/Relatorios";
 import Filiais from "@/pages/Filiais";
+import DashboardUnidades from "@/pages/DashboardUnidades";
 import Layout from "@/components/Layout";
 
 function Router() {
@@ -29,6 +30,7 @@ function Router() {
           <Route path="/professores" component={Professores} />
           <Route path="/turmas" component={Turmas} />
           <Route path="/filiais" component={Filiais} />
+          <Route path="/dashboard-unidades" component={DashboardUnidades} />
           <Route path="/financeiro" component={Financeiro} />
           <Route path="/relatorios" component={Relatorios} />
         </Layout>
