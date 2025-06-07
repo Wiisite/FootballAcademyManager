@@ -7,12 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Users } from "lucide-react";
+import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Users, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
-import type { Aluno } from "@shared/schema";
+import type { AlunoWithFilial } from "@shared/schema";
 import AlunoForm from "@/components/forms/AlunoForm";
 import CadastroResponsavelForm from "@/components/forms/CadastroResponsavelForm";
 
@@ -207,6 +207,7 @@ export default function Alunos() {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Contato</TableHead>
+                    <TableHead>Filial</TableHead>
                     <TableHead>Idade</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Status</TableHead>
@@ -242,6 +243,16 @@ export default function Alunos() {
                             </div>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {aluno.filial ? (
+                          <div className="flex items-center">
+                            <Building2 className="w-4 h-4 mr-2 text-neutral-400" />
+                            <span>{aluno.filial.nome}</span>
+                          </div>
+                        ) : (
+                          <span className="text-neutral-400">Sem filial</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <span className="font-medium">

@@ -134,6 +134,7 @@ export const professoresRelations = relations(professores, ({ many }) => ({
 
 export const filiaisRelations = relations(filiais, ({ many }) => ({
   turmas: many(turmas),
+  alunos: many(alunos),
 }));
 
 export const turmasRelations = relations(turmas, ({ one, many }) => ({
@@ -209,6 +210,9 @@ export type User = typeof users.$inferSelect;
 
 export type InsertAluno = z.infer<typeof insertAlunoSchema>;
 export type Aluno = typeof alunos.$inferSelect;
+export type AlunoWithFilial = Aluno & {
+  filial: Filial | null;
+};
 
 export type InsertProfessor = z.infer<typeof insertProfessorSchema>;
 export type Professor = typeof professores.$inferSelect;
