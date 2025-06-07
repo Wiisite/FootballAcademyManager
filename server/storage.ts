@@ -119,6 +119,10 @@ export interface IStorage {
   getNotificacoesByResponsavel(responsavelId: number): Promise<Notificacao[]>;
   createNotificacao(notificacao: InsertNotificacao): Promise<Notificacao>;
   marcarNotificacaoLida(id: number): Promise<void>;
+
+  // Presenças operations
+  getPresencasByTurmaData(turmaId: number, data: string): Promise<Presenca[]>;
+  registrarPresencas(presencas: InsertPresenca[]): Promise<Presenca[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -638,6 +642,39 @@ export class DatabaseStorage implements IStorage {
       .update(notificacoes)
       .set({ lida: true })
       .where(eq(notificacoes.id, id));
+  }
+
+  // Presenças operations
+  async getPresencasByTurmaData(turmaId: number, data: string): Promise<Presenca[]> {
+    return await db
+      .select()
+      .from(presencas)
+      .where(and(
+        eq(presencas.turmaId, turmaId),
+        eq(presencas.data, data)
+      ))
+      .orderBy(presencas.alunoId);
+  }
+
+  async registrarPresencas(presencasData: InsertPresenca[]): Promise<Presenca[]> {
+    // Primeiro, deletar presenças existentes para a mesma turma e data
+    if (presencasData.length > 0) {
+      const { turmaId, data } = presencasData[0];
+      await db
+        .delete(presencas)
+        .where(and(
+          eq(presencas.turmaId, turmaId),
+          eq(presencas.data, data)
+        ));
+    }
+
+    // Inserir novas presenças
+    const novasPresencas = await db
+      .insert(presencas)
+      .values(presencasData)
+      .returning();
+
+    return novasPresencas;
   }
 }
 

@@ -420,6 +420,11 @@ export const insertNotificacaoSchema = createInsertSchema(notificacoes).omit({
   id: true,
 });
 
+export const insertPresencaSchema = createInsertSchema(presencas).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -506,6 +511,9 @@ export type Notificacao = typeof notificacoes.$inferSelect;
 export type ResponsavelWithAlunos = Responsavel & {
   alunos: AlunoWithFilial[];
 };
+
+export type InsertPresenca = z.infer<typeof insertPresencaSchema>;
+export type Presenca = typeof presencas.$inferSelect;
 
 export type AlunoCompleto = Aluno & {
   responsavel?: Responsavel;
