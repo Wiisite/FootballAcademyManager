@@ -348,6 +348,20 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
                   />
                 </div>
 
+                <FormField
+                  control={form.control}
+                  name={`alunos.${index}.endereco`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Endereço</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Digite o endereço completo" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
                   <FormField
                     control={form.control}
