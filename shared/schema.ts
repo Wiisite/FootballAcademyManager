@@ -408,6 +408,9 @@ export type AlunoWithFilial = Aluno & {
 
 export type InsertProfessor = z.infer<typeof insertProfessorSchema>;
 export type Professor = typeof professores.$inferSelect;
+export type ProfessorWithFilial = Professor & {
+  filial: Filial | null;
+};
 
 export type InsertTurma = z.infer<typeof insertTurmaSchema>;
 export type Turma = typeof turmas.$inferSelect;

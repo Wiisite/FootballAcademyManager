@@ -280,7 +280,16 @@ export class DatabaseStorage implements IStorage {
 
   // Professores operations
   async getProfessores(): Promise<Professor[]> {
-    return await db.select().from(professores).where(eq(professores.ativo, true)).orderBy(desc(professores.createdAt));
+    return await db
+      .select()
+      .from(professores)
+      .leftJoin(filiais, eq(professores.filialId, filiais.id))
+      .where(eq(professores.ativo, true))
+      .orderBy(desc(professores.createdAt))
+      .then(results => results.map(result => ({
+        ...result.professores,
+        filial: result.filiais,
+      })));
   }
 
   async getProfessor(id: number): Promise<Professor | undefined> {
