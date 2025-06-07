@@ -24,11 +24,6 @@ const responsavelFormSchema = z.object({
   cpfResponsavel: z.string().optional(),
   emailResponsavel: z.string().email("Email inválido").optional().or(z.literal("")),
   telefoneResponsavel: z.string().min(1, "Telefone do responsável é obrigatório"),
-  endereco: z.string().optional(),
-  bairroResponsavel: z.string().optional(),
-  cepResponsavel: z.string().optional(),
-  cidadeResponsavel: z.string().optional(),
-  estadoResponsavel: z.string().optional(),
   alunos: z.array(alunoFormSchema).min(1, "Pelo menos um aluno deve ser cadastrado"),
 });
 
@@ -50,11 +45,6 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
       cpfResponsavel: "",
       emailResponsavel: "",
       telefoneResponsavel: "",
-      endereco: "",
-      bairroResponsavel: "",
-      cepResponsavel: "",
-      cidadeResponsavel: "",
-      estadoResponsavel: "",
       alunos: [
         {
           nome: "",
@@ -114,7 +104,11 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
       email: "",
       telefone: "",
       dataNascimento: "",
-      endereco: responsavelData.endereco || "",
+      endereco: "",
+      bairro: "",
+      cep: "",
+      cidade: "",
+      estado: "",
       nomeResponsavel: responsavelData.nomeResponsavel,
       telefoneResponsavel: responsavelData.telefoneResponsavel,
       ativo: true,
@@ -156,7 +150,7 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
     currentAlunos.forEach((_, index) => {
       form.setValue(`alunos.${index}.nomeResponsavel`, responsavelData.nomeResponsavel);
       form.setValue(`alunos.${index}.telefoneResponsavel`, responsavelData.telefoneResponsavel);
-      form.setValue(`alunos.${index}.endereco`, responsavelData.endereco || "");
+
     });
   };
 
@@ -251,98 +245,7 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="endereco"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Endereço</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Digite o endereço completo"
-                      className="min-h-[80px]"
-                      {...field}
-                      onBlur={() => {
-                        field.onBlur();
-                        updateResponsavelDataInAlunos();
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <FormField
-                control={form.control}
-                name="bairroResponsavel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Bairro</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Digite o bairro" 
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="cepResponsavel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CEP</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="00000-000" 
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="cidadeResponsavel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Cidade</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Digite a cidade" 
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="estadoResponsavel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estado</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="SP" 
-                        maxLength={2}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
           </CardContent>
         </Card>
 
