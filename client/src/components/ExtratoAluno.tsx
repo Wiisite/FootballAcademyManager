@@ -16,7 +16,7 @@ interface ExtratoAlunoProps {
 
 export default function ExtratoAluno({ aluno, onBack }: ExtratoAlunoProps) {
   const { data: pagamentos, isLoading } = useQuery<Pagamento[]>({
-    queryKey: ["/api/pagamentos/aluno", aluno.id],
+    queryKey: [`/api/pagamentos/aluno/${aluno.id}`],
   });
 
   const calcularTotal = () => {
