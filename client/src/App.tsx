@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import NotFound from "@/pages/not-found";
 import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
-import Alunos from "@/pages/Alunos";
+import Alunos from "@/pages/AlunosFixed";
 import Professores from "@/pages/Professores";
 import Turmas from "@/pages/Turmas";
 import Financeiro from "@/pages/Financeiro";

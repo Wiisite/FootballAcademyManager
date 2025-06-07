@@ -283,178 +283,118 @@ export default function Alunos() {
       {/* Alunos Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Alunos</CardTitle>
+          <CardTitle className="text-xl">Alunos Cadastrados</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="space-y-2 flex-1">
-                    <Skeleton className="h-4 w-48" />
-                    <Skeleton className="h-3 w-32" />
-                  </div>
-                  <Skeleton className="h-8 w-20" />
-                  <Skeleton className="h-8 w-8" />
-                </div>
+                <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
           ) : filteredAlunos.length === 0 ? (
-            <div className="text-center py-12">
-              <UserPlus className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-neutral-800 mb-2">
-                {searchTerm ? "Nenhum aluno encontrado" : "Nenhum aluno cadastrado"}
-              </h3>
-              <p className="text-neutral-500 mb-4">
-                {searchTerm 
-                  ? "Tente buscar com outros termos." 
-                  : "Comece cadastrando o primeiro aluno da escola."
-                }
-              </p>
-              {!searchTerm && (
-                <Button onClick={() => setIsDialogOpen(true)}>
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Cadastrar Primeiro Aluno
-                </Button>
-              )}
+            <div className="text-center py-8">
+              <p className="text-neutral-500">Nenhum aluno encontrado</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Contato</TableHead>
-                    <TableHead>Unidade</TableHead>
-                    <TableHead>Idade</TableHead>
-                    <TableHead>Responsável</TableHead>
-                    <TableHead>Status Pagamento</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredAlunos.map((aluno) => (
-                    <TableRow key={aluno.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{aluno.nome}</p>
-                          {aluno.dataNascimento && (
-                            <p className="text-sm text-neutral-500">
-                              <Calendar className="w-3 h-3 inline mr-1" />
-                              {format(new Date(aluno.dataNascimento), "dd/MM/yyyy", { locale: ptBR })}
-                            </p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          {aluno.email && (
-                            <div className="flex items-center text-sm">
-                              <Mail className="w-3 h-3 mr-1 text-neutral-400" />
-                              {aluno.email}
-                            </div>
-                          )}
-                          {aluno.telefone && (
-                            <div className="flex items-center text-sm">
-                              <Phone className="w-3 h-3 mr-1 text-neutral-400" />
-                              {aluno.telefone}
-                            </div>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {aluno.filial ? (
-                          <div className="flex items-center">
-                            <Building2 className="w-4 h-4 mr-2 text-neutral-400" />
-                            <span>{aluno.filial.nome}</span>
-                          </div>
-                        ) : (
-                          <span className="text-neutral-400">Sem unidade</span>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Idade</TableHead>
+                  <TableHead>Unidade</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Pagamento</TableHead>
+                  <TableHead>Contato</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredAlunos.map((aluno) => (
+                  <TableRow key={aluno.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{aluno.nome}</p>
+                        {aluno.email && (
+                          <p className="text-sm text-neutral-500">{aluno.email}</p>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium">
-                          {calculateAge(aluno.dataNascimento)} anos
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          {aluno.nomeResponsavel && (
-                            <p className="font-medium text-sm">{aluno.nomeResponsavel}</p>
-                          )}
-                          {aluno.telefoneResponsavel && (
-                            <p className="text-xs text-neutral-500">{aluno.telefoneResponsavel}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {aluno.statusPagamento ? (
-                          <div className="space-y-1">
-                            <Badge 
-                              variant={aluno.statusPagamento.emDia ? "default" : "destructive"}
-                              className={aluno.statusPagamento.emDia ? "bg-green-600 hover:bg-green-700" : ""}
-                            >
-                              {aluno.statusPagamento.emDia ? "Em Dia" : "Atrasado"}
-                            </Badge>
-                            {!aluno.statusPagamento.emDia && (
-                              <div className="text-xs text-red-600">
-                                {aluno.statusPagamento.diasAtraso !== undefined 
-                                  ? `${aluno.statusPagamento.diasAtraso} dias`
-                                  : "Sem pagamentos"
-                                }
-                              </div>
-                            )}
-                            {aluno.statusPagamento.ultimoPagamento && (
-                              <div className="text-xs text-neutral-500">
-                                Último: {aluno.statusPagamento.ultimoPagamento}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <Badge variant="secondary">
-                            Sem dados
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={aluno.ativo ? "default" : "secondary"}>
-                          {aluno.ativo ? "Ativo" : "Inativo"}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Calendar className="w-4 h-4 text-neutral-400" />
+                        <span>{calculateAge(aluno.dataNascimento)} anos</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Building2 className="w-4 h-4 text-neutral-400" />
+                        <span>{aluno.filial?.nome || "Não informada"}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={aluno.ativo ? "default" : "secondary"}>
+                        {aluno.ativo ? "Ativo" : "Inativo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {aluno.statusPagamento ? (
+                        <Badge 
+                          variant={aluno.statusPagamento.emDia ? "default" : "destructive"}
+                        >
+                          {aluno.statusPagamento.emDia ? "Em dia" : 
+                           `${aluno.statusPagamento.diasAtraso || 0} dias atraso`}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewExtrato(aluno)}
-                            title="Ver extrato de pagamentos"
-                          >
-                            <Receipt className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEdit(aluno)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDelete(aluno.id)}
-                            disabled={deleteAlunoMutation.isPending}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                      ) : (
+                        <Badge variant="outline">Sem dados</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {aluno.telefone && (
+                          <div className="flex items-center space-x-1 text-sm">
+                            <Phone className="w-3 h-3 text-neutral-400" />
+                            <span>{aluno.telefone}</span>
+                          </div>
+                        )}
+                        {aluno.email && (
+                          <div className="flex items-center space-x-1 text-sm">
+                            <Mail className="w-3 h-3 text-neutral-400" />
+                            <span>{aluno.email}</span>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewExtrato(aluno)}
+                        >
+                          <Receipt className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEdit(aluno)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(aluno.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>
