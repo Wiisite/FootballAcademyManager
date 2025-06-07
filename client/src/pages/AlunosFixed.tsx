@@ -316,15 +316,33 @@ export default function Alunos() {
                   <TableRow key={aluno.id}>
                     <TableCell>
                       <div className="flex items-center space-x-3">
-                        {aluno.fotoUrl && (
-                          <img 
-                            src={aluno.fotoUrl} 
-                            alt={aluno.nome}
-                            className="w-10 h-10 rounded-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
-                          />
+                        {aluno.fotoUrl ? (
+                          <div className="relative group">
+                            <img 
+                              src={aluno.fotoUrl} 
+                              alt={aluno.nome}
+                              className="w-10 h-10 rounded-full object-cover cursor-pointer"
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                              }}
+                              onClick={() => {
+                                const link = document.createElement('a');
+                                link.href = aluno.fotoUrl!;
+                                link.download = `foto-${aluno.nome.replace(/\s+/g, '-').toLowerCase()}.jpg`;
+                                link.target = '_blank';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }}
+                            />
+                            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-full transition-all duration-200 flex items-center justify-center">
+                              <span className="text-white text-xs opacity-0 group-hover:opacity-100">⬇</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                            <span className="text-gray-400 text-xs">Foto</span>
+                          </div>
                         )}
                         <div>
                           <p className="font-medium">{aluno.nome}</p>

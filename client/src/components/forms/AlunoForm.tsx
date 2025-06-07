@@ -143,9 +143,28 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                 <FormLabel>CPF do Aluno</FormLabel>
                 <FormControl>
                   <Input 
-                    placeholder="Digite apenas números (11 dígitos)" 
-                    maxLength={11}
-                    {...field} 
+                    placeholder="999.999.999-99" 
+                    maxLength={14}
+                    {...field}
+                    value={field.value || ""}
+                    onChange={(e) => {
+                      // Remove todos os caracteres não numéricos
+                      const numbers = e.target.value.replace(/\D/g, '');
+                      
+                      // Aplica a máscara do CPF
+                      let formatted = numbers;
+                      if (numbers.length > 3) {
+                        formatted = numbers.slice(0, 3) + '.' + numbers.slice(3);
+                      }
+                      if (numbers.length > 6) {
+                        formatted = numbers.slice(0, 3) + '.' + numbers.slice(3, 6) + '.' + numbers.slice(6);
+                      }
+                      if (numbers.length > 9) {
+                        formatted = numbers.slice(0, 3) + '.' + numbers.slice(3, 6) + '.' + numbers.slice(6, 9) + '-' + numbers.slice(9, 11);
+                      }
+                      
+                      field.onChange(formatted);
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -186,13 +205,45 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
             name="fotoUrl"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Foto do Aluno (URL)</FormLabel>
+                <FormLabel>Foto do Aluno</FormLabel>
                 <FormControl>
-                  <Input 
-                    placeholder="URL da foto do aluno" 
-                    {...field}
-                    value={field.value || ""}
-                  />
+                  <div className="space-y-2">
+                    <Input 
+                      placeholder="URL da foto do aluno" 
+                      {...field}
+                      value={field.value || ""}
+                    />
+                    {field.value && (
+                      <div className="flex items-center space-x-2">
+                        <img 
+                          src={field.value} 
+                          alt="Preview da foto"
+                          className="w-16 h-16 rounded-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (field.value) {
+                              const link = document.createElement('a');
+                              link.href = field.value;
+                              link.download = 'foto-aluno.jpg';
+                              link.target = '_blank';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }
+                          }}
+                        >
+                          Download Foto
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -232,7 +283,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>E-mail</FormLabel>
+                <FormLabel>E-mail do Aluno</FormLabel>
                 <FormControl>
                   <Input type="email" placeholder="email@exemplo.com" {...field} value={field.value || ""} />
                 </FormControl>
@@ -246,7 +297,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
             name="telefone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Telefone</FormLabel>
+                <FormLabel>Telefone do Aluno</FormLabel>
                 <FormControl>
                   <Input placeholder="(11) 99999-9999" {...field} value={field.value || ""} />
                 </FormControl>
