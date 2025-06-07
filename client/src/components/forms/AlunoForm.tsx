@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertAlunoSchema, type Aluno, type InsertAluno, type Filial } from "@shared/schema";
 import { z } from "zod";
+import { Camera, Download, Upload } from "lucide-react";
+import { useRef, useState } from "react";
 
 const formSchema = insertAlunoSchema.extend({
   dataNascimento: z.string().optional(),
@@ -29,6 +31,71 @@ interface AlunoFormProps {
 export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+
+  // Função para iniciar a captura de foto
+  const startCapture = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } 
+      });
+      setStream(mediaStream);
+      setIsCapturing(true);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível acessar a câmera. Verifique as permissões.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Função para capturar a foto
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const context = canvas.getContext('2d');
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      if (context) {
+        context.drawImage(video, 0, 0);
+        const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+        
+        // Atualiza o campo fotoUrl com a imagem capturada
+        form.setValue('fotoUrl', dataURL);
+        
+        toast({
+          title: "Sucesso",
+          description: "Foto capturada com sucesso!",
+        });
+      }
+      
+      stopCapture();
+    }
+  };
+
+  // Função para parar a captura
+  const stopCapture = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setIsCapturing(false);
+  };
 
   const { data: filiais } = useQuery<Filial[]>({
     queryKey: ["/api/filiais"],
@@ -207,22 +274,73 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
               <FormItem>
                 <FormLabel>Foto do Aluno</FormLabel>
                 <FormControl>
-                  <div className="space-y-2">
-                    <Input 
-                      placeholder="URL da foto do aluno" 
-                      {...field}
-                      value={field.value || ""}
-                    />
+                  <div className="space-y-4">
+                    {/* Captura de foto com câmera */}
+                    {isCapturing ? (
+                      <div className="space-y-3">
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          className="w-full max-w-md mx-auto rounded-lg border"
+                        />
+                        <div className="flex justify-center space-x-2">
+                          <Button
+                            type="button"
+                            onClick={capturePhoto}
+                            className="flex items-center space-x-2"
+                          >
+                            <Camera className="w-4 h-4" />
+                            <span>Capturar Foto</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={stopCapture}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Campo de URL manual */}
+                        <Input 
+                          placeholder="URL da foto do aluno" 
+                          {...field}
+                          value={field.value || ""}
+                        />
+                        
+                        {/* Botão para iniciar captura */}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={startCapture}
+                          className="flex items-center space-x-2"
+                        >
+                          <Camera className="w-4 h-4" />
+                          <span>Tirar Foto com Câmera</span>
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Preview da foto */}
                     {field.value && (
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-3 p-3 border rounded-lg">
                         <img 
                           src={field.value} 
                           alt="Preview da foto"
-                          className="w-16 h-16 rounded-full object-cover"
+                          className="w-20 h-20 rounded-full object-cover"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                           }}
                         />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Foto do aluno</p>
+                          <p className="text-xs text-gray-500">
+                            {field.value.startsWith('data:') ? 'Foto capturada pela câmera' : 'Foto via URL'}
+                          </p>
+                        </div>
                         <Button
                           type="button"
                           variant="outline"
@@ -230,19 +348,40 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                           onClick={() => {
                             if (field.value) {
                               const link = document.createElement('a');
-                              link.href = field.value;
-                              link.download = 'foto-aluno.jpg';
-                              link.target = '_blank';
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
+                              if (field.value.startsWith('data:')) {
+                                // Para fotos capturadas, criar blob para download
+                                fetch(field.value)
+                                  .then(res => res.blob())
+                                  .then(blob => {
+                                    const url = URL.createObjectURL(blob);
+                                    link.href = url;
+                                    link.download = 'foto-aluno.jpg';
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    URL.revokeObjectURL(url);
+                                  });
+                              } else {
+                                // Para URLs, download direto
+                                link.href = field.value;
+                                link.download = 'foto-aluno.jpg';
+                                link.target = '_blank';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }
                             }
                           }}
+                          className="flex items-center space-x-1"
                         >
-                          Download Foto
+                          <Download className="w-4 h-4" />
+                          <span>Download</span>
                         </Button>
                       </div>
                     )}
+
+                    {/* Canvas oculto para captura */}
+                    <canvas ref={canvasRef} className="hidden" />
                   </div>
                 </FormControl>
                 <FormMessage />
