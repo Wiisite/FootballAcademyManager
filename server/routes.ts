@@ -656,7 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Pacotes de treino routes
-  app.get("/api/pacotes-treino", isAuthenticated, async (req, res) => {
+  app.get("/api/pacotes-treino", async (req, res) => {
     try {
       const pacotes = await storage.getPacotesTreino();
       res.json(pacotes);
@@ -676,7 +676,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/assinaturas-pacotes", isAuthenticated, async (req, res) => {
+  app.get("/api/assinaturas-pacotes", async (req, res) => {
     try {
       const assinaturas = await storage.getAssinaturasPacotes();
       res.json(assinaturas);
@@ -686,7 +686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/assinaturas-pacotes", isAuthenticated, async (req, res) => {
+  app.post("/api/assinaturas-pacotes", async (req, res) => {
     try {
       const assinatura = await storage.criarAssinaturaPacote(req.body);
       res.json(assinatura);
