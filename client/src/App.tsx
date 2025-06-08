@@ -22,6 +22,9 @@ import AlunosUnidade from "@/pages/AlunosUnidade";
 import ProfessoresUnidade from "@/pages/ProfessoresUnidade";
 import TurmasUnidade from "@/pages/TurmasUnidade";
 import FinanceiroUnidade from "@/pages/FinanceiroUnidade";
+import SistemaUnidade from "@/pages/SistemaUnidade";
+import UnidadeAlunos from "@/pages/UnidadeAlunos";
+import UnidadeProfessores from "@/pages/UnidadeProfessores";
 import Filiais from "@/pages/Filiais";
 import DashboardUnidades from "@/pages/DashboardUnidades";
 import ResponsavelEntrada from "@/pages/ResponsavelEntrada";
@@ -41,13 +44,17 @@ function Router() {
       <Route path="/responsavel/login" component={ResponsavelLogin} />
       <Route path="/portal" component={ResponsavelPortal} />
       
-      {/* Painel específico da unidade */}
+      {/* Sistema Completo da Unidade */}
       <Route path="/login-unidade" component={LoginUnidade} />
-      <Route path="/painel-unidade" component={PainelUnidade} />
-      <Route path="/alunos-unidade" component={AlunosUnidade} />
-      <Route path="/professores-unidade" component={ProfessoresUnidade} />
-      <Route path="/turmas-unidade" component={TurmasUnidade} />
-      <Route path="/financeiro-unidade" component={FinanceiroUnidade} />
+      <Route path="/unidade/sistema" component={SistemaUnidade} />
+      <Route path="/unidade/alunos" component={UnidadeAlunos} />
+      <Route path="/unidade/professores" component={UnidadeProfessores} />
+      <Route path="/unidade/turmas" component={TurmasUnidade} />
+      <Route path="/unidade/financeiro" component={FinanceiroUnidade} />
+      <Route path="/unidade/matriculas" component={GestaoTurmas} />
+      <Route path="/unidade/relatorios" component={Relatorios} />
+      <Route path="/unidade/presencas" component={RelatorioPresencas} />
+      <Route path="/unidade/dashboard" component={DashboardUnidadeWrapper} />
       
       {/* Sistema Administrativo */}
       {isLoading || !isAuthenticated ? (
