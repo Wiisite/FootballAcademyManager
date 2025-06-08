@@ -15,7 +15,8 @@ import {
   Building2,
   ClipboardList,
   Menu,
-  X
+  X,
+  Activity
 } from "lucide-react";
 import { InterLogo } from "@/components/InterLogo";
 import { cn } from "@/lib/utils";
@@ -80,6 +81,12 @@ export default function Sidebar() {
       href: "/relatorio-presencas",
       icon: ClipboardList,
       active: location === "/relatorio-presencas",
+    },
+    {
+      name: "Avaliação Física",
+      href: "/avaliacao-fisica",
+      icon: Activity,
+      active: location === "/avaliacao-fisica",
     },
     {
       name: "Gestão de Unidades",

@@ -74,6 +74,7 @@ function Router() {
             <Route path="/financeiro" component={FinanceiroCompleto} />
             <Route path="/relatorios" component={Relatorios} />
             <Route path="/relatorio-presencas" component={RelatorioPresencas} />
+            <Route path="/avaliacao-fisica" component={AvaliacaoFisica} />
             <Route path="/gestao-unidades" component={GestaoUnidades} />
           </Layout>
           <Layout>
