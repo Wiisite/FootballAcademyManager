@@ -15,6 +15,11 @@ import {
   presencas,
   pacotesTreino,
   assinaturasPacotes,
+  categoriasTestes,
+  testes,
+  avaliacoesFisicas,
+  resultadosTestes,
+  metasAlunos,
   type User,
   type UpsertUser,
   type Aluno,
@@ -53,6 +58,19 @@ import {
   type AssinaturaPacote,
   type InsertAssinaturaPacote,
   type AssinaturaPacoteComplete,
+  type CategoriaTeste,
+  type InsertCategoriaTeste,
+  type Teste,
+  type InsertTeste,
+  type TesteWithCategoria,
+  type AvaliacaoFisica,
+  type InsertAvaliacaoFisica,
+  type AvaliacaoFisicaComplete,
+  type ResultadoTeste,
+  type InsertResultadoTeste,
+  type MetaAluno,
+  type InsertMetaAluno,
+  type MetaAlunoComplete,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, count } from "drizzle-orm";
@@ -156,6 +174,37 @@ export interface IStorage {
   createPacoteTreino(pacote: InsertPacoteTreino): Promise<PacoteTreino>;
   getAssinaturasPacotes(): Promise<AssinaturaPacoteComplete[]>;
   criarAssinaturaPacote(assinatura: InsertAssinaturaPacote): Promise<AssinaturaPacote>;
+
+  // Physical evaluation operations
+  getCategoriasTestes(): Promise<CategoriaTeste[]>;
+  createCategoriaTeste(categoria: InsertCategoriaTeste): Promise<CategoriaTeste>;
+  updateCategoriaTeste(id: number, categoria: Partial<InsertCategoriaTeste>): Promise<CategoriaTeste>;
+  deleteCategoriaTeste(id: number): Promise<void>;
+
+  getTestes(): Promise<TesteWithCategoria[]>;
+  getTestesByCategoria(categoriaId: number): Promise<TesteWithCategoria[]>;
+  createTeste(teste: InsertTeste): Promise<Teste>;
+  updateTeste(id: number, teste: Partial<InsertTeste>): Promise<Teste>;
+  deleteTeste(id: number): Promise<void>;
+
+  getAvaliacoesFisicas(): Promise<AvaliacaoFisicaComplete[]>;
+  getAvaliacoesByAluno(alunoId: number): Promise<AvaliacaoFisicaComplete[]>;
+  getAvaliacoesByFilial(filialId: number): Promise<AvaliacaoFisicaComplete[]>;
+  createAvaliacaoFisica(avaliacao: InsertAvaliacaoFisica): Promise<AvaliacaoFisica>;
+  updateAvaliacaoFisica(id: number, avaliacao: Partial<InsertAvaliacaoFisica>): Promise<AvaliacaoFisica>;
+  deleteAvaliacaoFisica(id: number): Promise<void>;
+
+  getResultadosTestes(): Promise<ResultadoTeste[]>;
+  getResultadosByAvaliacao(avaliacaoId: number): Promise<ResultadoTeste[]>;
+  createResultadoTeste(resultado: InsertResultadoTeste): Promise<ResultadoTeste>;
+  updateResultadoTeste(id: number, resultado: Partial<InsertResultadoTeste>): Promise<ResultadoTeste>;
+  deleteResultadoTeste(id: number): Promise<void>;
+
+  getMetasAlunos(): Promise<MetaAlunoComplete[]>;
+  getMetasByAluno(alunoId: number): Promise<MetaAlunoComplete[]>;
+  createMetaAluno(meta: InsertMetaAluno): Promise<MetaAluno>;
+  updateMetaAluno(id: number, meta: Partial<InsertMetaAluno>): Promise<MetaAluno>;
+  deleteMetaAluno(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -911,6 +960,273 @@ export class DatabaseStorage implements IStorage {
       .values(assinaturaData)
       .returning();
     return assinatura;
+  }
+
+  // Physical evaluation operations
+  async getCategoriasTestes(): Promise<CategoriaTeste[]> {
+    return await db.select().from(categoriasTestes).where(eq(categoriasTestes.ativo, true));
+  }
+
+  async createCategoriaTeste(categoriaData: InsertCategoriaTeste): Promise<CategoriaTeste> {
+    const [categoria] = await db
+      .insert(categoriasTestes)
+      .values(categoriaData)
+      .returning();
+    return categoria;
+  }
+
+  async updateCategoriaTeste(id: number, categoriaData: Partial<InsertCategoriaTeste>): Promise<CategoriaTeste> {
+    const [categoria] = await db
+      .update(categoriasTestes)
+      .set({
+        ...categoriaData,
+        updatedAt: new Date(),
+      })
+      .where(eq(categoriasTestes.id, id))
+      .returning();
+    return categoria;
+  }
+
+  async deleteCategoriaTeste(id: number): Promise<void> {
+    await db.delete(categoriasTestes).where(eq(categoriasTestes.id, id));
+  }
+
+  async getTestes(): Promise<TesteWithCategoria[]> {
+    const result = await db
+      .select()
+      .from(testes)
+      .leftJoin(categoriasTestes, eq(testes.categoriaId, categoriasTestes.id))
+      .where(eq(testes.ativo, true));
+
+    return result.map(row => ({
+      ...row.testes,
+      categoria: row.categorias_testes || {} as CategoriaTeste
+    })) as TesteWithCategoria[];
+  }
+
+  async getTestesByCategoria(categoriaId: number): Promise<TesteWithCategoria[]> {
+    const result = await db
+      .select()
+      .from(testes)
+      .leftJoin(categoriasTestes, eq(testes.categoriaId, categoriasTestes.id))
+      .where(and(eq(testes.categoriaId, categoriaId), eq(testes.ativo, true)));
+
+    return result.map(row => ({
+      ...row.testes,
+      categoria: row.categorias_testes || {} as CategoriaTeste
+    })) as TesteWithCategoria[];
+  }
+
+  async createTeste(testeData: InsertTeste): Promise<Teste> {
+    const [teste] = await db
+      .insert(testes)
+      .values(testeData)
+      .returning();
+    return teste;
+  }
+
+  async updateTeste(id: number, testeData: Partial<InsertTeste>): Promise<Teste> {
+    const [teste] = await db
+      .update(testes)
+      .set({
+        ...testeData,
+        updatedAt: new Date(),
+      })
+      .where(eq(testes.id, id))
+      .returning();
+    return teste;
+  }
+
+  async deleteTeste(id: number): Promise<void> {
+    await db.delete(testes).where(eq(testes.id, id));
+  }
+
+  async getAvaliacoesFisicas(): Promise<AvaliacaoFisicaComplete[]> {
+    const result = await db
+      .select()
+      .from(avaliacoesFisicas)
+      .leftJoin(alunos, eq(avaliacoesFisicas.alunoId, alunos.id))
+      .leftJoin(professores, eq(avaliacoesFisicas.professorId, professores.id))
+      .leftJoin(filiais, eq(avaliacoesFisicas.filialId, filiais.id));
+
+    const avaliacoes = result.map(row => ({
+      ...row.avaliacoes_fisicas,
+      aluno: row.alunos || {} as Aluno,
+      professor: row.professores || {} as Professor,
+      filial: row.filiais || null,
+      resultados: []
+    })) as AvaliacaoFisicaComplete[];
+
+    // Get resultados for each avaliacao
+    for (const avaliacao of avaliacoes) {
+      const resultados = await this.getResultadosByAvaliacao(avaliacao.id);
+      avaliacao.resultados = resultados.map(resultado => ({
+        ...resultado,
+        teste: {} as TesteWithCategoria
+      }));
+    }
+
+    return avaliacoes;
+  }
+
+  async getAvaliacoesByAluno(alunoId: number): Promise<AvaliacaoFisicaComplete[]> {
+    const result = await db
+      .select()
+      .from(avaliacoesFisicas)
+      .leftJoin(alunos, eq(avaliacoesFisicas.alunoId, alunos.id))
+      .leftJoin(professores, eq(avaliacoesFisicas.professorId, professores.id))
+      .leftJoin(filiais, eq(avaliacoesFisicas.filialId, filiais.id))
+      .where(eq(avaliacoesFisicas.alunoId, alunoId));
+
+    return result.map(row => ({
+      ...row.avaliacoes_fisicas,
+      aluno: row.alunos || {} as Aluno,
+      professor: row.professores || {} as Professor,
+      filial: row.filiais || null,
+      resultados: []
+    })) as AvaliacaoFisicaComplete[];
+  }
+
+  async getAvaliacoesByFilial(filialId: number): Promise<AvaliacaoFisicaComplete[]> {
+    const result = await db
+      .select()
+      .from(avaliacoesFisicas)
+      .leftJoin(alunos, eq(avaliacoesFisicas.alunoId, alunos.id))
+      .leftJoin(professores, eq(avaliacoesFisicas.professorId, professores.id))
+      .leftJoin(filiais, eq(avaliacoesFisicas.filialId, filiais.id))
+      .where(eq(avaliacoesFisicas.filialId, filialId));
+
+    return result.map(row => ({
+      ...row.avaliacoes_fisicas,
+      aluno: row.alunos || {} as Aluno,
+      professor: row.professores || {} as Professor,
+      filial: row.filiais || null,
+      resultados: []
+    })) as AvaliacaoFisicaComplete[];
+  }
+
+  async createAvaliacaoFisica(avaliacaoData: InsertAvaliacaoFisica): Promise<AvaliacaoFisica> {
+    const [avaliacao] = await db
+      .insert(avaliacoesFisicas)
+      .values(avaliacaoData)
+      .returning();
+    return avaliacao;
+  }
+
+  async updateAvaliacaoFisica(id: number, avaliacaoData: Partial<InsertAvaliacaoFisica>): Promise<AvaliacaoFisica> {
+    const [avaliacao] = await db
+      .update(avaliacoesFisicas)
+      .set({
+        ...avaliacaoData,
+        updatedAt: new Date(),
+      })
+      .where(eq(avaliacoesFisicas.id, id))
+      .returning();
+    return avaliacao;
+  }
+
+  async deleteAvaliacaoFisica(id: number): Promise<void> {
+    // Delete related resultados first
+    await db.delete(resultadosTestes).where(eq(resultadosTestes.avaliacaoId, id));
+    // Then delete the avaliacao
+    await db.delete(avaliacoesFisicas).where(eq(avaliacoesFisicas.id, id));
+  }
+
+  async getResultadosTestes(): Promise<ResultadoTeste[]> {
+    return await db.select().from(resultadosTestes);
+  }
+
+  async getResultadosByAvaliacao(avaliacaoId: number): Promise<ResultadoTeste[]> {
+    return await db
+      .select()
+      .from(resultadosTestes)
+      .where(eq(resultadosTestes.avaliacaoId, avaliacaoId));
+  }
+
+  async createResultadoTeste(resultadoData: InsertResultadoTeste): Promise<ResultadoTeste> {
+    const [resultado] = await db
+      .insert(resultadosTestes)
+      .values(resultadoData)
+      .returning();
+    return resultado;
+  }
+
+  async updateResultadoTeste(id: number, resultadoData: Partial<InsertResultadoTeste>): Promise<ResultadoTeste> {
+    const [resultado] = await db
+      .update(resultadosTestes)
+      .set(resultadoData)
+      .where(eq(resultadosTestes.id, id))
+      .returning();
+    return resultado;
+  }
+
+  async deleteResultadoTeste(id: number): Promise<void> {
+    await db.delete(resultadosTestes).where(eq(resultadosTestes.id, id));
+  }
+
+  async getMetasAlunos(): Promise<MetaAlunoComplete[]> {
+    const result = await db
+      .select()
+      .from(metasAlunos)
+      .leftJoin(alunos, eq(metasAlunos.alunoId, alunos.id))
+      .leftJoin(testes, eq(metasAlunos.testeId, testes.id))
+      .leftJoin(categoriasTestes, eq(testes.categoriaId, categoriasTestes.id))
+      .leftJoin(professores, eq(metasAlunos.definidoPor, professores.id));
+
+    return result.map(row => ({
+      ...row.metas_alunos,
+      aluno: row.alunos || {} as Aluno,
+      teste: {
+        ...row.testes || {} as Teste,
+        categoria: row.categorias_testes || {} as CategoriaTeste
+      } as TesteWithCategoria,
+      definidoPorProfessor: row.professores || null
+    })) as MetaAlunoComplete[];
+  }
+
+  async getMetasByAluno(alunoId: number): Promise<MetaAlunoComplete[]> {
+    const result = await db
+      .select()
+      .from(metasAlunos)
+      .leftJoin(alunos, eq(metasAlunos.alunoId, alunos.id))
+      .leftJoin(testes, eq(metasAlunos.testeId, testes.id))
+      .leftJoin(categoriasTestes, eq(testes.categoriaId, categoriasTestes.id))
+      .leftJoin(professores, eq(metasAlunos.definidoPor, professores.id))
+      .where(eq(metasAlunos.alunoId, alunoId));
+
+    return result.map(row => ({
+      ...row.metas_alunos,
+      aluno: row.alunos || {} as Aluno,
+      teste: {
+        ...row.testes || {} as Teste,
+        categoria: row.categorias_testes || {} as CategoriaTeste
+      } as TesteWithCategoria,
+      definidoPorProfessor: row.professores || null
+    })) as MetaAlunoComplete[];
+  }
+
+  async createMetaAluno(metaData: InsertMetaAluno): Promise<MetaAluno> {
+    const [meta] = await db
+      .insert(metasAlunos)
+      .values(metaData)
+      .returning();
+    return meta;
+  }
+
+  async updateMetaAluno(id: number, metaData: Partial<InsertMetaAluno>): Promise<MetaAluno> {
+    const [meta] = await db
+      .update(metasAlunos)
+      .set({
+        ...metaData,
+        updatedAt: new Date(),
+      })
+      .where(eq(metasAlunos.id, id))
+      .returning();
+    return meta;
+  }
+
+  async deleteMetaAluno(id: number): Promise<void> {
+    await db.delete(metasAlunos).where(eq(metasAlunos.id, id));
   }
 }
 

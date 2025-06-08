@@ -610,6 +610,36 @@ export const insertAssinaturaPacoteSchema = createInsertSchema(assinaturasPacote
   updatedAt: true,
 });
 
+// Physical evaluation schemas
+export const insertCategoriaTesteSchema = createInsertSchema(categoriasTestes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTesteSchema = createInsertSchema(testes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAvaliacaoFisicaSchema = createInsertSchema(avaliacoesFisicas).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertResultadoTesteSchema = createInsertSchema(resultadosTestes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertMetaAlunoSchema = createInsertSchema(metasAlunos).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -726,4 +756,36 @@ export type AssinaturaPacote = typeof assinaturasPacotes.$inferSelect;
 export type AssinaturaPacoteComplete = AssinaturaPacote & {
   aluno: Aluno;
   pacote: PacoteTreino;
+};
+
+// Physical evaluation types
+export type InsertCategoriaTeste = z.infer<typeof insertCategoriaTesteSchema>;
+export type CategoriaTeste = typeof categoriasTestes.$inferSelect;
+
+export type InsertTeste = z.infer<typeof insertTesteSchema>;
+export type Teste = typeof testes.$inferSelect;
+export type TesteWithCategoria = Teste & {
+  categoria: CategoriaTeste;
+};
+
+export type InsertAvaliacaoFisica = z.infer<typeof insertAvaliacaoFisicaSchema>;
+export type AvaliacaoFisica = typeof avaliacoesFisicas.$inferSelect;
+export type AvaliacaoFisicaComplete = AvaliacaoFisica & {
+  aluno: Aluno;
+  professor: Professor;
+  filial: Filial | null;
+  resultados: (ResultadoTeste & {
+    teste: TesteWithCategoria;
+  })[];
+};
+
+export type InsertResultadoTeste = z.infer<typeof insertResultadoTesteSchema>;
+export type ResultadoTeste = typeof resultadosTestes.$inferSelect;
+
+export type InsertMetaAluno = z.infer<typeof insertMetaAlunoSchema>;
+export type MetaAluno = typeof metasAlunos.$inferSelect;
+export type MetaAlunoComplete = MetaAluno & {
+  aluno: Aluno;
+  teste: TesteWithCategoria;
+  definidoPorProfessor: Professor | null;
 };
