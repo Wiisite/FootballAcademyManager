@@ -152,9 +152,9 @@ export default function ResponsavelPortal() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-green-600" />
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
           <p className="text-gray-600">Carregando portal...</p>
         </div>
       </div>
@@ -170,9 +170,9 @@ export default function ResponsavelPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-blue-50 shadow-sm border-b border-blue-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
@@ -206,17 +206,17 @@ export default function ResponsavelPortal() {
 
           <TabsContent value="dashboard" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
+              <Card className="bg-blue-50 border-blue-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Filhos Matriculados</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <Users className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{responsavel.alunos?.length || 0}</div>
+                  <div className="text-2xl font-bold text-blue-600">{responsavel.alunos?.length || 0}</div>
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-blue-50 border-blue-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Pagamentos em Dia</CardTitle>
                   <CheckCircle className="h-4 w-4 text-green-600" />
@@ -228,7 +228,7 @@ export default function ResponsavelPortal() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-blue-50 border-blue-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Pagamentos Atrasados</CardTitle>
                   <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -240,13 +240,13 @@ export default function ResponsavelPortal() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="bg-blue-50 border-blue-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Notificações</CardTitle>
-                  <Bell className="h-4 w-4 text-muted-foreground" />
+                  <Bell className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">3</div>
+                  <div className="text-2xl font-bold text-blue-600">3</div>
                 </CardContent>
               </Card>
             </div>
@@ -256,7 +256,7 @@ export default function ResponsavelPortal() {
               <h3 className="text-lg font-semibold">Seus Filhos</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 {responsavel.alunos?.map((aluno: any) => (
-                  <Card key={aluno.id}>
+                  <Card key={aluno.id} className="bg-blue-50 border-blue-200">
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div className="flex items-center space-x-3">

@@ -11,9 +11,9 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-neutral-200 sticky top-0 z-50">
+      <header className="bg-blue-50/80 backdrop-blur-sm border-b border-blue-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
@@ -27,7 +27,7 @@ export default function Landing() {
             </div>
             <div className="flex gap-3">
               <Link href="/responsavel">
-                <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
+                <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
                   Portal dos Responsáveis
                 </Button>
               </Link>
@@ -77,7 +77,7 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-blue-50">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-neutral-900 mb-4">
@@ -91,10 +91,10 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1 */}
-            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
+            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
-                  <Users className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6 text-blue-600" />
                 </div>
                 <CardTitle className="text-xl">Gestão de Alunos</CardTitle>
                 <CardDescription>
@@ -105,10 +105,10 @@ export default function Landing() {
             </Card>
 
             {/* Feature 2 */}
-            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
+            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-secondary" />
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <Shield className="w-6 h-6 text-blue-600" />
                 </div>
                 <CardTitle className="text-xl">Controle de Professores</CardTitle>
                 <CardDescription>
