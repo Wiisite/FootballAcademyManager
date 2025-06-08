@@ -18,6 +18,10 @@ import GestaoUnidades from "@/pages/GestaoUnidades";
 import DashboardUnidadeWrapper from "@/pages/DashboardUnidadeWrapper";
 import PainelUnidade from "@/pages/PainelUnidade";
 import LoginUnidade from "@/pages/LoginUnidade";
+import AlunosUnidade from "@/pages/AlunosUnidade";
+import ProfessoresUnidade from "@/pages/ProfessoresUnidade";
+import TurmasUnidade from "@/pages/TurmasUnidade";
+import FinanceiroUnidade from "@/pages/FinanceiroUnidade";
 import Filiais from "@/pages/Filiais";
 import DashboardUnidades from "@/pages/DashboardUnidades";
 import ResponsavelEntrada from "@/pages/ResponsavelEntrada";
@@ -40,6 +44,10 @@ function Router() {
       {/* Painel específico da unidade */}
       <Route path="/login-unidade" component={LoginUnidade} />
       <Route path="/painel-unidade" component={PainelUnidade} />
+      <Route path="/alunos-unidade" component={AlunosUnidade} />
+      <Route path="/professores-unidade" component={ProfessoresUnidade} />
+      <Route path="/turmas-unidade" component={TurmasUnidade} />
+      <Route path="/financeiro-unidade" component={FinanceiroUnidade} />
       
       {/* Sistema Administrativo */}
       {isLoading || !isAuthenticated ? (
