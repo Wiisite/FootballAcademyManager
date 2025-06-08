@@ -13,9 +13,9 @@
   --card-foreground: 20 14.3% 4.1%; /* #0F0F0F */
   --border: 20 5.9% 90%; /* #E0E0E0 */
   --input: 20 5.9% 90%; /* #E0E0E0 */
-  --primary: 122 39% 49%; /* #4CAF50 */
+  --primary: 216 91% 35%; /* #0847ad */
   --primary-foreground: 0 0% 98%; /* #FAFAFA */
-  --secondary: 60 4.8% 95.9%; /* #F5F5F5 */
+  --secondary: 0 0% 95%; /* #F2F2F2 */
   --secondary-foreground: 24 9.8% 10%; /* #1F1F1F */
   --accent: 36 100% 50%; /* #FF9800 */
   --accent-foreground: 60 9.1% 97.8%; /* #FAFAFA */
@@ -25,9 +25,9 @@
   --radius: 0.5rem;
   
   /* Custom colors for the football school theme */
-  --primary-green: 122 100% 25%; /* #1B5E20 */
-  --secondary-green: 122 39% 49%; /* #4CAF50 */
-  --neutral-50: 0 0% 96%; /* #F5F5F5 */
+  --primary-blue: 216 91% 35%; /* #0847ad */
+  --secondary-blue: 216 91% 45%; /* #1055d4 */
+  --neutral-50: 0 0% 95%; /* #F2F2F2 */
   --neutral-100: 0 0% 88%; /* #E0E0E0 */
   --neutral-400: 0 0% 62%; /* #9E9E9E */
   --neutral-800: 0 0% 26%; /* #424242 */
@@ -44,8 +44,8 @@
   --card-foreground: 0 0% 98%; /* #FAFAFA */
   --border: 240 3.7% 15.9%; /* #262626 */
   --input: 240 3.7% 15.9%; /* #262626 */
-  --primary: 122 39% 49%; /* #4CAF50 */
-  --primary-foreground: 122 100% 99%; /* #F1F8E9 */
+  --primary: 216 91% 35%; /* #0847ad */
+  --primary-foreground: 216 100% 99%; /* #F1F6FF */
   --secondary: 240 3.7% 15.9%; /* #262626 */
   --secondary-foreground: 0 0% 98%; /* #FAFAFA */
   --accent: 36 100% 50%; /* #FF9800 */
@@ -72,20 +72,20 @@
 }
 
 @layer utilities {
-  .text-primary-green {
-    color: hsl(var(--primary-green));
+  .text-primary-blue {
+    color: hsl(var(--primary-blue));
   }
   
-  .bg-primary-green {
-    background-color: hsl(var(--primary-green));
+  .bg-primary-blue {
+    background-color: hsl(var(--primary-blue));
   }
   
-  .text-secondary-green {
-    color: hsl(var(--secondary-green));
+  .text-secondary-blue {
+    color: hsl(var(--secondary-blue));
   }
   
-  .bg-secondary-green {
-    background-color: hsl(var(--secondary-green));
+  .bg-secondary-blue {
+    background-color: hsl(var(--secondary-blue));
   }
   
   .bg-neutral-50 {

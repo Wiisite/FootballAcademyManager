@@ -176,7 +176,7 @@ export default function Dashboard() {
             </div>
             <Button 
               onClick={() => window.location.href = '/dashboard-unidades'}
-              className="bg-green-600 hover:bg-green-700 text-white"
+              className="bg-blue-600 hover:bg-green-700 text-white"
             >
               <BarChart3 className="w-4 h-4 mr-2" />
               Ver Dashboard
