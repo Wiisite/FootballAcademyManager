@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Plus, Search, Edit, Trash2, ArrowLeft, GraduationCap, Building2 } from "lucide-react";
+import { InterLogo } from "@/components/InterLogo";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -151,7 +152,9 @@ export default function UnidadeProfessores() {
                 Voltar ao Sistema
               </Button>
               <div className="flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-green-600" />
+                <div className="w-5 h-5 bg-blue-600 rounded flex items-center justify-center p-0.5">
+                  <InterLogo size={14} />
+                </div>
                 <div>
                   <h1 className="text-xl font-bold">Gestão de Professores</h1>
                   <p className="text-sm text-muted-foreground">
