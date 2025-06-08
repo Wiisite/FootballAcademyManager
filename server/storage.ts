@@ -131,6 +131,18 @@ export interface IStorage {
   getPresencasByTurmaData(turmaId: number, data: string): Promise<Presenca[]>;
   getPresencasDetalhadas(): Promise<any[]>;
   registrarPresencas(presencas: InsertPresenca[]): Promise<Presenca[]>;
+
+  // Uniformes operations
+  getUniformes(): Promise<Uniforme[]>;
+  createUniforme(uniforme: InsertUniforme): Promise<Uniforme>;
+  getComprasUniformes(): Promise<any[]>;
+  comprarUniforme(compra: InsertCompraUniforme): Promise<CompraUniforme>;
+
+  // Eventos operations
+  getEventos(): Promise<EventoWithFilial[]>;
+  createEvento(evento: InsertEvento): Promise<Evento>;
+  getInscricoesEventos(): Promise<InscricaoEvento[]>;
+  inscreveAlunoEvento(inscricao: InsertInscricaoEvento): Promise<InscricaoEvento>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -822,6 +834,50 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     return novasPresencas;
+  }
+
+  // Uniformes operations
+  async getUniformes(): Promise<Uniforme[]> {
+    return await db.select().from(uniformes);
+  }
+
+  async createUniforme(uniformeData: InsertUniforme): Promise<Uniforme> {
+    const [uniforme] = await db
+      .insert(uniformes)
+      .values(uniformeData)
+      .returning();
+    return uniforme;
+  }
+
+  async getComprasUniformes(): Promise<any[]> {
+    const compras = await db
+      .select({
+        compra: comprasUniformes,
+        uniforme: uniformes,
+        aluno: alunos
+      })
+      .from(comprasUniformes)
+      .leftJoin(uniformes, eq(comprasUniformes.uniformeId, uniformes.id))
+      .leftJoin(alunos, eq(comprasUniformes.alunoId, alunos.id));
+
+    return compras.map(row => ({
+      ...row.compra,
+      uniforme: row.uniforme,
+      aluno: row.aluno
+    }));
+  }
+
+  async comprarUniforme(compraData: InsertCompraUniforme): Promise<CompraUniforme> {
+    const [compra] = await db
+      .insert(comprasUniformes)
+      .values(compraData)
+      .returning();
+    return compra;
+  }
+
+  // Eventos operations  
+  async getInscricoesEventos(): Promise<InscricaoEvento[]> {
+    return await db.select().from(inscricoesEventos);
   }
 }
 
