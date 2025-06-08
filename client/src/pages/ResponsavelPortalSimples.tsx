@@ -174,19 +174,20 @@ export default function ResponsavelPortal() {
       {/* Header */}
       <div className="bg-blue-50 shadow-sm border-b border-blue-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center p-1">
-                <InterLogo size={32} />
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center p-1">
+                <InterLogo size={24} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Portal dos Responsáveis</h1>
-                <p className="text-sm text-gray-600">Bem-vindo, {responsavel.nome}</p>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900">Portal dos Responsáveis</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Bem-vindo, {responsavel.nome}</p>
               </div>
             </div>
-            <Button onClick={handleLogout} variant="outline" size="sm">
-              <LogOut className="w-4 h-4 mr-2" />
-              Sair
+            <Button onClick={handleLogout} variant="outline" size="sm" className="text-xs sm:text-sm">
+              <LogOut className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Sair</span>
+              <span className="sm:hidden">🚪</span>
             </Button>
           </div>
         </div>
@@ -195,13 +196,13 @@ export default function ResponsavelPortal() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="alunos">Meus Filhos</TabsTrigger>
-            <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
-            <TabsTrigger value="pacotes">Pacotes de Treino</TabsTrigger>
-            <TabsTrigger value="eventos">Eventos</TabsTrigger>
-            <TabsTrigger value="uniformes">Uniformes</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1">
+            <TabsTrigger value="dashboard" className="text-xs sm:text-sm">📊 Dashboard</TabsTrigger>
+            <TabsTrigger value="alunos" className="text-xs sm:text-sm">👨‍👩‍👧‍👦 Filhos</TabsTrigger>
+            <TabsTrigger value="pagamentos" className="text-xs sm:text-sm">💳 Pagamentos</TabsTrigger>
+            <TabsTrigger value="pacotes" className="text-xs sm:text-sm">🏃‍♂️ Pacotes</TabsTrigger>
+            <TabsTrigger value="eventos" className="text-xs sm:text-sm">📅 Eventos</TabsTrigger>
+            <TabsTrigger value="uniformes" className="text-xs sm:text-sm">👕 Uniformes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">

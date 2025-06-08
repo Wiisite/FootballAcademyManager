@@ -13,14 +13,18 @@ import {
   Settings, 
   LogOut,
   Building2,
-  ClipboardList
+  ClipboardList,
+  Menu,
+  X
 } from "lucide-react";
 import { InterLogo } from "@/components/InterLogo";
 import { cn } from "@/lib/utils";
+import { useState } from "react";
 
 export default function Sidebar() {
   const { user } = useAuth();
   const [location] = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navigationItems = [
     {
@@ -90,77 +94,102 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 bg-white shadow-lg border-r border-neutral-100 flex flex-col">
-      {/* Header */}
-      <div className="p-6 border-b border-neutral-100">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center p-1">
-            <InterLogo size={32} />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-neutral-800">EscolaFut</h1>
-            <p className="text-sm text-neutral-400">Sistema de Gestão</p>
-          </div>
-        </div>
-      </div>
+    <>
+      {/* Mobile Menu Button */}
+      <Button
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        variant="outline"
+        size="sm"
+        className="fixed top-4 left-4 z-50 lg:hidden bg-white shadow-md"
+      >
+        {isMobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+      </Button>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
-          {navigationItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <li key={item.name}>
-                <Link href={item.href}>
-                  <Button
-                    variant="ghost"
-                    className={cn(
-                      "w-full justify-start px-4 py-3 h-auto font-normal",
-                      item.active
-                        ? "text-primary bg-primary/10 hover:bg-primary/15"
-                        : "text-neutral-600 hover:text-primary hover:bg-primary/5"
-                    )}
-                  >
-                    <Icon className="mr-3 h-4 w-4" />
-                    {item.name}
-                  </Button>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      </nav>
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
-      {/* User Profile */}
-      <div className="p-4 border-t border-neutral-100">
-        <div className="flex items-center space-x-3 mb-4">
-          {user?.profileImageUrl ? (
-            <img 
-              src={user.profileImageUrl} 
-              alt="Perfil do usuário" 
-              className="w-10 h-10 rounded-full object-cover" 
-            />
-          ) : (
-            <div className="w-10 h-10 bg-neutral-200 rounded-full flex items-center justify-center">
-              <Users className="w-5 h-5 text-neutral-500" />
+      {/* Sidebar */}
+      <aside className={cn(
+        "w-64 bg-white shadow-lg border-r border-neutral-100 flex flex-col transition-transform duration-300 ease-in-out z-50",
+        "lg:translate-x-0",
+        isMobileMenuOpen ? "translate-x-0 fixed inset-y-0 left-0" : "-translate-x-full fixed inset-y-0 left-0 lg:relative lg:translate-x-0"
+      )}>
+        {/* Header */}
+        <div className="p-4 lg:p-6 border-b border-neutral-100">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 bg-blue-600 rounded-lg flex items-center justify-center p-1">
+              <InterLogo size={24} />
             </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-neutral-800 truncate">
-              {user?.firstName || user?.email || "Usuário"}
-            </p>
-            <p className="text-xs text-neutral-400">Administrador</p>
+            <div>
+              <h1 className="text-base lg:text-lg font-semibold text-neutral-800">EscolaFut</h1>
+              <p className="text-xs lg:text-sm text-neutral-400">Sistema de Gestão</p>
+            </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className="text-neutral-400 hover:text-neutral-600"
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
         </div>
-      </div>
-    </aside>
+
+        {/* Navigation */}
+        <nav className="flex-1 p-4">
+          <ul className="space-y-2">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <li key={item.name}>
+                  <Link href={item.href}>
+                    <Button
+                      variant="ghost"
+                      className={cn(
+                        "w-full justify-start px-4 py-3 h-auto font-normal",
+                        item.active
+                          ? "text-primary bg-primary/10 hover:bg-primary/15"
+                          : "text-neutral-600 hover:text-primary hover:bg-primary/5"
+                      )}
+                    >
+                      <Icon className="mr-3 h-4 w-4" />
+                      {item.name}
+                    </Button>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* User Profile */}
+        <div className="p-4 border-t border-neutral-100">
+          <div className="flex items-center space-x-3 mb-4">
+            {user?.profileImageUrl ? (
+              <img 
+                src={user.profileImageUrl} 
+                alt="Perfil do usuário" 
+                className="w-10 h-10 rounded-full object-cover" 
+              />
+            ) : (
+              <div className="w-10 h-10 bg-neutral-200 rounded-full flex items-center justify-center">
+                <Users className="w-5 h-5 text-neutral-500" />
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-neutral-800 truncate">
+                {user?.firstName || user?.email || "Usuário"}
+              </p>
+              <p className="text-xs text-neutral-400">Administrador</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-neutral-400 hover:text-neutral-600"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }

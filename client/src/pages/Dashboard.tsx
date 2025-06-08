@@ -60,19 +60,20 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-neutral-800">Dashboard</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-neutral-800">Dashboard</h2>
           <p className="text-neutral-600">Visão geral da escola de futebol</p>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2 sm:space-x-4">
           <Button variant="outline" size="icon" className="relative">
             <Bell className="h-4 w-4" />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full"></span>
           </Button>
-          <Button onClick={() => handleQuickAction("Novo Cadastro")} className="bg-primary hover:bg-primary/90">
-            <UserPlus className="w-4 h-4 mr-2" />
-            Novo Cadastro
+          <Button onClick={() => handleQuickAction("Novo Cadastro")} className="bg-primary hover:bg-primary/90 text-sm sm:text-base">
+            <UserPlus className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Novo Cadastro</span>
+            <span className="sm:hidden">Novo</span>
           </Button>
         </div>
       </div>
