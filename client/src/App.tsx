@@ -32,6 +32,7 @@ import ResponsavelEntrada from "@/pages/ResponsavelEntrada";
 import ResponsavelLogin from "@/pages/ResponsavelLogin";
 import ResponsavelCadastro from "@/pages/ResponsavelCadastro";
 import ResponsavelPortal from "@/pages/ResponsavelPortalSimples";
+import AvaliacaoFisica from "@/pages/AvaliacaoFisica";
 import Layout from "@/components/Layout";
 
 function Router() {

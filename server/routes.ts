@@ -22,6 +22,11 @@ import {
   insertInscricaoEventoSchema,
   insertCompraUniformeSchema,
   insertNotificacaoSchema,
+  insertCategoriaTesteSchema,
+  insertTesteSchema,
+  insertAvaliacaoFisicaSchema,
+  insertResultadoTesteSchema,
+  insertMetaAlunoSchema,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -693,6 +698,316 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating assinatura pacote:", error);
       res.status(500).json({ message: "Failed to create assinatura pacote" });
+    }
+  });
+
+  // Physical Evaluation Routes - Categorias de Testes
+  app.get("/api/categorias-testes", isAuthenticated, async (req, res) => {
+    try {
+      const categorias = await storage.getCategoriasTestes();
+      res.json(categorias);
+    } catch (error) {
+      console.error("Error fetching categorias testes:", error);
+      res.status(500).json({ message: "Failed to fetch categorias testes" });
+    }
+  });
+
+  app.post("/api/categorias-testes", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertCategoriaTesteSchema.parse(req.body);
+      const categoria = await storage.createCategoriaTeste(validatedData);
+      res.status(201).json(categoria);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating categoria teste:", error);
+      res.status(500).json({ message: "Failed to create categoria teste" });
+    }
+  });
+
+  app.put("/api/categorias-testes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertCategoriaTesteSchema.partial().parse(req.body);
+      const categoria = await storage.updateCategoriaTeste(id, validatedData);
+      res.json(categoria);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating categoria teste:", error);
+      res.status(500).json({ message: "Failed to update categoria teste" });
+    }
+  });
+
+  app.delete("/api/categorias-testes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteCategoriaTeste(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting categoria teste:", error);
+      res.status(500).json({ message: "Failed to delete categoria teste" });
+    }
+  });
+
+  // Testes Routes
+  app.get("/api/testes", isAuthenticated, async (req, res) => {
+    try {
+      const testes = await storage.getTestes();
+      res.json(testes);
+    } catch (error) {
+      console.error("Error fetching testes:", error);
+      res.status(500).json({ message: "Failed to fetch testes" });
+    }
+  });
+
+  app.get("/api/testes/categoria/:categoriaId", isAuthenticated, async (req, res) => {
+    try {
+      const categoriaId = parseInt(req.params.categoriaId);
+      const testes = await storage.getTestesByCategoria(categoriaId);
+      res.json(testes);
+    } catch (error) {
+      console.error("Error fetching testes by categoria:", error);
+      res.status(500).json({ message: "Failed to fetch testes by categoria" });
+    }
+  });
+
+  app.post("/api/testes", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertTesteSchema.parse(req.body);
+      const teste = await storage.createTeste(validatedData);
+      res.status(201).json(teste);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating teste:", error);
+      res.status(500).json({ message: "Failed to create teste" });
+    }
+  });
+
+  app.put("/api/testes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertTesteSchema.partial().parse(req.body);
+      const teste = await storage.updateTeste(id, validatedData);
+      res.json(teste);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating teste:", error);
+      res.status(500).json({ message: "Failed to update teste" });
+    }
+  });
+
+  app.delete("/api/testes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteTeste(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting teste:", error);
+      res.status(500).json({ message: "Failed to delete teste" });
+    }
+  });
+
+  // Avaliacoes Fisicas Routes
+  app.get("/api/avaliacoes-fisicas", isAuthenticated, async (req, res) => {
+    try {
+      const avaliacoes = await storage.getAvaliacoesFisicas();
+      res.json(avaliacoes);
+    } catch (error) {
+      console.error("Error fetching avaliacoes fisicas:", error);
+      res.status(500).json({ message: "Failed to fetch avaliacoes fisicas" });
+    }
+  });
+
+  app.get("/api/avaliacoes-fisicas/aluno/:alunoId", isAuthenticated, async (req, res) => {
+    try {
+      const alunoId = parseInt(req.params.alunoId);
+      const avaliacoes = await storage.getAvaliacoesByAluno(alunoId);
+      res.json(avaliacoes);
+    } catch (error) {
+      console.error("Error fetching avaliacoes by aluno:", error);
+      res.status(500).json({ message: "Failed to fetch avaliacoes by aluno" });
+    }
+  });
+
+  app.get("/api/avaliacoes-fisicas/filial/:filialId", isAuthenticated, async (req, res) => {
+    try {
+      const filialId = parseInt(req.params.filialId);
+      const avaliacoes = await storage.getAvaliacoesByFilial(filialId);
+      res.json(avaliacoes);
+    } catch (error) {
+      console.error("Error fetching avaliacoes by filial:", error);
+      res.status(500).json({ message: "Failed to fetch avaliacoes by filial" });
+    }
+  });
+
+  app.post("/api/avaliacoes-fisicas", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertAvaliacaoFisicaSchema.parse(req.body);
+      const avaliacao = await storage.createAvaliacaoFisica(validatedData);
+      res.status(201).json(avaliacao);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating avaliacao fisica:", error);
+      res.status(500).json({ message: "Failed to create avaliacao fisica" });
+    }
+  });
+
+  app.put("/api/avaliacoes-fisicas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertAvaliacaoFisicaSchema.partial().parse(req.body);
+      const avaliacao = await storage.updateAvaliacaoFisica(id, validatedData);
+      res.json(avaliacao);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating avaliacao fisica:", error);
+      res.status(500).json({ message: "Failed to update avaliacao fisica" });
+    }
+  });
+
+  app.delete("/api/avaliacoes-fisicas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteAvaliacaoFisica(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting avaliacao fisica:", error);
+      res.status(500).json({ message: "Failed to delete avaliacao fisica" });
+    }
+  });
+
+  // Resultados Testes Routes
+  app.get("/api/resultados-testes", isAuthenticated, async (req, res) => {
+    try {
+      const resultados = await storage.getResultadosTestes();
+      res.json(resultados);
+    } catch (error) {
+      console.error("Error fetching resultados testes:", error);
+      res.status(500).json({ message: "Failed to fetch resultados testes" });
+    }
+  });
+
+  app.get("/api/resultados-testes/avaliacao/:avaliacaoId", isAuthenticated, async (req, res) => {
+    try {
+      const avaliacaoId = parseInt(req.params.avaliacaoId);
+      const resultados = await storage.getResultadosByAvaliacao(avaliacaoId);
+      res.json(resultados);
+    } catch (error) {
+      console.error("Error fetching resultados by avaliacao:", error);
+      res.status(500).json({ message: "Failed to fetch resultados by avaliacao" });
+    }
+  });
+
+  app.post("/api/resultados-testes", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertResultadoTesteSchema.parse(req.body);
+      const resultado = await storage.createResultadoTeste(validatedData);
+      res.status(201).json(resultado);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating resultado teste:", error);
+      res.status(500).json({ message: "Failed to create resultado teste" });
+    }
+  });
+
+  app.put("/api/resultados-testes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertResultadoTesteSchema.partial().parse(req.body);
+      const resultado = await storage.updateResultadoTeste(id, validatedData);
+      res.json(resultado);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating resultado teste:", error);
+      res.status(500).json({ message: "Failed to update resultado teste" });
+    }
+  });
+
+  app.delete("/api/resultados-testes/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteResultadoTeste(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting resultado teste:", error);
+      res.status(500).json({ message: "Failed to delete resultado teste" });
+    }
+  });
+
+  // Metas Alunos Routes
+  app.get("/api/metas-alunos", isAuthenticated, async (req, res) => {
+    try {
+      const metas = await storage.getMetasAlunos();
+      res.json(metas);
+    } catch (error) {
+      console.error("Error fetching metas alunos:", error);
+      res.status(500).json({ message: "Failed to fetch metas alunos" });
+    }
+  });
+
+  app.get("/api/metas-alunos/aluno/:alunoId", isAuthenticated, async (req, res) => {
+    try {
+      const alunoId = parseInt(req.params.alunoId);
+      const metas = await storage.getMetasByAluno(alunoId);
+      res.json(metas);
+    } catch (error) {
+      console.error("Error fetching metas by aluno:", error);
+      res.status(500).json({ message: "Failed to fetch metas by aluno" });
+    }
+  });
+
+  app.post("/api/metas-alunos", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertMetaAlunoSchema.parse(req.body);
+      const meta = await storage.createMetaAluno(validatedData);
+      res.status(201).json(meta);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating meta aluno:", error);
+      res.status(500).json({ message: "Failed to create meta aluno" });
+    }
+  });
+
+  app.put("/api/metas-alunos/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertMetaAlunoSchema.partial().parse(req.body);
+      const meta = await storage.updateMetaAluno(id, validatedData);
+      res.json(meta);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating meta aluno:", error);
+      res.status(500).json({ message: "Failed to update meta aluno" });
+    }
+  });
+
+  app.delete("/api/metas-alunos/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteMetaAluno(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting meta aluno:", error);
+      res.status(500).json({ message: "Failed to delete meta aluno" });
     }
   });
 
