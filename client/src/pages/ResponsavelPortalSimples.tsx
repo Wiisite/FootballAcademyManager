@@ -50,7 +50,45 @@ export default function ResponsavelPortal() {
     queryKey: ["/api/alunos"],
   });
 
+  const { data: pacotesTreino = [] } = useQuery({
+    queryKey: ["/api/pacotes-treino"],
+  });
+
+  const { data: assinaturasPacotes = [] } = useQuery({
+    queryKey: ["/api/assinaturas-pacotes"],
+  });
+
   // Mutations
+  const contratarPacoteMutation = useMutation({
+    mutationFn: async (data: { alunoId: number; pacoteId: number; formaPagamento: string; observacoes?: string }) => {
+      const response = await apiRequest("POST", "/api/assinaturas-pacotes", {
+        alunoId: data.alunoId,
+        pacoteId: data.pacoteId,
+        status: "ativo",
+        dataInicio: new Date().toISOString().split('T')[0],
+        dataFim: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 dias
+        valorPago: "0.00",
+        formaPagamento: data.formaPagamento,
+        observacoes: data.observacoes
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Sucesso!",
+        description: "Pacote contratado com sucesso!",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/assinaturas-pacotes"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Erro",
+        description: "Erro ao contratar pacote. Tente novamente.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const createAlunoMutation = useMutation({
     mutationFn: async (data: InsertAluno) => {
       return await apiRequest("POST", "/api/alunos", data);
@@ -156,10 +194,11 @@ export default function ResponsavelPortal() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="alunos">Meus Filhos</TabsTrigger>
             <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
+            <TabsTrigger value="pacotes">Pacotes de Treino</TabsTrigger>
             <TabsTrigger value="eventos">Eventos</TabsTrigger>
             <TabsTrigger value="uniformes">Uniformes</TabsTrigger>
           </TabsList>
@@ -470,6 +509,122 @@ export default function ResponsavelPortal() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="pacotes">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Gift className="w-5 h-5" />
+                    Pacotes de Treino Disponíveis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {pacotesTreino.map((pacote: any) => (
+                      <Card key={pacote.id} className="border-2 hover:shadow-lg transition-shadow">
+                        <CardHeader>
+                          <CardTitle className="text-lg">{pacote.nome}</CardTitle>
+                          <p className="text-2xl font-bold text-green-600">
+                            R$ {parseFloat(pacote.valor).toFixed(2)}
+                          </p>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <p className="text-gray-600">{pacote.descricao}</p>
+                          <div className="text-sm text-gray-500">
+                            <p><strong>Duração:</strong> {pacote.duracao}</p>
+                            <p><strong>Frequência:</strong> {
+                              pacote.nome.includes('3x') ? '3 vezes por semana' :
+                              pacote.nome.includes('2x') ? '2 vezes por semana' :
+                              '1 vez por semana'
+                            }</p>
+                          </div>
+                          
+                          {/* Seletor de aluno */}
+                          <div className="space-y-3">
+                            <label className="text-sm font-medium">Selecione o filho:</label>
+                            <select 
+                              className="w-full p-2 border rounded-md"
+                              onChange={(e) => {
+                                const alunoId = parseInt(e.target.value);
+                                if (alunoId) {
+                                  contratarPacoteMutation.mutate({
+                                    alunoId,
+                                    pacoteId: pacote.id,
+                                    formaPagamento: "pendente",
+                                    observacoes: `Contratação do pacote ${pacote.nome}`
+                                  });
+                                }
+                                e.target.value = "";
+                              }}
+                              disabled={contratarPacoteMutation.isPending}
+                            >
+                              <option value="">Escolha um filho</option>
+                              {alunos?.filter(aluno => aluno.responsavelId === responsavel?.id).map(aluno => (
+                                <option key={aluno.id} value={aluno.id}>
+                                  {aluno.nome}
+                                </option>
+                              ))}
+                            </select>
+                            {contratarPacoteMutation.isPending && (
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Contratando pacote...
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pacotes Contratados */}
+              {assinaturasPacotes.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Pacotes Contratados</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {assinaturasPacotes.map((assinatura: any) => {
+                        const aluno = alunos?.find(a => a.id === assinatura.alunoId);
+                        const pacote = pacotesTreino.find((p: any) => p.id === assinatura.pacoteId);
+                        
+                        return (
+                          <div key={assinatura.id} className="border rounded-lg p-4">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-medium">{aluno?.nome}</h4>
+                                <p className="text-sm text-gray-600">{pacote?.nome}</p>
+                                <p className="text-sm text-gray-500">
+                                  Período: {new Date(assinatura.dataInicio).toLocaleDateString()} - {new Date(assinatura.dataFim).toLocaleDateString()}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="font-bold text-green-600">R$ {pacote?.valor}</p>
+                                <Badge 
+                                  variant={assinatura.status === "ativo" ? "default" : "secondary"}
+                                >
+                                  {assinatura.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            {assinatura.observacoes && (
+                              <p className="text-sm text-gray-600 mt-2">
+                                {assinatura.observacoes}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="eventos">
