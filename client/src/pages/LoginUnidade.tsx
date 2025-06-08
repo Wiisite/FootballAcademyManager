@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Building2, ArrowRight, ChevronLeft } from "lucide-react";
+import { InterLogo } from "@/components/InterLogo";
 import type { Filial } from "@shared/schema";
 
 export default function LoginUnidade() {
@@ -41,8 +42,8 @@ export default function LoginUnidade() {
 
         <Card className="shadow-xl">
           <CardHeader className="text-center pb-6">
-            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Building2 className="h-8 w-8 text-blue-600" />
+            <div className="mx-auto w-16 h-16 bg-blue-600 rounded-lg flex items-center justify-center mb-4 p-2">
+              <InterLogo size={48} />
             </div>
             <CardTitle className="text-2xl font-bold text-gray-900">
               Acesso por Unidade

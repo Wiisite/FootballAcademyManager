@@ -19,6 +19,7 @@ import {
   UserCheck,
   CreditCard
 } from "lucide-react";
+import { InterLogo } from "@/components/InterLogo";
 import { useLocation } from "wouter";
 import type { Filial } from "@shared/schema";
 
@@ -179,7 +180,9 @@ export default function SistemaUnidade() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <Building2 className="h-8 w-8 text-blue-600 mr-3" />
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center p-1 mr-3">
+                <InterLogo size={32} />
+              </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">{filial.nome}</h1>
                 <p className="text-sm text-gray-600">Sistema Completo de Gestão</p>
