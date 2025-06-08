@@ -79,8 +79,8 @@ export default function ResponsavelLogin() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <School className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 p-2">
+            <InterLogo size={48} />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Portal do Responsável</h1>
           <p className="text-gray-600 mt-2">
