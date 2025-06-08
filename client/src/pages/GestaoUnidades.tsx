@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ interface FilialDetalhada extends Filial {
 
 export default function GestaoUnidades() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [, setLocation] = useLocation();
   const [selectedFilial, setSelectedFilial] = useState<FilialDetalhada | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isViewingDetails, setIsViewingDetails] = useState(false);

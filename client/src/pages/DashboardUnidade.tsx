@@ -19,19 +19,19 @@ export default function DashboardUnidade({ filialId }: DashboardUnidadeProps) {
   const { toast } = useToast();
 
   const { data: filial, isLoading: loadingFilial } = useQuery<Filial>({
-    queryKey: ["/api/filiais", filialId],
+    queryKey: [`/api/filiais/${filialId}`],
   });
 
   const { data: alunos, isLoading: loadingAlunos } = useQuery<AlunoWithFilial[]>({
-    queryKey: ["/api/alunos", { filialId }],
+    queryKey: [`/api/alunos?filialId=${filialId}`],
   });
 
   const { data: professores, isLoading: loadingProfessores } = useQuery<Professor[]>({
-    queryKey: ["/api/professores", { filialId }],
+    queryKey: [`/api/professores?filialId=${filialId}`],
   });
 
   const { data: turmas, isLoading: loadingTurmas } = useQuery<TurmaWithProfessor[]>({
-    queryKey: ["/api/turmas", { filialId }],
+    queryKey: [`/api/turmas?filialId=${filialId}`],
   });
 
   if (loadingFilial) {

@@ -39,20 +39,24 @@ function Router() {
       {isLoading || !isAuthenticated ? (
         <Route path="/" component={Landing} />
       ) : (
-        <Layout>
-          <Route path="/" component={Dashboard} />
-          <Route path="/alunos" component={Alunos} />
-          <Route path="/professores" component={Professores} />
-          <Route path="/turmas" component={Turmas} />
-          <Route path="/gestao-turmas" component={GestaoTurmas} />
-          <Route path="/filiais" component={Filiais} />
-          <Route path="/dashboard-unidades" component={DashboardUnidades} />
-          <Route path="/financeiro" component={Financeiro} />
-          <Route path="/relatorios" component={Relatorios} />
-          <Route path="/relatorio-presencas" component={RelatorioPresencas} />
-          <Route path="/gestao-unidades" component={GestaoUnidades} />
-          <Route path="/unidade/:filialId" component={DashboardUnidadeWrapper} />
-        </Layout>
+        <>
+          <Layout>
+            <Route path="/" component={Dashboard} />
+            <Route path="/alunos" component={Alunos} />
+            <Route path="/professores" component={Professores} />
+            <Route path="/turmas" component={Turmas} />
+            <Route path="/gestao-turmas" component={GestaoTurmas} />
+            <Route path="/filiais" component={Filiais} />
+            <Route path="/dashboard-unidades" component={DashboardUnidades} />
+            <Route path="/financeiro" component={Financeiro} />
+            <Route path="/relatorios" component={Relatorios} />
+            <Route path="/relatorio-presencas" component={RelatorioPresencas} />
+            <Route path="/gestao-unidades" component={GestaoUnidades} />
+          </Layout>
+          <Layout>
+            <Route path="/unidade/:filialId" component={DashboardUnidadeWrapper} />
+          </Layout>
+        </>
       )}
       <Route component={NotFound} />
     </Switch>
