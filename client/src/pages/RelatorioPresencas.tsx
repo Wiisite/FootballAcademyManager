@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import type { 
   TurmaWithProfessor, 
   AlunoWithFilial, 
@@ -71,7 +73,7 @@ export default function RelatorioPresencas() {
       : 0
   } : null;
 
-  const handleExportarRelatorio = () => {
+  const handleExportarCSV = () => {
     const csvData = presencasFiltradas.map(presenca => ({
       Data: format(new Date(presenca.data), "dd/MM/yyyy"),
       Aluno: presenca.aluno.nome,
@@ -97,6 +99,65 @@ export default function RelatorioPresencas() {
     document.body.removeChild(link);
   };
 
+  const handleExportarPDF = () => {
+    const doc = new jsPDF();
+    
+    // Título do documento
+    doc.setFontSize(20);
+    doc.text("Relatório de Presenças", 20, 20);
+    
+    // Informações gerais
+    doc.setFontSize(12);
+    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, 20, 35);
+    
+    // Estatísticas
+    if (estatisticas) {
+      doc.text(`Total de Registros: ${estatisticas.totalRegistros}`, 20, 45);
+      doc.text(`Presenças: ${estatisticas.totalPresentes}`, 20, 55);
+      doc.text(`Ausências: ${estatisticas.totalAusentes}`, 20, 65);
+      doc.text(`Percentual de Presença: ${estatisticas.percentualPresenca}%`, 20, 75);
+    }
+
+    // Tabela de dados
+    const tableData = presencasFiltradas.map(presenca => [
+      format(new Date(presenca.data), "dd/MM/yyyy"),
+      presenca.aluno.nome,
+      presenca.turma.nome,
+      presenca.turma.professor?.nome || "N/A",
+      presenca.presente ? "Presente" : "Ausente",
+      presenca.observacoes || ""
+    ]);
+
+    autoTable(doc, {
+      head: [["Data", "Aluno", "Turma", "Professor", "Status", "Observações"]],
+      body: tableData,
+      startY: 90,
+      styles: {
+        fontSize: 8,
+        cellPadding: 3,
+      },
+      headStyles: {
+        fillColor: [41, 128, 185],
+        textColor: 255,
+        fontStyle: 'bold',
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245],
+      },
+      columnStyles: {
+        0: { cellWidth: 25 }, // Data
+        1: { cellWidth: 40 }, // Aluno
+        2: { cellWidth: 30 }, // Turma
+        3: { cellWidth: 35 }, // Professor
+        4: { cellWidth: 25 }, // Status
+        5: { cellWidth: 35 }, // Observações
+      },
+    });
+
+    // Salvar o PDF
+    doc.save(`relatorio_presencas_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -105,10 +166,23 @@ export default function RelatorioPresencas() {
           <h2 className="text-3xl font-bold text-neutral-800">Relatório de Presenças</h2>
           <p className="text-neutral-600">Acompanhe a frequência dos alunos nas turmas</p>
         </div>
-        <Button onClick={handleExportarRelatorio} disabled={presencasFiltradas.length === 0}>
-          <Download className="w-4 h-4 mr-2" />
-          Exportar CSV
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button 
+            variant="outline" 
+            onClick={handleExportarCSV} 
+            disabled={presencasFiltradas.length === 0}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Exportar CSV
+          </Button>
+          <Button 
+            onClick={handleExportarPDF} 
+            disabled={presencasFiltradas.length === 0}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Exportar PDF
+          </Button>
+        </div>
       </div>
 
       {/* Estatísticas */}
