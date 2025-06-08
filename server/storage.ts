@@ -143,6 +143,12 @@ export interface IStorage {
   createEvento(evento: InsertEvento): Promise<Evento>;
   getInscricoesEventos(): Promise<InscricaoEvento[]>;
   inscreveAlunoEvento(inscricao: InsertInscricaoEvento): Promise<InscricaoEvento>;
+
+  // Pacotes de treino operations
+  getPacotesTreino(): Promise<PacoteTreino[]>;
+  createPacoteTreino(pacote: InsertPacoteTreino): Promise<PacoteTreino>;
+  getAssinaturasPacotes(): Promise<AssinaturaPacoteComplete[]>;
+  criarAssinaturaPacote(assinatura: InsertAssinaturaPacote): Promise<AssinaturaPacote>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -878,6 +884,81 @@ export class DatabaseStorage implements IStorage {
   // Eventos operations  
   async getInscricoesEventos(): Promise<InscricaoEvento[]> {
     return await db.select().from(inscricoesEventos);
+  }
+
+  // Pacotes de treino operations
+  async getPacotesTreino(): Promise<PacoteTreino[]> {
+    return await db.select().from(pacotesTreino).where(eq(pacotesTreino.ativo, true));
+  }
+
+  async createPacoteTreino(pacoteData: InsertPacoteTreino): Promise<PacoteTreino> {
+    const [pacote] = await db
+      .insert(pacotesTreino)
+      .values(pacoteData)
+      .returning();
+    return pacote;
+  }
+
+  async getAssinaturasPacotes(): Promise<AssinaturaPacoteComplete[]> {
+    return await db
+      .select({
+        id: assinaturasPacotes.id,
+        alunoId: assinaturasPacotes.alunoId,
+        pacoteId: assinaturasPacotes.pacoteId,
+        dataInicio: assinaturasPacotes.dataInicio,
+        dataFim: assinaturasPacotes.dataFim,
+        status: assinaturasPacotes.status,
+        valorPago: assinaturasPacotes.valorPago,
+        formaPagamento: assinaturasPacotes.formaPagamento,
+        observacoes: assinaturasPacotes.observacoes,
+        createdAt: assinaturasPacotes.createdAt,
+        updatedAt: assinaturasPacotes.updatedAt,
+        aluno: {
+          id: alunos.id,
+          nome: alunos.nome,
+          email: alunos.email,
+          telefone: alunos.telefone,
+          cpf: alunos.cpf,
+          dataNascimento: alunos.dataNascimento,
+          dataMatricula: alunos.dataMatricula,
+          ativo: alunos.ativo,
+          endereco: alunos.endereco,
+          bairro: alunos.bairro,
+          cidade: alunos.cidade,
+          estado: alunos.estado,
+          cep: alunos.cep,
+          nomeResponsavel: alunos.nomeResponsavel,
+          telefoneResponsavel: alunos.telefoneResponsavel,
+          emailResponsavel: alunos.emailResponsavel,
+          foto: alunos.foto,
+          filialId: alunos.filialId,
+          responsavelId: alunos.responsavelId,
+          createdAt: alunos.createdAt,
+          updatedAt: alunos.updatedAt,
+        },
+        pacote: {
+          id: pacotesTreino.id,
+          nome: pacotesTreino.nome,
+          descricao: pacotesTreino.descricao,
+          frequenciaSemanal: pacotesTreino.frequenciaSemanal,
+          valor: pacotesTreino.valor,
+          duracao: pacotesTreino.duracao,
+          ativo: pacotesTreino.ativo,
+          createdAt: pacotesTreino.createdAt,
+          updatedAt: pacotesTreino.updatedAt,
+        },
+      })
+      .from(assinaturasPacotes)
+      .leftJoin(alunos, eq(assinaturasPacotes.alunoId, alunos.id))
+      .leftJoin(pacotesTreino, eq(assinaturasPacotes.pacoteId, pacotesTreino.id));
+  }
+
+  async criarAssinaturaPacote(assinaturaData: InsertAssinaturaPacote): Promise<AssinaturaPacote> {
+    const [assinatura] = await db
+      .insert(assinaturasPacotes)
+      .values(assinaturaData)
+      .returning();
+    return assinatura;
   }
 }
 

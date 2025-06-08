@@ -352,6 +352,49 @@ export const presencasRelations = relations(presencas, ({ one }) => ({
   }),
 }));
 
+// Pacotes de treino
+export const pacotesTreino = pgTable("pacotes_treino", {
+  id: serial("id").primaryKey(),
+  nome: varchar("nome", { length: 100 }).notNull(),
+  descricao: text("descricao"),
+  frequenciaSemanal: integer("frequencia_semanal").notNull(), // 1, 2 ou 3 vezes por semana
+  valor: varchar("valor", { length: 20 }).notNull(),
+  duracao: integer("duracao").notNull(), // duração em dias
+  ativo: boolean("ativo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Assinaturas de pacotes pelos alunos
+export const assinaturasPacotes = pgTable("assinaturas_pacotes", {
+  id: serial("id").primaryKey(),
+  alunoId: integer("aluno_id").references(() => alunos.id),
+  pacoteId: integer("pacote_id").references(() => pacotesTreino.id),
+  dataInicio: varchar("data_inicio", { length: 10 }).notNull(), // YYYY-MM-DD
+  dataFim: varchar("data_fim", { length: 10 }).notNull(), // YYYY-MM-DD
+  status: varchar("status", { length: 20 }).notNull().default("ativo"), // ativo, pausado, cancelado
+  valorPago: varchar("valor_pago", { length: 20 }).notNull(),
+  formaPagamento: varchar("forma_pagamento", { length: 50 }),
+  observacoes: text("observacoes"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const pacotesTreinoRelations = relations(pacotesTreino, ({ many }) => ({
+  assinaturas: many(assinaturasPacotes),
+}));
+
+export const assinaturasPacotesRelations = relations(assinaturasPacotes, ({ one }) => ({
+  aluno: one(alunos, {
+    fields: [assinaturasPacotes.alunoId],
+    references: [alunos.id],
+  }),
+  pacote: one(pacotesTreino, {
+    fields: [assinaturasPacotes.pacoteId],
+    references: [pacotesTreino.id],
+  }),
+}));
+
 // Insert schemas
 export const insertAlunoSchema = createInsertSchema(alunos).omit({
   id: true,
@@ -423,6 +466,18 @@ export const insertNotificacaoSchema = createInsertSchema(notificacoes).omit({
 export const insertPresencaSchema = createInsertSchema(presencas).omit({
   id: true,
   createdAt: true,
+});
+
+export const insertPacoteTreinoSchema = createInsertSchema(pacotesTreino).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAssinaturaPacoteSchema = createInsertSchema(assinaturasPacotes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 // Types
@@ -531,4 +586,14 @@ export type AlunoCompleto = Aluno & {
     ultimoPagamento?: string;
     diasAtraso?: number;
   };
+};
+
+export type InsertPacoteTreino = z.infer<typeof insertPacoteTreinoSchema>;
+export type PacoteTreino = typeof pacotesTreino.$inferSelect;
+
+export type InsertAssinaturaPacote = z.infer<typeof insertAssinaturaPacoteSchema>;
+export type AssinaturaPacote = typeof assinaturasPacotes.$inferSelect;
+export type AssinaturaPacoteComplete = AssinaturaPacote & {
+  aluno: Aluno;
+  pacote: PacoteTreino;
 };
