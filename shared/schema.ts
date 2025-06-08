@@ -228,6 +228,76 @@ export const presencas = pgTable("presencas", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Avaliações Físicas - Categorias de testes
+export const categoriasTestes = pgTable("categorias_testes", {
+  id: serial("id").primaryKey(),
+  nome: varchar("nome", { length: 100 }).notNull(), // Ex: "Resistência", "Velocidade", "Força"
+  descricao: text("descricao"),
+  unidadeMedida: varchar("unidade_medida", { length: 20 }), // Ex: "segundos", "metros", "repetições"
+  tipoTeste: varchar("tipo_teste", { length: 50 }).notNull(), // "fisico", "tecnico", "antropometrico"
+  ativo: boolean("ativo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Testes específicos dentro de cada categoria
+export const testes = pgTable("testes", {
+  id: serial("id").primaryKey(),
+  categoriaId: integer("categoria_id").references(() => categoriasTestes.id).notNull(),
+  nome: varchar("nome", { length: 150 }).notNull(), // Ex: "Corrida de 20 metros", "Flexão de braço"
+  descricao: text("descricao"),
+  instrucoes: text("instrucoes"), // Como executar o teste
+  unidadeMedida: varchar("unidade_medida", { length: 20 }), // Ex: "segundos", "repetições"
+  valorMinimo: decimal("valor_minimo", { precision: 10, scale: 2 }), // Para validação
+  valorMaximo: decimal("valor_maximo", { precision: 10, scale: 2 }), // Para validação
+  ativo: boolean("ativo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Avaliações físicas - cabeçalho da avaliação
+export const avaliacoesFisicas = pgTable("avaliacoes_fisicas", {
+  id: serial("id").primaryKey(),
+  alunoId: integer("aluno_id").references(() => alunos.id).notNull(),
+  professorId: integer("professor_id").references(() => professores.id).notNull(),
+  dataAvaliacao: date("data_avaliacao").notNull(),
+  pesoKg: decimal("peso_kg", { precision: 5, scale: 2 }), // Peso em kg
+  alturaM: decimal("altura_m", { precision: 3, scale: 2 }), // Altura em metros
+  imc: decimal("imc", { precision: 4, scale: 2 }), // Calculado automaticamente
+  observacoesGerais: text("observacoes_gerais"),
+  recomendacoes: text("recomendacoes"),
+  proximaAvaliacao: date("proxima_avaliacao"),
+  filialId: integer("filial_id").references(() => filiais.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Resultados individuais dos testes em cada avaliação
+export const resultadosTestes = pgTable("resultados_testes", {
+  id: serial("id").primaryKey(),
+  avaliacaoId: integer("avaliacao_id").references(() => avaliacoesFisicas.id).notNull(),
+  testeId: integer("teste_id").references(() => testes.id).notNull(),
+  resultado: decimal("resultado", { precision: 10, scale: 2 }).notNull(), // Valor obtido no teste
+  tentativa: integer("tentativa").default(1), // Para testes com múltiplas tentativas
+  observacoes: text("observacoes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Metas e objetivos para cada aluno
+export const metasAlunos = pgTable("metas_alunos", {
+  id: serial("id").primaryKey(),
+  alunoId: integer("aluno_id").references(() => alunos.id).notNull(),
+  testeId: integer("teste_id").references(() => testes.id).notNull(),
+  valorMeta: decimal("valor_meta", { precision: 10, scale: 2 }).notNull(),
+  dataDefinicao: date("data_definicao").defaultNow(),
+  dataPrazo: date("data_prazo"),
+  status: varchar("status", { length: 20 }).default("ativa"), // ativa, atingida, cancelada
+  observacoes: text("observacoes"),
+  definidoPor: integer("definido_por").references(() => professores.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const responsaveisRelations = relations(responsaveis, ({ many }) => ({
   alunos: many(alunos),
@@ -248,6 +318,8 @@ export const alunosRelations = relations(alunos, ({ one, many }) => ({
   inscricoesEventos: many(inscricoesEventos),
   comprasUniformes: many(comprasUniformes),
   presencas: many(presencas),
+  avaliacoesFisicas: many(avaliacoesFisicas),
+  metasAlunos: many(metasAlunos),
 }));
 
 export const professoresRelations = relations(professores, ({ one, many }) => ({
@@ -257,6 +329,8 @@ export const professoresRelations = relations(professores, ({ one, many }) => ({
     references: [filiais.id],
   }),
   presencasRegistradas: many(presencas),
+  avaliacoesFisicas: many(avaliacoesFisicas),
+  metasDefinidas: many(metasAlunos),
 }));
 
 export const filiaisRelations = relations(filiais, ({ many }) => ({
@@ -392,6 +466,62 @@ export const assinaturasPacotesRelations = relations(assinaturasPacotes, ({ one 
   pacote: one(pacotesTreino, {
     fields: [assinaturasPacotes.pacoteId],
     references: [pacotesTreino.id],
+  }),
+}));
+
+// Physical evaluation relations
+export const categoriasTestesRelations = relations(categoriasTestes, ({ many }) => ({
+  testes: many(testes),
+}));
+
+export const testesRelations = relations(testes, ({ one, many }) => ({
+  categoria: one(categoriasTestes, {
+    fields: [testes.categoriaId],
+    references: [categoriasTestes.id],
+  }),
+  resultados: many(resultadosTestes),
+  metas: many(metasAlunos),
+}));
+
+export const avaliacoesFisicasRelations = relations(avaliacoesFisicas, ({ one, many }) => ({
+  aluno: one(alunos, {
+    fields: [avaliacoesFisicas.alunoId],
+    references: [alunos.id],
+  }),
+  professor: one(professores, {
+    fields: [avaliacoesFisicas.professorId],
+    references: [professores.id],
+  }),
+  filial: one(filiais, {
+    fields: [avaliacoesFisicas.filialId],
+    references: [filiais.id],
+  }),
+  resultados: many(resultadosTestes),
+}));
+
+export const resultadosTestesRelations = relations(resultadosTestes, ({ one }) => ({
+  avaliacao: one(avaliacoesFisicas, {
+    fields: [resultadosTestes.avaliacaoId],
+    references: [avaliacoesFisicas.id],
+  }),
+  teste: one(testes, {
+    fields: [resultadosTestes.testeId],
+    references: [testes.id],
+  }),
+}));
+
+export const metasAlunosRelations = relations(metasAlunos, ({ one }) => ({
+  aluno: one(alunos, {
+    fields: [metasAlunos.alunoId],
+    references: [alunos.id],
+  }),
+  teste: one(testes, {
+    fields: [metasAlunos.testeId],
+    references: [testes.id],
+  }),
+  definidoPorProfessor: one(professores, {
+    fields: [metasAlunos.definidoPor],
+    references: [professores.id],
   }),
 }));
 
