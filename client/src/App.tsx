@@ -16,6 +16,8 @@ import Relatorios from "@/pages/Relatorios";
 import RelatorioPresencas from "@/pages/RelatorioPresencas";
 import GestaoUnidades from "@/pages/GestaoUnidades";
 import DashboardUnidadeWrapper from "@/pages/DashboardUnidadeWrapper";
+import PainelUnidade from "@/pages/PainelUnidade";
+import LoginUnidade from "@/pages/LoginUnidade";
 import Filiais from "@/pages/Filiais";
 import DashboardUnidades from "@/pages/DashboardUnidades";
 import ResponsavelEntrada from "@/pages/ResponsavelEntrada";
@@ -34,6 +36,10 @@ function Router() {
       <Route path="/responsavel/cadastro" component={ResponsavelCadastro} />
       <Route path="/responsavel/login" component={ResponsavelLogin} />
       <Route path="/portal" component={ResponsavelPortal} />
+      
+      {/* Painel específico da unidade */}
+      <Route path="/login-unidade" component={LoginUnidade} />
+      <Route path="/painel-unidade" component={PainelUnidade} />
       
       {/* Sistema Administrativo */}
       {isLoading || !isAuthenticated ? (

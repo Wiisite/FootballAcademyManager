@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Volleyball, Users, Calendar, TrendingUp, Shield, Zap } from "lucide-react";
+import { Volleyball, Users, Calendar, TrendingUp, Shield, Zap, Building2 } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Landing() {
@@ -53,13 +53,24 @@ export default function Landing() {
               Gerencie alunos, professores, turmas e finanças da sua escola de futebol 
               de forma simples e eficiente com nossa plataforma completa.
             </p>
-            <Button 
-              onClick={handleLogin}
-              size="lg"
-              className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg"
-            >
-              Acessar Sistema
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button 
+                onClick={handleLogin}
+                size="lg"
+                className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg"
+              >
+                Acessar Sistema Completo
+              </Button>
+              <Button 
+                onClick={() => window.location.href = "/login-unidade"}
+                size="lg"
+                variant="outline"
+                className="border-primary text-primary hover:bg-primary/10 px-8 py-4 text-lg"
+              >
+                <Building2 className="w-5 h-5 mr-2" />
+                Acesso por Unidade
+              </Button>
+            </div>
           </div>
         </div>
       </section>
