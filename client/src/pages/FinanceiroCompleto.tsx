@@ -48,6 +48,54 @@ export default function FinanceiroCompleto() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Form handlers
+  const handleCreateUniforme = () => {
+    const formData = {
+      nome: (document.getElementById('nomeUniforme') as HTMLInputElement)?.value,
+      categoria: 'camisa',
+      descricao: (document.getElementById('descricaoUniforme') as HTMLTextAreaElement)?.value,
+      preco: (document.getElementById('precoUniforme') as HTMLInputElement)?.value,
+      tamanhos: (document.getElementById('tamanhos') as HTMLInputElement)?.value,
+      cores: (document.getElementById('cores') as HTMLInputElement)?.value,
+      estoque: parseInt((document.getElementById('estoque') as HTMLInputElement)?.value || '0'),
+    };
+
+    if (!formData.nome || !formData.preco || !formData.tamanhos || !formData.cores) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createUniformeMutation.mutate(formData as InsertUniforme);
+  };
+
+  const handleCreateEvento = () => {
+    const formData = {
+      nome: (document.getElementById('nomeEvento') as HTMLInputElement)?.value,
+      descricao: (document.getElementById('descricaoEvento') as HTMLTextAreaElement)?.value,
+      dataEvento: (document.getElementById('dataEvento') as HTMLInputElement)?.value,
+      local: (document.getElementById('localEvento') as HTMLInputElement)?.value,
+      preco: (document.getElementById('precoEvento') as HTMLInputElement)?.value,
+      vagasMaximas: parseInt((document.getElementById('vagasEvento') as HTMLInputElement)?.value || '0'),
+      horaInicio: (document.getElementById('horaInicio') as HTMLInputElement)?.value,
+      filialId: 1,
+    };
+
+    if (!formData.nome || !formData.dataEvento || !formData.preco || !formData.vagasMaximas) {
+      toast({
+        title: "Erro",
+        description: "Preencha todos os campos obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createEventoMutation.mutate(formData as InsertEvento);
+  };
+
   // Queries
   const { data: pagamentos = [] } = useQuery<Pagamento[]>({
     queryKey: ["/api/pagamentos"],
