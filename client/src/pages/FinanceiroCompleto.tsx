@@ -121,6 +121,14 @@ export default function FinanceiroCompleto() {
     queryKey: ["/api/inscricoes-eventos"],
   });
 
+  const { data: pacotesTreino = [] } = useQuery({
+    queryKey: ["/api/pacotes-treino"],
+  });
+
+  const { data: assinaturasPacotes = [] } = useQuery({
+    queryKey: ["/api/assinaturas-pacotes"],
+  });
+
   // Mutations
   const createPagamentoMutation = useMutation({
     mutationFn: async (data: InsertPagamento) => {
@@ -282,12 +290,13 @@ export default function FinanceiroCompleto() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
           <TabsTrigger value="uniformes">Uniformes</TabsTrigger>
           <TabsTrigger value="compras-uniformes">Compras</TabsTrigger>
           <TabsTrigger value="eventos">Eventos</TabsTrigger>
           <TabsTrigger value="inscricoes">Inscrições</TabsTrigger>
+          <TabsTrigger value="pacotes">Pacotes de Treino</TabsTrigger>
         </TabsList>
 
         {/* Tab de Pagamentos */}

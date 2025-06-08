@@ -727,22 +727,7 @@ export class DatabaseStorage implements IStorage {
     return novaInscricao;
   }
 
-  // Uniformes operations
-  async getUniformes(): Promise<Uniforme[]> {
-    return await db
-      .select()
-      .from(uniformes)
-      .where(eq(uniformes.ativo, true))
-      .orderBy(desc(uniformes.createdAt));
-  }
 
-  async comprarUniforme(compra: InsertCompraUniforme): Promise<CompraUniforme> {
-    const [novaCompra] = await db
-      .insert(comprasUniformes)
-      .values(compra)
-      .returning();
-    return novaCompra;
-  }
 
   // Notificações operations
   async getNotificacoesByResponsavel(responsavelId: number): Promise<Notificacao[]> {
@@ -936,8 +921,8 @@ export class DatabaseStorage implements IStorage {
           cep: alunos.cep,
           nomeResponsavel: alunos.nomeResponsavel,
           telefoneResponsavel: alunos.telefoneResponsavel,
-          emailResponsavel: alunos.emailResponsavel,
-          foto: alunos.foto,
+          nomeResponsavel: alunos.nomeResponsavel,
+          telefoneResponsavel: alunos.telefoneResponsavel,
           filialId: alunos.filialId,
           responsavelId: alunos.responsavelId,
           createdAt: alunos.createdAt,
