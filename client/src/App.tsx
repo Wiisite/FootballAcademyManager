@@ -40,7 +40,7 @@ function Router() {
   return (
     <Switch>
       {/* Portal do Responsável - Rotas independentes */}
-      <Route path="/responsavel" component={ResponsavelEntrada} />
+      <Route path="/responsavel" component={ResponsavelLogin} />
       <Route path="/responsavel/cadastro" component={ResponsavelCadastro} />
       <Route path="/responsavel/login" component={ResponsavelLogin} />
       <Route path="/portal" component={ResponsavelPortal} />
