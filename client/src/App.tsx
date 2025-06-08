@@ -25,6 +25,7 @@ import FinanceiroUnidade from "@/pages/FinanceiroUnidade";
 import SistemaUnidade from "@/pages/SistemaUnidade";
 import UnidadeAlunos from "@/pages/UnidadeAlunos";
 import UnidadeProfessores from "@/pages/UnidadeProfessores";
+import FinanceiroCompleto from "@/pages/FinanceiroCompleto";
 import Filiais from "@/pages/Filiais";
 import DashboardUnidades from "@/pages/DashboardUnidades";
 import ResponsavelEntrada from "@/pages/ResponsavelEntrada";
@@ -69,7 +70,7 @@ function Router() {
             <Route path="/gestao-turmas" component={GestaoTurmas} />
             <Route path="/filiais" component={Filiais} />
             <Route path="/dashboard-unidades" component={DashboardUnidades} />
-            <Route path="/financeiro" component={Financeiro} />
+            <Route path="/financeiro" component={FinanceiroCompleto} />
             <Route path="/relatorios" component={Relatorios} />
             <Route path="/relatorio-presencas" component={RelatorioPresencas} />
             <Route path="/gestao-unidades" component={GestaoUnidades} />
