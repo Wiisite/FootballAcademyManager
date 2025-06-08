@@ -125,6 +125,7 @@ export interface IStorage {
 
   // Presenças operations
   getPresencasByTurmaData(turmaId: number, data: string): Promise<Presenca[]>;
+  getPresencasDetalhadas(): Promise<any[]>;
   registrarPresencas(presencas: InsertPresenca[]): Promise<Presenca[]>;
 }
 
@@ -657,6 +658,54 @@ export class DatabaseStorage implements IStorage {
         eq(presencas.data, data)
       ))
       .orderBy(presencas.alunoId);
+  }
+
+  async getPresencasDetalhadas(): Promise<any[]> {
+    const presencasComDetalhes = await db
+      .select({
+        id: presencas.id,
+        alunoId: presencas.alunoId,
+        turmaId: presencas.turmaId,
+        data: presencas.data,
+        presente: presencas.presente,
+        observacoes: presencas.observacoes,
+        createdAt: presencas.createdAt,
+        alunoNome: alunos.nome,
+        turmanome: turmas.nome,
+        professorNome: professores.nome,
+        filialNome: filiais.nome
+      })
+      .from(presencas)
+      .leftJoin(alunos, eq(presencas.alunoId, alunos.id))
+      .leftJoin(turmas, eq(presencas.turmaId, turmas.id))
+      .leftJoin(professores, eq(turmas.professorId, professores.id))
+      .leftJoin(filiais, eq(alunos.filialId, filiais.id))
+      .orderBy(desc(presencas.createdAt));
+
+    // Mapear para o formato esperado
+    return presencasComDetalhes.map(p => ({
+      id: p.id,
+      alunoId: p.alunoId,
+      turmaId: p.turmaId,
+      data: p.data,
+      presente: p.presente,
+      observacoes: p.observacoes,
+      createdAt: p.createdAt,
+      aluno: {
+        id: p.alunoId,
+        nome: p.alunoNome,
+        filial: {
+          nome: p.filialNome
+        }
+      },
+      turma: {
+        id: p.turmaId,
+        nome: p.turmanome,
+        professor: {
+          nome: p.professorNome
+        }
+      }
+    }));
   }
 
   async registrarPresencas(presencasData: InsertPresenca[]): Promise<Presenca[]> {

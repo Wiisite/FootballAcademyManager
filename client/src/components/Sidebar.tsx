@@ -70,6 +70,12 @@ export default function Sidebar() {
       icon: FileText,
       active: location === "/relatorios",
     },
+    {
+      name: "Relatório de Presenças",
+      href: "/relatorio-presencas",
+      icon: ClipboardList,
+      active: location === "/relatorio-presencas",
+    },
   ];
 
   const handleLogout = () => {

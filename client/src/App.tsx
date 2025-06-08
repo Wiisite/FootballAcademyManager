@@ -13,6 +13,7 @@ import Turmas from "@/pages/Turmas";
 import GestaoTurmas from "@/pages/GestaoTurmas";
 import Financeiro from "@/pages/Financeiro";
 import Relatorios from "@/pages/Relatorios";
+import RelatorioPresencas from "@/pages/RelatorioPresencas";
 import Filiais from "@/pages/Filiais";
 import DashboardUnidades from "@/pages/DashboardUnidades";
 import ResponsavelEntrada from "@/pages/ResponsavelEntrada";
@@ -46,6 +47,7 @@ function Router() {
           <Route path="/dashboard-unidades" component={DashboardUnidades} />
           <Route path="/financeiro" component={Financeiro} />
           <Route path="/relatorios" component={Relatorios} />
+          <Route path="/relatorio-presencas" component={RelatorioPresencas} />
         </Layout>
       )}
       <Route component={NotFound} />
