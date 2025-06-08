@@ -14,6 +14,7 @@ import GestaoTurmas from "@/pages/GestaoTurmas";
 import Financeiro from "@/pages/Financeiro";
 import Relatorios from "@/pages/Relatorios";
 import RelatorioPresencas from "@/pages/RelatorioPresencas";
+import GestaoUnidades from "@/pages/GestaoUnidades";
 import Filiais from "@/pages/Filiais";
 import DashboardUnidades from "@/pages/DashboardUnidades";
 import ResponsavelEntrada from "@/pages/ResponsavelEntrada";

@@ -89,10 +89,14 @@ export interface IStorage {
 
   // Filiais operations
   getFiliais(): Promise<Filial[]>;
+  getFiliaisDetalhadas(): Promise<any[]>;
   getFilial(id: number): Promise<Filial | undefined>;
   createFilial(filial: InsertFilial): Promise<Filial>;
   updateFilial(id: number, filial: Partial<InsertFilial>): Promise<Filial>;
   deleteFilial(id: number): Promise<void>;
+  getAlunosByFilial(filialId: number): Promise<AlunoWithFilial[]>;
+  getProfessoresByFilial(filialId: number): Promise<Professor[]>;
+  getTurmasByFilial(filialId: number): Promise<TurmaWithProfessor[]>;
 
   // Dashboard metrics
   getDashboardMetrics(): Promise<{
@@ -488,6 +492,97 @@ export class DatabaseStorage implements IStorage {
 
   async deleteFilial(id: number): Promise<void> {
     await db.update(filiais).set({ ativa: false }).where(eq(filiais.id, id));
+  }
+
+  async getFiliaisDetalhadas(): Promise<any[]> {
+    const filiaisData = await db.select().from(filiais);
+    
+    const filiaisComDetalhes = await Promise.all(
+      filiaisData.map(async (filial) => {
+        // Contar alunos por filial
+        const totalAlunosResult = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(alunos)
+          .where(eq(alunos.filialId, filial.id));
+        
+        // Contar professores por filial
+        const totalProfessoresResult = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(professores)
+          .where(eq(professores.filialId, filial.id));
+        
+        // Contar turmas por filial
+        const totalTurmasResult = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(turmas)
+          .where(eq(turmas.filialId, filial.id));
+        
+        // Calcular receita mensal (soma dos pagamentos do mês atual)
+        const currentMonth = new Date().getMonth() + 1;
+        const currentYear = new Date().getFullYear();
+        const receitaResult = await db
+          .select({ total: sql<number>`coalesce(sum(cast(valor as decimal)), 0)` })
+          .from(pagamentos)
+          .innerJoin(alunos, eq(pagamentos.alunoId, alunos.id))
+          .where(and(
+            eq(alunos.filialId, filial.id),
+            eq(sql`extract(month from ${pagamentos.dataPagamento})`, currentMonth),
+            eq(sql`extract(year from ${pagamentos.dataPagamento})`, currentYear)
+          ));
+
+        return {
+          ...filial,
+          totalAlunos: totalAlunosResult[0]?.count || 0,
+          totalProfessores: totalProfessoresResult[0]?.count || 0,
+          totalTurmas: totalTurmasResult[0]?.count || 0,
+          receitaMensal: Number(receitaResult[0]?.total || 0),
+        };
+      })
+    );
+
+    return filiaisComDetalhes;
+  }
+
+  async getAlunosByFilial(filialId: number): Promise<AlunoWithFilial[]> {
+    const alunosData = await db
+      .select({
+        aluno: alunos,
+        filial: filiais,
+      })
+      .from(alunos)
+      .leftJoin(filiais, eq(alunos.filialId, filiais.id))
+      .where(eq(alunos.filialId, filialId));
+
+    return alunosData.map(({ aluno, filial }) => ({
+      ...aluno,
+      filial,
+    }));
+  }
+
+  async getProfessoresByFilial(filialId: number): Promise<Professor[]> {
+    return await db
+      .select()
+      .from(professores)
+      .where(eq(professores.filialId, filialId));
+  }
+
+  async getTurmasByFilial(filialId: number): Promise<TurmaWithProfessor[]> {
+    const turmasData = await db
+      .select({
+        turma: turmas,
+        professor: professores,
+        filial: filiais,
+      })
+      .from(turmas)
+      .leftJoin(professores, eq(turmas.professorId, professores.id))
+      .leftJoin(filiais, eq(turmas.filialId, filiais.id))
+      .where(eq(turmas.filialId, filialId));
+
+    return turmasData.map(({ turma, professor, filial }) => ({
+      ...turma,
+      professor,
+      filial,
+    }));
   }
 
   // Responsáveis operations

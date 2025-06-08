@@ -70,8 +70,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Alunos routes
   app.get("/api/alunos", isAuthenticatedOrResponsavel, async (req, res) => {
     try {
-      const alunos = await storage.getAlunos();
-      res.json(alunos);
+      const { filialId } = req.query;
+      if (filialId) {
+        const alunos = await storage.getAlunosByFilial(parseInt(filialId as string));
+        res.json(alunos);
+      } else {
+        const alunos = await storage.getAlunos();
+        res.json(alunos);
+      }
     } catch (error) {
       console.error("Error fetching alunos:", error);
       res.status(500).json({ message: "Failed to fetch alunos" });
@@ -135,8 +141,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Professores routes
   app.get("/api/professores", isAuthenticated, async (req, res) => {
     try {
-      const professores = await storage.getProfessores();
-      res.json(professores);
+      const { filialId } = req.query;
+      if (filialId) {
+        const professores = await storage.getProfessoresByFilial(parseInt(filialId as string));
+        res.json(professores);
+      } else {
+        const professores = await storage.getProfessores();
+        res.json(professores);
+      }
     } catch (error) {
       console.error("Error fetching professores:", error);
       res.status(500).json({ message: "Failed to fetch professores" });
@@ -200,8 +212,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Turmas routes
   app.get("/api/turmas", isAuthenticated, async (req, res) => {
     try {
-      const turmas = await storage.getTurmas();
-      res.json(turmas);
+      const { filialId } = req.query;
+      if (filialId) {
+        const turmas = await storage.getTurmasByFilial(parseInt(filialId as string));
+        res.json(turmas);
+      } else {
+        const turmas = await storage.getTurmas();
+        res.json(turmas);
+      }
     } catch (error) {
       console.error("Error fetching turmas:", error);
       res.status(500).json({ message: "Failed to fetch turmas" });
@@ -353,6 +371,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching filiais:", error);
       res.status(500).json({ message: "Failed to fetch filiais" });
+    }
+  });
+
+  app.get("/api/filiais/detalhadas", isAuthenticated, async (req, res) => {
+    try {
+      const filiais = await storage.getFiliaisDetalhadas();
+      res.json(filiais);
+    } catch (error) {
+      console.error("Error fetching detailed filiais:", error);
+      res.status(500).json({ message: "Failed to fetch detailed filiais" });
     }
   });
 
