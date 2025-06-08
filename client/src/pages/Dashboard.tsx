@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, SquareUser, Wallet, UsersIcon, UserPlus, Calendar, TrendingUp, Bell, Building2, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { InterLogo } from "@/components/InterLogo";
 
 interface DashboardMetrics {
   totalAlunos: number;
@@ -162,16 +163,16 @@ export default function Dashboard() {
       </div>
 
       {/* Dashboard das Unidades - Acesso Rápido */}
-      <Card className="border-green-200 bg-green-50/50">
+      <Card className="border-blue-200 bg-blue-50/50">
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-500/10 rounded-lg flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-green-600" />
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center p-1">
+                <InterLogo size={32} />
               </div>
               <div>
-                <CardTitle className="text-lg font-semibold text-green-800">Dashboard das Unidades</CardTitle>
-                <p className="text-sm text-green-600">Análise comparativa entre todas as unidades</p>
+                <CardTitle className="text-lg font-semibold text-blue-800">Dashboard das Unidades</CardTitle>
+                <p className="text-sm text-blue-600">Análise comparativa entre todas as unidades</p>
               </div>
             </div>
             <Button 
@@ -185,17 +186,17 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-3 bg-white rounded-lg border border-green-200">
-              <p className="text-2xl font-bold text-green-600">1</p>
-              <p className="text-sm text-green-700">Unidades Ativas</p>
+            <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-2xl font-bold text-blue-600">1</p>
+              <p className="text-sm text-blue-700">Unidades Ativas</p>
             </div>
-            <div className="text-center p-3 bg-white rounded-lg border border-green-200">
+            <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-2xl font-bold text-blue-600">{metrics?.totalAlunos || 0}</p>
-              <p className="text-sm text-green-700">Total de Alunos</p>
+              <p className="text-sm text-blue-700">Total de Alunos</p>
             </div>
-            <div className="text-center p-3 bg-white rounded-lg border border-green-200">
-              <p className="text-2xl font-bold text-purple-600">{formatCurrency(metrics?.receitaMensal || 0)}</p>
-              <p className="text-sm text-green-700">Receita Total</p>
+            <div className="text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-2xl font-bold text-blue-600">{formatCurrency(metrics?.receitaMensal || 0)}</p>
+              <p className="text-sm text-blue-700">Receita Total</p>
             </div>
           </div>
         </CardContent>
