@@ -76,6 +76,12 @@ export default function Sidebar() {
       icon: ClipboardList,
       active: location === "/relatorio-presencas",
     },
+    {
+      name: "Gestão de Unidades",
+      href: "/gestao-unidades",
+      icon: Building2,
+      active: location === "/gestao-unidades",
+    },
   ];
 
   const handleLogout = () => {

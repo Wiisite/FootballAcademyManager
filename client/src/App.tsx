@@ -49,6 +49,7 @@ function Router() {
           <Route path="/financeiro" component={Financeiro} />
           <Route path="/relatorios" component={Relatorios} />
           <Route path="/relatorio-presencas" component={RelatorioPresencas} />
+          <Route path="/gestao-unidades" component={GestaoUnidades} />
         </Layout>
       )}
       <Route component={NotFound} />

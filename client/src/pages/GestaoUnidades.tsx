@@ -52,17 +52,20 @@ export default function GestaoUnidades() {
   });
 
   const { data: alunosPorFilial } = useQuery<AlunoWithFilial[]>({
-    queryKey: ["/api/alunos", "filial", selectedFilial?.id],
+    queryKey: ["/api/alunos", { filialId: selectedFilial?.id }],
+    queryFn: () => apiRequest("GET", `/api/alunos?filialId=${selectedFilial?.id}`),
     enabled: !!selectedFilial,
   });
 
   const { data: professoresPorFilial } = useQuery<Professor[]>({
-    queryKey: ["/api/professores", "filial", selectedFilial?.id],
+    queryKey: ["/api/professores", { filialId: selectedFilial?.id }],
+    queryFn: () => apiRequest("GET", `/api/professores?filialId=${selectedFilial?.id}`),
     enabled: !!selectedFilial,
   });
 
   const { data: turmasPorFilial } = useQuery<TurmaWithProfessor[]>({
-    queryKey: ["/api/turmas", "filial", selectedFilial?.id],
+    queryKey: ["/api/turmas", { filialId: selectedFilial?.id }],
+    queryFn: () => apiRequest("GET", `/api/turmas?filialId=${selectedFilial?.id}`),
     enabled: !!selectedFilial,
   });
 
