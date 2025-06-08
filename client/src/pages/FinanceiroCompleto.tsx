@@ -450,7 +450,7 @@ export default function FinanceiroCompleto() {
 
       {/* Dialogs para criação/edição */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {dialogType === "pagamento" && "Novo Pagamento"}
@@ -460,7 +460,347 @@ export default function FinanceiroCompleto() {
               {dialogType === "inscricao-evento" && "Inscrever em Evento"}
             </DialogTitle>
           </DialogHeader>
-          {/* Forms específicos para cada tipo serão implementados aqui */}
+          
+          {/* Form de Pagamento */}
+          {dialogType === "pagamento" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="aluno">Aluno</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o aluno" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {alunos.map((aluno) => (
+                        <SelectItem key={aluno.id} value={aluno.id.toString()}>
+                          {aluno.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="valor">Valor (R$)</Label>
+                  <Input id="valor" type="number" step="0.01" placeholder="0,00" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="mesReferencia">Mês de Referência</Label>
+                  <Input id="mesReferencia" placeholder="Ex: Janeiro/2024" />
+                </div>
+                <div>
+                  <Label htmlFor="dataPagamento">Data do Pagamento</Label>
+                  <Input id="dataPagamento" type="date" />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="formaPagamento">Forma de Pagamento</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a forma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                    <SelectItem value="cartao">Cartão</SelectItem>
+                    <SelectItem value="pix">PIX</SelectItem>
+                    <SelectItem value="transferencia">Transferência</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="observacoes">Observações</Label>
+                <Textarea id="observacoes" placeholder="Observações adicionais..." />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => setDialogOpen(false)} variant="outline" className="flex-1">
+                  Cancelar
+                </Button>
+                <Button className="flex-1">
+                  Registrar Pagamento
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Form de Evento */}
+          {dialogType === "evento" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="nomeEvento">Nome do Evento</Label>
+                  <Input id="nomeEvento" placeholder="Ex: Torneio de Futebol" />
+                </div>
+                <div>
+                  <Label htmlFor="dataEvento">Data do Evento</Label>
+                  <Input id="dataEvento" type="date" />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="descricaoEvento">Descrição</Label>
+                <Textarea id="descricaoEvento" placeholder="Descrição detalhada do evento..." />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="localEvento">Local</Label>
+                  <Input id="localEvento" placeholder="Local do evento" />
+                </div>
+                <div>
+                  <Label htmlFor="precoEvento">Preço (R$)</Label>
+                  <Input id="precoEvento" type="number" step="0.01" placeholder="0,00" />
+                </div>
+                <div>
+                  <Label htmlFor="vagasEvento">Vagas Máximas</Label>
+                  <Input id="vagasEvento" type="number" placeholder="50" />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="horaInicio">Hora de Início</Label>
+                <Input id="horaInicio" type="time" />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => setDialogOpen(false)} variant="outline" className="flex-1">
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleCreateEvento}
+                  disabled={createEventoMutation.isPending}
+                  className="flex-1"
+                >
+                  {createEventoMutation.isPending ? "Criando..." : "Criar Evento"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Form de Uniforme */}
+          {dialogType === "uniforme" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="nomeUniforme">Nome do Item</Label>
+                  <Input id="nomeUniforme" placeholder="Ex: Camisa Oficial" />
+                </div>
+                <div>
+                  <Label htmlFor="categoria">Categoria</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="camisa">Camisa</SelectItem>
+                      <SelectItem value="short">Short</SelectItem>
+                      <SelectItem value="meias">Meias</SelectItem>
+                      <SelectItem value="chuteira">Chuteira</SelectItem>
+                      <SelectItem value="acessorios">Acessórios</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="descricaoUniforme">Descrição</Label>
+                <Textarea id="descricaoUniforme" placeholder="Descrição detalhada do item..." />
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="precoUniforme">Preço (R$)</Label>
+                  <Input id="precoUniforme" type="number" step="0.01" placeholder="0,00" />
+                </div>
+                <div>
+                  <Label htmlFor="tamanhos">Tamanhos Disponíveis</Label>
+                  <Input id="tamanhos" placeholder="P, M, G, GG" />
+                </div>
+                <div>
+                  <Label htmlFor="cores">Cores Disponíveis</Label>
+                  <Input id="cores" placeholder="Azul, Branco, Vermelho" />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="estoque">Quantidade em Estoque</Label>
+                <Input id="estoque" type="number" placeholder="100" />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => setDialogOpen(false)} variant="outline" className="flex-1">
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleCreateUniforme}
+                  disabled={createUniformeMutation.isPending}
+                  className="flex-1"
+                >
+                  {createUniformeMutation.isPending ? "Criando..." : "Adicionar Uniforme"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Form de Compra de Uniforme */}
+          {dialogType === "compra-uniforme" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="alunoCompra">Aluno</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o aluno" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {alunos.map((aluno) => (
+                        <SelectItem key={aluno.id} value={aluno.id.toString()}>
+                          {aluno.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="uniformeCompra">Uniforme</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o uniforme" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {uniformes.map((uniforme) => (
+                        <SelectItem key={uniforme.id} value={uniforme.id.toString()}>
+                          {uniforme.nome} - R$ {parseFloat(uniforme.preco || "0").toFixed(2)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="quantidade">Quantidade</Label>
+                  <Input id="quantidade" type="number" defaultValue="1" min="1" />
+                </div>
+                <div>
+                  <Label htmlFor="tamanhoEscolhido">Tamanho</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="P">P</SelectItem>
+                      <SelectItem value="M">M</SelectItem>
+                      <SelectItem value="G">G</SelectItem>
+                      <SelectItem value="GG">GG</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="corEscolhida">Cor</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="azul">Azul</SelectItem>
+                      <SelectItem value="branco">Branco</SelectItem>
+                      <SelectItem value="vermelho">Vermelho</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="statusPagamentoUniforme">Status do Pagamento</Label>
+                  <Select defaultValue="pendente">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                      <SelectItem value="pago">Pago</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="statusEntrega">Status da Entrega</Label>
+                  <Select defaultValue="preparando">
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="preparando">Preparando</SelectItem>
+                      <SelectItem value="entregue">Entregue</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => setDialogOpen(false)} variant="outline" className="flex-1">
+                  Cancelar
+                </Button>
+                <Button className="flex-1">
+                  Registrar Compra
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Form de Inscrição em Evento */}
+          {dialogType === "inscricao-evento" && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="alunoInscricao">Aluno</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o aluno" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {alunos.map((aluno) => (
+                        <SelectItem key={aluno.id} value={aluno.id.toString()}>
+                          {aluno.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="eventoInscricao">Evento</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o evento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {eventos.map((evento) => (
+                        <SelectItem key={evento.id} value={evento.id.toString()}>
+                          {evento.nome} - R$ {parseFloat(evento.preco || "0").toFixed(2)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="statusPagamentoEvento">Status do Pagamento</Label>
+                <Select defaultValue="pendente">
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="pago">Pago</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="observacoesInscricao">Observações</Label>
+                <Textarea id="observacoesInscricao" placeholder="Observações sobre a inscrição..." />
+              </div>
+              <div className="flex gap-2 pt-4">
+                <Button onClick={() => setDialogOpen(false)} variant="outline" className="flex-1">
+                  Cancelar
+                </Button>
+                <Button className="flex-1">
+                  Confirmar Inscrição
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
