@@ -617,6 +617,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/presencas/detalhadas", isAuthenticated, async (req, res) => {
+    try {
+      const presencas = await storage.getPresencasDetalhadas();
+      res.json(presencas);
+    } catch (error) {
+      console.error("Error fetching detailed presencas:", error);
+      res.status(500).json({ message: "Failed to fetch detailed presencas" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
