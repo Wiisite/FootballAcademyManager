@@ -119,10 +119,10 @@ export default function Landing() {
             </Card>
 
             {/* Feature 3 */}
-            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
+            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
-                  <Calendar className="w-6 h-6 text-accent" />
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <Calendar className="w-6 h-6 text-blue-600" />
                 </div>
                 <CardTitle className="text-xl">Organização de Turmas</CardTitle>
                 <CardDescription>
@@ -133,10 +133,10 @@ export default function Landing() {
             </Card>
 
             {/* Feature 4 */}
-            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
+            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-4">
-                  <TrendingUp className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <TrendingUp className="w-6 h-6 text-blue-600" />
                 </div>
                 <CardTitle className="text-xl">Controle Financeiro</CardTitle>
                 <CardDescription>
@@ -147,9 +147,9 @@ export default function Landing() {
             </Card>
 
             {/* Feature 5 */}
-            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
+            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                   <Zap className="w-6 h-6 text-blue-600" />
                 </div>
                 <CardTitle className="text-xl">Relatórios Completos</CardTitle>
@@ -161,10 +161,10 @@ export default function Landing() {
             </Card>
 
             {/* Feature 6 */}
-            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
+            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mb-4">
-                  <Volleyball className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <Volleyball className="w-6 h-6 text-blue-600" />
                 </div>
                 <CardTitle className="text-xl">Interface Intuitiva</CardTitle>
                 <CardDescription>
@@ -178,19 +178,19 @@ export default function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-primary-green">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-blue-600">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
             Pronto para revolucionar sua escola de futebol?
           </h2>
-          <p className="text-xl text-green-100 mb-8">
+          <p className="text-xl text-blue-100 mb-8">
             Entre no sistema e comece a gerenciar sua escola de forma profissional e eficiente.
           </p>
           <Button 
             onClick={handleLogin}
             size="lg"
             variant="secondary"
-            className="bg-white text-primary-green hover:bg-neutral-50 px-8 py-4 text-lg"
+            className="bg-white text-blue-600 hover:bg-neutral-50 px-8 py-4 text-lg"
           >
             Acessar Sistema Agora
           </Button>
@@ -198,12 +198,12 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-neutral-200 py-8 px-4 sm:px-6 lg:px-8">
+      <footer className="bg-blue-50 border-t border-blue-200 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-primary-green rounded-lg flex items-center justify-center">
-                <Volleyball className="w-4 h-4 text-white" />
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center p-1">
+                <InterLogo size={16} />
               </div>
               <div>
                 <p className="font-semibold text-neutral-800">EscolaFut</p>
