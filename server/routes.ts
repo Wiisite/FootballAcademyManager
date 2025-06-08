@@ -655,6 +655,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Pacotes de treino routes
+  app.get("/api/pacotes-treino", isAuthenticated, async (req, res) => {
+    try {
+      const pacotes = await storage.getPacotesTreino();
+      res.json(pacotes);
+    } catch (error) {
+      console.error("Error fetching pacotes treino:", error);
+      res.status(500).json({ message: "Failed to fetch pacotes treino" });
+    }
+  });
+
+  app.post("/api/pacotes-treino", isAuthenticated, async (req, res) => {
+    try {
+      const pacote = await storage.createPacoteTreino(req.body);
+      res.json(pacote);
+    } catch (error) {
+      console.error("Error creating pacote treino:", error);
+      res.status(500).json({ message: "Failed to create pacote treino" });
+    }
+  });
+
+  app.get("/api/assinaturas-pacotes", isAuthenticated, async (req, res) => {
+    try {
+      const assinaturas = await storage.getAssinaturasPacotes();
+      res.json(assinaturas);
+    } catch (error) {
+      console.error("Error fetching assinaturas pacotes:", error);
+      res.status(500).json({ message: "Failed to fetch assinaturas pacotes" });
+    }
+  });
+
+  app.post("/api/assinaturas-pacotes", isAuthenticated, async (req, res) => {
+    try {
+      const assinatura = await storage.criarAssinaturaPacote(req.body);
+      res.json(assinatura);
+    } catch (error) {
+      console.error("Error creating assinatura pacote:", error);
+      res.status(500).json({ message: "Failed to create assinatura pacote" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

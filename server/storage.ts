@@ -13,6 +13,8 @@ import {
   inscricoesEventos,
   comprasUniformes,
   presencas,
+  pacotesTreino,
+  assinaturasPacotes,
   type User,
   type UpsertUser,
   type Aluno,
@@ -46,6 +48,11 @@ import {
   type InsertCompraUniforme,
   type Presenca,
   type InsertPresenca,
+  type PacoteTreino,
+  type InsertPacoteTreino,
+  type AssinaturaPacote,
+  type InsertAssinaturaPacote,
+  type AssinaturaPacoteComplete,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, count } from "drizzle-orm";
