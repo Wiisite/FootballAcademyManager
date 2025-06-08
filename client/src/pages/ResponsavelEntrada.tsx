@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, UserPlus, LogIn, Shield, Bell, CreditCard, Calendar } from "lucide-react";
+import { InterLogo } from "@/components/InterLogo";
 
 export default function ResponsavelEntrada() {
   return (

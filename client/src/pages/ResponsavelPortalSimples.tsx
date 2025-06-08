@@ -32,6 +32,7 @@ import {
   Camera,
   ImageIcon
 } from "lucide-react";
+import { InterLogo } from "@/components/InterLogo";
 
 export default function ResponsavelPortal() {
   const [activeTab, setActiveTab] = useState("dashboard");

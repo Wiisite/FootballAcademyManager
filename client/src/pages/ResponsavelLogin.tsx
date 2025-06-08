@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Eye, EyeOff, User, Lock, School } from "lucide-react";
+import { InterLogo } from "@/components/InterLogo";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),

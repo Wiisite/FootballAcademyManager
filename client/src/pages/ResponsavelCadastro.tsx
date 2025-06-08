@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertResponsavelSchema } from "@shared/schema";
 import { UserPlus, LogIn, Users } from "lucide-react";
+import { InterLogo } from "@/components/InterLogo";
 
 const cadastroSchema = insertResponsavelSchema.extend({
   confirmarSenha: z.string().min(6, "Confirmação de senha deve ter pelo menos 6 caracteres"),

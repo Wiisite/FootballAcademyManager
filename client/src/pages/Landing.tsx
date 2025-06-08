@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Volleyball, Users, Calendar, TrendingUp, Shield, Zap, Building2 } from "lucide-react";
+import { InterLogo } from "@/components/InterLogo";
 import { Link } from "wouter";
 
 export default function Landing() {
@@ -16,8 +17,8 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary-green rounded-lg flex items-center justify-center">
-                <Volleyball className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center p-1">
+                <InterLogo size={32} />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-neutral-800">EscolaFut</h1>

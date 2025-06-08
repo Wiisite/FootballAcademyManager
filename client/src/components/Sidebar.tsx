@@ -15,6 +15,7 @@ import {
   Building2,
   ClipboardList
 } from "lucide-react";
+import { InterLogo } from "@/components/InterLogo";
 import { cn } from "@/lib/utils";
 
 export default function Sidebar() {
@@ -93,8 +94,8 @@ export default function Sidebar() {
       {/* Header */}
       <div className="p-6 border-b border-neutral-100">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-primary-green rounded-lg flex items-center justify-center">
-            <Volleyball className="text-white text-lg" />
+          <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center p-1">
+            <InterLogo size={32} />
           </div>
           <div>
             <h1 className="text-lg font-semibold text-neutral-800">EscolaFut</h1>
