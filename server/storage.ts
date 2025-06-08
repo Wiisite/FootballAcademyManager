@@ -892,57 +892,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAssinaturasPacotes(): Promise<AssinaturaPacoteComplete[]> {
-    return await db
-      .select({
-        id: assinaturasPacotes.id,
-        alunoId: assinaturasPacotes.alunoId,
-        pacoteId: assinaturasPacotes.pacoteId,
-        dataInicio: assinaturasPacotes.dataInicio,
-        dataFim: assinaturasPacotes.dataFim,
-        status: assinaturasPacotes.status,
-        valorPago: assinaturasPacotes.valorPago,
-        formaPagamento: assinaturasPacotes.formaPagamento,
-        observacoes: assinaturasPacotes.observacoes,
-        createdAt: assinaturasPacotes.createdAt,
-        updatedAt: assinaturasPacotes.updatedAt,
-        aluno: {
-          id: alunos.id,
-          nome: alunos.nome,
-          email: alunos.email,
-          telefone: alunos.telefone,
-          cpf: alunos.cpf,
-          dataNascimento: alunos.dataNascimento,
-          dataMatricula: alunos.dataMatricula,
-          ativo: alunos.ativo,
-          endereco: alunos.endereco,
-          bairro: alunos.bairro,
-          cidade: alunos.cidade,
-          estado: alunos.estado,
-          cep: alunos.cep,
-          nomeResponsavel: alunos.nomeResponsavel,
-          telefoneResponsavel: alunos.telefoneResponsavel,
-          nomeResponsavel: alunos.nomeResponsavel,
-          telefoneResponsavel: alunos.telefoneResponsavel,
-          filialId: alunos.filialId,
-          responsavelId: alunos.responsavelId,
-          createdAt: alunos.createdAt,
-          updatedAt: alunos.updatedAt,
-        },
-        pacote: {
-          id: pacotesTreino.id,
-          nome: pacotesTreino.nome,
-          descricao: pacotesTreino.descricao,
-          frequenciaSemanal: pacotesTreino.frequenciaSemanal,
-          valor: pacotesTreino.valor,
-          duracao: pacotesTreino.duracao,
-          ativo: pacotesTreino.ativo,
-          createdAt: pacotesTreino.createdAt,
-          updatedAt: pacotesTreino.updatedAt,
-        },
-      })
+    const result = await db
+      .select()
       .from(assinaturasPacotes)
       .leftJoin(alunos, eq(assinaturasPacotes.alunoId, alunos.id))
       .leftJoin(pacotesTreino, eq(assinaturasPacotes.pacoteId, pacotesTreino.id));
+
+    return result.map(row => ({
+      ...row.assinaturas_pacotes,
+      aluno: row.alunos || {},
+      pacote: row.pacotes_treino || {}
+    })) as AssinaturaPacoteComplete[];
   }
 
   async criarAssinaturaPacote(assinaturaData: InsertAssinaturaPacote): Promise<AssinaturaPacote> {

@@ -503,6 +503,129 @@ export default function FinanceiroCompleto() {
             })}
           </div>
         </TabsContent>
+
+        {/* Tab de Pacotes de Treino */}
+        <TabsContent value="pacotes" className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Pacotes de Treino Disponíveis</h3>
+          </div>
+
+          {/* Pacotes Disponíveis */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {pacotesTreino.map((pacote: any) => (
+              <Card key={pacote.id} className="relative">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h4 className="font-semibold text-lg">{pacote.nome}</h4>
+                    <Badge variant="secondary">
+                      {pacote.frequenciaSemanal}x/semana
+                    </Badge>
+                  </div>
+                  
+                  <div className="space-y-2 mb-4">
+                    <p className="text-sm text-muted-foreground">{pacote.descricao}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-bold text-green-600">
+                        R$ {parseFloat(pacote.valor || "0").toFixed(2)}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        {pacote.duracao} dias
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center text-sm">
+                      <Users className="w-4 h-4 mr-2 text-blue-500" />
+                      <span>Frequência: {pacote.frequenciaSemanal}x por semana</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <Calendar className="w-4 h-4 mr-2 text-purple-500" />
+                      <span>Duração: {pacote.duracao} dias</span>
+                    </div>
+                  </div>
+
+                  <Button 
+                    className="w-full mt-4"
+                    onClick={() => {
+                      const formData = {
+                        alunoId: 1,
+                        pacoteId: pacote.id,
+                        dataInicio: new Date().toISOString().split('T')[0],
+                        dataFim: new Date(Date.now() + pacote.duracao * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                        status: 'ativo',
+                        valorPago: pacote.valor,
+                        formaPagamento: 'pix'
+                      };
+                      
+                      const handleContratarPacote = async () => {
+                        try {
+                          await apiRequest("POST", "/api/assinaturas-pacotes", formData);
+                          toast({
+                            title: "Sucesso",
+                            description: `Pacote ${pacote.nome} contratado com sucesso!`,
+                          });
+                          queryClient.invalidateQueries({ queryKey: ["/api/assinaturas-pacotes"] });
+                        } catch (error) {
+                          toast({
+                            title: "Erro",
+                            description: "Erro ao contratar pacote",
+                            variant: "destructive",
+                          });
+                        }
+                      };
+                      
+                      handleContratarPacote();
+                    }}
+                  >
+                    Contratar Agora
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Assinaturas Ativas */}
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">Assinaturas Ativas</h3>
+            <div className="grid gap-4">
+              {assinaturasPacotes.map((assinatura: any) => (
+                <Card key={assinatura.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-semibold">{assinatura.aluno?.nome || "Aluno não encontrado"}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {assinatura.pacote?.nome || "Pacote não encontrado"} • {assinatura.pacote?.frequenciaSemanal}x/semana
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(assinatura.dataInicio).toLocaleDateString('pt-BR')} - {new Date(assinatura.dataFim).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-green-600">
+                          R$ {parseFloat(assinatura.valorPago || "0").toFixed(2)}
+                        </p>
+                        <Badge variant={assinatura.status === 'ativo' ? 'default' : 'secondary'}>
+                          {assinatura.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+              
+              {assinaturasPacotes.length === 0 && (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground">Nenhuma assinatura de pacote encontrada</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialogs para criação/edição */}
