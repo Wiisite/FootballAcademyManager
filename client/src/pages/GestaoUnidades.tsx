@@ -53,19 +53,16 @@ export default function GestaoUnidades() {
 
   const { data: alunosPorFilial } = useQuery<AlunoWithFilial[]>({
     queryKey: ["/api/alunos", { filialId: selectedFilial?.id }],
-    queryFn: () => apiRequest("GET", `/api/alunos?filialId=${selectedFilial?.id}`),
     enabled: !!selectedFilial,
   });
 
   const { data: professoresPorFilial } = useQuery<Professor[]>({
     queryKey: ["/api/professores", { filialId: selectedFilial?.id }],
-    queryFn: () => apiRequest("GET", `/api/professores?filialId=${selectedFilial?.id}`),
     enabled: !!selectedFilial,
   });
 
   const { data: turmasPorFilial } = useQuery<TurmaWithProfessor[]>({
     queryKey: ["/api/turmas", { filialId: selectedFilial?.id }],
-    queryFn: () => apiRequest("GET", `/api/turmas?filialId=${selectedFilial?.id}`),
     enabled: !!selectedFilial,
   });
 
@@ -339,14 +336,24 @@ export default function GestaoUnidades() {
 
                 {/* Ações */}
                 <div className="flex items-center justify-between pt-4 border-t">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleViewDetails(filial)}
-                  >
-                    <Eye className="w-4 h-4 mr-1" />
-                    Detalhes
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => setLocation(`/unidade/${filial.id}`)}
+                    >
+                      <Building2 className="w-4 h-4 mr-1" />
+                      Painel
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleViewDetails(filial)}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Detalhes
+                    </Button>
+                  </div>
                   <div className="flex space-x-2">
                     <Button
                       variant="outline"

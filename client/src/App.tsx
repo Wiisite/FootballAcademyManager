@@ -15,6 +15,7 @@ import Financeiro from "@/pages/Financeiro";
 import Relatorios from "@/pages/Relatorios";
 import RelatorioPresencas from "@/pages/RelatorioPresencas";
 import GestaoUnidades from "@/pages/GestaoUnidades";
+import DashboardUnidadeWrapper from "@/pages/DashboardUnidadeWrapper";
 import Filiais from "@/pages/Filiais";
 import DashboardUnidades from "@/pages/DashboardUnidades";
 import ResponsavelEntrada from "@/pages/ResponsavelEntrada";
@@ -50,6 +51,7 @@ function Router() {
           <Route path="/relatorios" component={Relatorios} />
           <Route path="/relatorio-presencas" component={RelatorioPresencas} />
           <Route path="/gestao-unidades" component={GestaoUnidades} />
+          <Route path="/unidade/:filialId" component={DashboardUnidadeWrapper} />
         </Layout>
       )}
       <Route component={NotFound} />
