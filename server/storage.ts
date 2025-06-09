@@ -20,8 +20,12 @@ import {
   avaliacoesFisicas,
   resultadosTestes,
   metasAlunos,
+  gestoresUnidade,
   type User,
   type UpsertUser,
+  type GestorUnidade,
+  type InsertGestorUnidade,
+  type GestorUnidadeWithFilial,
   type Aluno,
   type InsertAluno,
   type Professor,
@@ -137,6 +141,13 @@ export interface IStorage {
   createResponsavel(responsavel: InsertResponsavel): Promise<Responsavel>;
   authenticateResponsavel(email: string, senha: string): Promise<Responsavel | null>;
   getResponsavelWithAlunos(id: number): Promise<ResponsavelWithAlunos | undefined>;
+
+  // Gestores de Unidade operations
+  getGestorUnidade(id: number): Promise<GestorUnidade | undefined>;
+  getGestorUnidadeByEmail(email: string): Promise<GestorUnidade | undefined>;
+  createGestorUnidade(gestor: InsertGestorUnidade): Promise<GestorUnidade>;
+  authenticateGestorUnidade(email: string, senha: string): Promise<GestorUnidadeWithFilial | null>;
+  updateGestorUltimoLogin(id: number): Promise<void>;
 
   // Eventos operations
   getEventos(): Promise<EventoWithFilial[]>;
@@ -1130,6 +1141,72 @@ export class DatabaseStorage implements IStorage {
     await db.delete(resultadosTestes).where(eq(resultadosTestes.avaliacaoId, id));
     // Then delete the avaliacao
     await db.delete(avaliacoesFisicas).where(eq(avaliacoesFisicas.id, id));
+  }
+
+  // Gestores de Unidade operations
+  async getGestorUnidade(id: number): Promise<GestorUnidade | undefined> {
+    const [gestor] = await db
+      .select()
+      .from(gestoresUnidade)
+      .where(eq(gestoresUnidade.id, id));
+    return gestor;
+  }
+
+  async getGestorUnidadeByEmail(email: string): Promise<GestorUnidade | undefined> {
+    const [gestor] = await db
+      .select()
+      .from(gestoresUnidade)
+      .where(eq(gestoresUnidade.email, email));
+    return gestor;
+  }
+
+  async createGestorUnidade(gestorData: InsertGestorUnidade): Promise<GestorUnidade> {
+    // Hash the password before storing
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(gestorData.senha, 10);
+    
+    const [gestor] = await db
+      .insert(gestoresUnidade)
+      .values({
+        ...gestorData,
+        senha: hashedPassword,
+      })
+      .returning();
+    return gestor;
+  }
+
+  async authenticateGestorUnidade(email: string, senha: string): Promise<GestorUnidadeWithFilial | null> {
+    const gestor = await this.getGestorUnidadeByEmail(email);
+    if (!gestor || !gestor.ativo) {
+      return null;
+    }
+
+    const bcrypt = require('bcrypt');
+    const isValidPassword = await bcrypt.compare(senha, gestor.senha);
+    if (!isValidPassword) {
+      return null;
+    }
+
+    // Update last login
+    await this.updateGestorUltimoLogin(gestor.id);
+
+    // Get filial information
+    const filial = await this.getFilial(gestor.filialId);
+    
+    return {
+      ...gestor,
+      filial,
+    };
+  }
+
+  async updateGestorUltimoLogin(id: number): Promise<void> {
+    await db
+      .update(gestoresUnidade)
+      .set({
+        ultimoLogin: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(gestoresUnidade.id, id));
   }
 
   async getResultadosTestes(): Promise<ResultadoTeste[]> {
