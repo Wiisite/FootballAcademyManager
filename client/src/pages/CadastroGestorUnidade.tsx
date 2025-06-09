@@ -1,21 +1,31 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { insertGestorUnidadeSchema, type Filial } from "@shared/schema";
+import { insertGestorUnidadeSchema, insertFilialSchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
 import { Building2, UserPlus, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 
-const cadastroSchema = insertGestorUnidadeSchema.extend({
+const cadastroSchema = z.object({
+  // Dados do gestor
+  nome: z.string().min(1, "Nome é obrigatório"),
+  email: z.string().email("Email inválido"),
+  senha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   confirmarSenha: z.string().min(6, "Confirmação de senha é obrigatória"),
+  telefone: z.string().optional(),
+  
+  // Dados da unidade
+  nomeUnidade: z.string().min(1, "Nome da unidade é obrigatório"),
+  enderecoUnidade: z.string().min(1, "Endereço da unidade é obrigatório"),
+  telefoneUnidade: z.string().optional(),
+  responsavelUnidade: z.string().optional(),
 }).refine((data) => data.senha === data.confirmarSenha, {
   message: "As senhas não coincidem",
   path: ["confirmarSenha"],
@@ -30,10 +40,6 @@ export default function CadastroGestorUnidade() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const { data: filiais, isLoading: isLoadingFiliais } = useQuery({
-    queryKey: ["/api/filiais"],
-  });
-
   const form = useForm<CadastroFormData>({
     resolver: zodResolver(cadastroSchema),
     defaultValues: {
@@ -42,23 +48,36 @@ export default function CadastroGestorUnidade() {
       senha: "",
       confirmarSenha: "",
       telefone: "",
-      filialId: undefined,
-      ativo: true,
-      papel: "gestor",
+      nomeUnidade: "",
+      enderecoUnidade: "",
+      telefoneUnidade: "",
+      responsavelUnidade: "",
     },
   });
 
   const onSubmit = async (data: CadastroFormData) => {
     setIsLoading(true);
     try {
-      const { confirmarSenha, ...cadastroData } = data;
-      const response = await apiRequest("POST", "/api/unidade/cadastro", cadastroData);
+      const { confirmarSenha, nomeUnidade, enderecoUnidade, telefoneUnidade, responsavelUnidade, ...gestorData } = data;
+      
+      const cadastroCompleto = {
+        gestor: gestorData,
+        unidade: {
+          nome: nomeUnidade,
+          endereco: enderecoUnidade,
+          telefone: telefoneUnidade || "",
+          responsavel: responsavelUnidade || gestorData.nome,
+          ativa: true,
+        }
+      };
+      
+      const response = await apiRequest("POST", "/api/unidade/cadastro-completo", cadastroCompleto);
       const result = await response.json();
       
       if (response.ok) {
         toast({
           title: "Cadastro realizado com sucesso!",
-          description: "Aguarde aprovação do administrador para acessar o sistema.",
+          description: "Sua unidade e acesso foram criados. Você já pode fazer login.",
         });
         
         setLocation("/unidade/login");
@@ -156,6 +175,7 @@ export default function CadastroGestorUnidade() {
                         <Input
                           placeholder="(11) 99999-9999"
                           {...field}
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage />
@@ -163,39 +183,83 @@ export default function CadastroGestorUnidade() {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="filialId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Unidade</FormLabel>
-                      <Select
-                        value={field.value?.toString()}
-                        onValueChange={(value) => field.onChange(parseInt(value))}
-                      >
+                {/* Seção da Unidade */}
+                <div className="border-t pt-6 mt-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Dados da Unidade</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="nomeUnidade"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Nome da Unidade</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Ex: Escola de Futebol Vila Nova"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="telefoneUnidade"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Telefone da Unidade</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="(11) 3333-4444"
+                              {...field}
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="enderecoUnidade"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Endereço da Unidade</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione a unidade" />
-                          </SelectTrigger>
+                          <Textarea
+                            placeholder="Rua, número, bairro, cidade - CEP"
+                            {...field}
+                            rows={3}
+                          />
                         </FormControl>
-                        <SelectContent>
-                          {isLoadingFiliais ? (
-                            <SelectItem value="loading" disabled>
-                              Carregando...
-                            </SelectItem>
-                          ) : (
-                            filiais?.map((filial: Filial) => (
-                              <SelectItem key={filial.id} value={filial.id.toString()}>
-                                {filial.nome}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="responsavelUnidade"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Responsável pela Unidade (opcional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Deixe vazio para usar seu nome"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -267,8 +331,8 @@ export default function CadastroGestorUnidade() {
 
                 <div className="bg-blue-50 p-4 rounded-lg">
                   <p className="text-sm text-gray-700">
-                    <strong>Observação:</strong> Após o cadastro, sua solicitação será analisada pela administração. 
-                    Você receberá um email de confirmação quando seu acesso for aprovado.
+                    <strong>Observação:</strong> Após o cadastro, sua unidade será criada e você poderá fazer login imediatamente. 
+                    Todos os dados da unidade poderão ser editados posteriormente no painel administrativo.
                   </p>
                 </div>
 

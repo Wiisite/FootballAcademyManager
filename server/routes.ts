@@ -1172,6 +1172,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ message: "Logout realizado com sucesso" });
   });
 
+  // Complete Unit and Manager Registration
+  app.post("/api/unidade/cadastro-completo", async (req, res) => {
+    try {
+      const { gestor, unidade } = req.body;
+      
+      // Validate gestor data
+      const validatedGestor = z.object({
+        nome: z.string().min(1),
+        email: z.string().email(),
+        senha: z.string().min(6),
+        telefone: z.string().optional(),
+      }).parse(gestor);
+      
+      // Validate unidade data  
+      const validatedUnidade = insertFilialSchema.parse(unidade);
+      
+      // Check if email already exists
+      const existingGestor = await storage.getGestorUnidadeByEmail(validatedGestor.email);
+      if (existingGestor) {
+        return res.status(400).json({ message: "Email já cadastrado" });
+      }
+
+      // Create the unit first
+      const novaUnidade = await storage.createFilial(validatedUnidade);
+      
+      // Create the manager with the new unit ID
+      const novoGestor = await storage.createGestorUnidade({
+        ...validatedGestor,
+        filialId: novaUnidade.id,
+        ativo: true,
+        papel: "gestor",
+      });
+      
+      res.status(201).json({ 
+        message: "Unidade e gestor cadastrados com sucesso!",
+        unidadeId: novaUnidade.id,
+        gestorId: novoGestor.id
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Error creating complete registration:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
