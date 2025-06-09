@@ -78,6 +78,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, count } from "drizzle-orm";
+import bcrypt from "bcrypt";
 
 export interface IStorage {
   // User operations (mandatory for Replit Auth)
@@ -1162,7 +1163,6 @@ export class DatabaseStorage implements IStorage {
 
   async createGestorUnidade(gestorData: InsertGestorUnidade): Promise<GestorUnidade> {
     // Hash the password before storing
-    const bcrypt = require('bcrypt');
     const hashedPassword = await bcrypt.hash(gestorData.senha, 10);
     
     const [gestor] = await db
@@ -1181,7 +1181,6 @@ export class DatabaseStorage implements IStorage {
       return null;
     }
 
-    const bcrypt = require('bcrypt');
     const isValidPassword = await bcrypt.compare(senha, gestor.senha);
     if (!isValidPassword) {
       return null;
