@@ -39,6 +39,8 @@ export default function SistemaUnidade() {
     enabled: !!filialId,
   });
 
+  const filialData = filial as { id: number; nome: string; ativo: boolean } | undefined;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-blue-50">
@@ -47,7 +49,7 @@ export default function SistemaUnidade() {
     );
   }
 
-  if (!filial) {
+  if (!filialData) {
     return (
       <div className="min-h-screen bg-blue-50 flex items-center justify-center">
         <Card className="p-8 text-center">
@@ -86,13 +88,13 @@ export default function SistemaUnidade() {
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 flex items-center">
                   <Building2 className="h-6 w-6 mr-2 text-blue-600" />
-                  {filial.nome}
+                  {filialData.nome}
                 </h1>
                 <p className="text-gray-600">Sistema de gestão completo da unidade</p>
               </div>
             </div>
-            <Badge variant={filial.ativo ? "default" : "secondary"}>
-              {filial.ativo ? "Ativo" : "Inativo"}
+            <Badge variant={filialData.ativo ? "default" : "secondary"}>
+              {filialData.ativo ? "Ativo" : "Inativo"}
             </Badge>
           </div>
         </div>
@@ -137,7 +139,7 @@ export default function SistemaUnidade() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <DashboardUnidade />
+                <DashboardUnidade filialId={parseInt(filialId!)} />
               </CardContent>
             </Card>
           </TabsContent>

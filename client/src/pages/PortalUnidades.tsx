@@ -40,7 +40,7 @@ export default function PortalUnidades() {
     queryKey: ["/api/filiais/detalhadas"],
   });
 
-  const filteredUnidades = unidades.filter((unidade: Filial) =>
+  const filteredUnidades = (unidades as Filial[]).filter((unidade: Filial) =>
     unidade.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     unidade.endereco?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -90,7 +90,7 @@ export default function PortalUnidades() {
                   <Building2 className="h-6 w-6 text-blue-600" />
                   <div>
                     <p className="text-sm text-gray-600">Total de Unidades</p>
-                    <p className="text-2xl font-bold">{unidades.length}</p>
+                    <p className="text-2xl font-bold">{(unidades as Filial[]).length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -103,7 +103,7 @@ export default function PortalUnidades() {
                   <div>
                     <p className="text-sm text-gray-600">Total de Alunos</p>
                     <p className="text-2xl font-bold">
-                      {unidades.reduce((acc: number, u: Filial) => acc + u.totalAlunos, 0)}
+                      {(unidades as Filial[]).reduce((acc: number, u: Filial) => acc + u.totalAlunos, 0)}
                     </p>
                   </div>
                 </div>
@@ -117,7 +117,7 @@ export default function PortalUnidades() {
                   <div>
                     <p className="text-sm text-gray-600">Receita Total</p>
                     <p className="text-2xl font-bold">
-                      R$ {unidades.reduce((acc: number, u: Filial) => acc + u.receitaMensal, 0).toLocaleString()}
+                      R$ {(unidades as Filial[]).reduce((acc: number, u: Filial) => acc + u.receitaMensal, 0).toLocaleString()}
                     </p>
                   </div>
                 </div>
