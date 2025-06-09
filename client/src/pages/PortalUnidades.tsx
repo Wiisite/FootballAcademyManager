@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { 
   Building2, 
   Users, 
@@ -16,7 +18,10 @@ import {
   Clock,
   Search,
   Eye,
-  Settings
+  Settings,
+  RefreshCw,
+  CheckCircle,
+  AlertCircle
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -35,10 +40,32 @@ interface Filial {
 
 export default function PortalUnidades() {
   const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
 
   const { data: unidades = [], isLoading } = useQuery({
     queryKey: ["/api/filiais/detalhadas"],
   });
+
+  const { data: syncStatus } = useQuery({
+    queryKey: ["/api/sync/status"],
+    refetchInterval: 10000, // Atualiza a cada 10 segundos
+  });
+
+  const forceSyncMutation = async () => {
+    try {
+      await apiRequest("POST", "/api/sync/force");
+      toast({
+        title: "Sincronização Forçada",
+        description: "Todas as unidades foram sincronizadas com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro na Sincronização",
+        description: "Não foi possível forçar a sincronização.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const filteredUnidades = (unidades as Filial[]).filter((unidade: Filial) =>
     unidade.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -65,7 +92,32 @@ export default function PortalUnidades() {
                 Gerencie todas as unidades da escola de futebol de forma centralizada
               </p>
             </div>
-            <Building2 className="h-12 w-12 text-blue-600" />
+            <div className="flex items-center space-x-4">
+              {/* Sync Status */}
+              <div className="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-lg">
+                {syncStatus?.isActive ? (
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                ) : (
+                  <AlertCircle className="h-5 w-5 text-yellow-600" />
+                )}
+                <div className="text-sm">
+                  <p className="font-medium text-gray-900">
+                    Sincronização: {syncStatus?.isActive ? "Ativa" : "Inativa"}
+                  </p>
+                  <p className="text-gray-600">
+                    {syncStatus?.pendingSyncs || 0} operações pendentes
+                  </p>
+                </div>
+              </div>
+              
+              {/* Force Sync Button */}
+              <Button onClick={forceSyncMutation} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Forçar Sincronização
+              </Button>
+              
+              <Building2 className="h-12 w-12 text-blue-600" />
+            </div>
           </div>
         </div>
 
@@ -193,6 +245,14 @@ export default function PortalUnidades() {
                 </div>
 
                 <Separator />
+
+                {/* Sync Status for Unit */}
+                <div className="flex items-center justify-center py-2">
+                  <div className="flex items-center space-x-2 text-sm">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <span className="text-gray-600">Sincronizado</span>
+                  </div>
+                </div>
 
                 {/* Actions */}
                 <div className="flex space-x-2">

@@ -1090,6 +1090,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sync management routes
+  app.get("/api/sync/status", isAuthenticated, async (req, res) => {
+    try {
+      const { syncManager } = await import("./sync");
+      const stats = syncManager.getSyncStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting sync status:", error);
+      res.status(500).json({ message: "Failed to get sync status" });
+    }
+  });
+
+  app.post("/api/sync/force", isAuthenticated, async (req, res) => {
+    try {
+      const { syncManager } = await import("./sync");
+      await syncManager.forceSyncNow();
+      res.json({ message: "Sync forced successfully" });
+    } catch (error) {
+      console.error("Error forcing sync:", error);
+      res.status(500).json({ message: "Failed to force sync" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
