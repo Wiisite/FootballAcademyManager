@@ -52,7 +52,19 @@ function Router() {
       <Route path="/unidade/login" component={LoginUnidade} />
       <Route path="/unidade/cadastro" component={CadastroGestorUnidade} />
       
-      {/* Sistema Completo da Unidade */}
+      {/* Sistema Completo da Unidade com ID */}
+      <Route path="/unidade/:filialId/sistema" component={SistemaUnidade} />
+      <Route path="/unidade/:filialId/alunos" component={UnidadeAlunos} />
+      <Route path="/unidade/:filialId/professores" component={UnidadeProfessores} />
+      <Route path="/unidade/:filialId/turmas" component={TurmasUnidade} />
+      <Route path="/unidade/:filialId/financeiro" component={FinanceiroUnidade} />
+      <Route path="/unidade/:filialId/matriculas" component={GestaoTurmas} />
+      <Route path="/unidade/:filialId/relatorios" component={Relatorios} />
+      <Route path="/unidade/:filialId/presencas" component={RelatorioPresencas} />
+      <Route path="/unidade/:filialId/dashboard" component={DashboardUnidadeWrapper} />
+      <Route path="/unidade/:filialId" component={DashboardUnidadeWrapper} />
+      
+      {/* Sistema Completo da Unidade sem ID (compatibilidade) */}
       <Route path="/login-unidade" component={LoginUnidade} />
       <Route path="/unidade/sistema" component={SistemaUnidade} />
       <Route path="/unidade/alunos" component={UnidadeAlunos} />
