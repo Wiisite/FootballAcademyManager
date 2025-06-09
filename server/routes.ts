@@ -219,6 +219,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const validatedData = insertProfessorSchema.partial().parse(req.body);
       const professor = await storage.updateProfessor(id, validatedData);
+      
+      // Sincronização automática com sistema principal
+      if (professor.filialId) {
+        await addToSync(professor.filialId, 'professor', 'update', professor);
+      }
+      
       res.json(professor);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -232,6 +238,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/professores/:id", isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Buscar professor antes de deletar para sincronização
+      const professor = await storage.getProfessor(id);
+      if (professor && professor.filialId) {
+        await addToSync(professor.filialId, 'professor', 'delete', { id });
+      }
+      
       await storage.deleteProfessor(id);
       res.status(204).send();
     } catch (error) {
@@ -373,6 +386,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertPagamentoSchema.parse(req.body);
       const pagamento = await storage.createPagamento(validatedData);
+      
+      // Sincronização automática com sistema principal - buscar aluno para obter filialId
+      if (validatedData.alunoId) {
+        const aluno = await storage.getAluno(validatedData.alunoId);
+        if (aluno && aluno.filialId) {
+          await addToSync(aluno.filialId, 'pagamento', 'create', pagamento);
+        }
+      }
+      
       res.status(201).json(pagamento);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -386,6 +408,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/pagamentos/:id", isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Buscar pagamento antes de deletar para sincronização
+      const pagamentos = await storage.getPagamentos();
+      const pagamento = pagamentos.find(p => p.id === id);
+      if (pagamento && pagamento.alunoId) {
+        const aluno = await storage.getAluno(pagamento.alunoId);
+        if (aluno && aluno.filialId) {
+          await addToSync(aluno.filialId, 'pagamento', 'delete', { id });
+        }
+      }
+      
       await storage.deletePagamento(id);
       res.status(204).send();
     } catch (error) {
@@ -669,6 +702,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Presencas must be an array" });
       }
       const novasPresencas = await storage.registrarPresencas(presencas);
+      
+      // Sincronização automática com sistema principal - buscar turma para obter filialId
+      if (presencas.length > 0) {
+        const turmaId = presencas[0].turmaId;
+        const turmas = await storage.getTurmas();
+        const turma = turmas.find(t => t.id === turmaId);
+        if (turma && turma.filialId) {
+          await addToSync(turma.filialId, 'presenca', 'create', novasPresencas);
+        }
+      }
+      
       res.status(201).json(novasPresencas);
     } catch (error) {
       console.error("Error registering presenças:", error);
@@ -877,6 +921,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertAvaliacaoFisicaSchema.parse(req.body);
       const avaliacao = await storage.createAvaliacaoFisica(validatedData);
+      
+      // Sincronização automática com sistema principal
+      if (validatedData.alunoId) {
+        const aluno = await storage.getAluno(validatedData.alunoId);
+        if (aluno && aluno.filialId) {
+          await addToSync(aluno.filialId, 'avaliacao', 'create', avaliacao);
+        }
+      }
+      
       res.status(201).json(avaliacao);
     } catch (error) {
       if (error instanceof z.ZodError) {
