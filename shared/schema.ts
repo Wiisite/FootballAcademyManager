@@ -109,6 +109,21 @@ export const filiais = pgTable("filiais", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Gestores de Unidades table
+export const gestoresUnidade = pgTable("gestores_unidade", {
+  id: serial("id").primaryKey(),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  email: varchar("email", { length: 255 }).unique().notNull(),
+  senha: varchar("senha", { length: 255 }).notNull(), // Hash da senha
+  filialId: integer("filial_id").references(() => filiais.id).notNull(),
+  ativo: boolean("ativo").default(true),
+  papel: varchar("papel", { length: 50 }).default("gestor"), // gestor, supervisor, admin_unidade
+  telefone: varchar("telefone", { length: 20 }),
+  ultimoLogin: timestamp("ultimo_login"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Turmas table
 export const turmas = pgTable("turmas", {
   id: serial("id").primaryKey(),
@@ -337,6 +352,14 @@ export const filiaisRelations = relations(filiais, ({ many }) => ({
   turmas: many(turmas),
   alunos: many(alunos),
   professores: many(professores),
+  gestores: many(gestoresUnidade),
+}));
+
+export const gestoresUnidadeRelations = relations(gestoresUnidade, ({ one }) => ({
+  filial: one(filiais, {
+    fields: [gestoresUnidade.filialId],
+    references: [filiais.id],
+  }),
 }));
 
 export const turmasRelations = relations(turmas, ({ one, many }) => ({
@@ -640,9 +663,28 @@ export const insertMetaAlunoSchema = createInsertSchema(metasAlunos).omit({
   updatedAt: true,
 });
 
+// Unit manager schemas
+export const insertGestorUnidadeSchema = createInsertSchema(gestoresUnidade).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  ultimoLogin: true,
+});
+
+export const loginGestorSchema = z.object({
+  email: z.string().email("Email inválido"),
+  senha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+});
+
 // Types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+export type InsertGestorUnidade = z.infer<typeof insertGestorUnidadeSchema>;
+export type GestorUnidade = typeof gestoresUnidade.$inferSelect;
+export type GestorUnidadeWithFilial = GestorUnidade & {
+  filial: Filial | null;
+};
 
 export type InsertAluno = z.infer<typeof insertAlunoSchema>;
 export type Aluno = typeof alunos.$inferSelect;
