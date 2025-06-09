@@ -18,6 +18,7 @@ import GestaoUnidades from "@/pages/GestaoUnidades";
 import DashboardUnidadeWrapper from "@/pages/DashboardUnidadeWrapper";
 import PainelUnidade from "@/pages/PainelUnidade";
 import LoginUnidade from "@/pages/LoginUnidade";
+import CadastroGestorUnidade from "@/pages/CadastroGestorUnidade";
 import AlunosUnidade from "@/pages/AlunosUnidade";
 import ProfessoresUnidade from "@/pages/ProfessoresUnidade";
 import TurmasUnidade from "@/pages/TurmasUnidade";
@@ -46,6 +47,10 @@ function Router() {
       <Route path="/responsavel/cadastro" component={ResponsavelCadastro} />
       <Route path="/responsavel/login" component={ResponsavelLogin} />
       <Route path="/portal" component={ResponsavelPortal} />
+      
+      {/* Acesso de Gestores de Unidade - Rotas independentes */}
+      <Route path="/unidade/login" component={LoginUnidade} />
+      <Route path="/unidade/cadastro" component={CadastroGestorUnidade} />
       
       {/* Sistema Completo da Unidade */}
       <Route path="/login-unidade" component={LoginUnidade} />
