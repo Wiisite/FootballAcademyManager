@@ -4,10 +4,12 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
 import { addToSync } from "./sync";
 
-// Extend session type for responsavel
+// Extend session type for responsavel and gestor
 declare module "express-session" {
   interface SessionData {
     responsavelId?: number;
+    gestorUnidadeId?: number;
+    filialId?: number;
   }
 }
 import {
@@ -28,6 +30,8 @@ import {
   insertAvaliacaoFisicaSchema,
   insertResultadoTesteSchema,
   insertMetaAlunoSchema,
+  insertGestorUnidadeSchema,
+  loginGestorSchema,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -1111,6 +1115,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error forcing sync:", error);
       res.status(500).json({ message: "Failed to force sync" });
     }
+  });
+
+  // Unit Manager Authentication Routes
+  app.post("/api/unidade/cadastro", async (req, res) => {
+    try {
+      const validatedData = insertGestorUnidadeSchema.parse(req.body);
+      
+      // Check if email already exists
+      const existingGestor = await storage.getGestorUnidadeByEmail(validatedData.email);
+      if (existingGestor) {
+        return res.status(400).json({ message: "Email já cadastrado" });
+      }
+
+      const gestor = await storage.createGestorUnidade(validatedData);
+      res.status(201).json({ message: "Cadastro realizado com sucesso! Aguarde aprovação do administrador." });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Error creating gestor unidade:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/unidade/login", async (req, res) => {
+    try {
+      const validatedData = loginGestorSchema.parse(req.body);
+      
+      const gestor = await storage.authenticateGestorUnidade(validatedData.email, validatedData.senha);
+      if (!gestor) {
+        return res.status(401).json({ message: "Credenciais inválidas ou conta inativa" });
+      }
+
+      // Store in session
+      req.session.gestorUnidadeId = gestor.id;
+      req.session.filialId = gestor.filialId;
+      
+      res.json({ 
+        message: "Login realizado com sucesso", 
+        filialId: gestor.filialId,
+        gestorId: gestor.id 
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Error authenticating gestor unidade:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.post("/api/unidade/logout", (req, res) => {
+    req.session.gestorUnidadeId = undefined;
+    req.session.filialId = undefined;
+    res.json({ message: "Logout realizado com sucesso" });
   });
 
   const httpServer = createServer(app);

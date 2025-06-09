@@ -1195,7 +1195,7 @@ export class DatabaseStorage implements IStorage {
     
     return {
       ...gestor,
-      filial,
+      filial: filial || null,
     };
   }
 
