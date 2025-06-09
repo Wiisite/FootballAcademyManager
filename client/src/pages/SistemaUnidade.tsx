@@ -1,367 +1,271 @@
 import { useState } from "react";
+import { useParams } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { 
-  Building2,
+  Building2, 
   Users, 
-  GraduationCap, 
-  BookOpen,
-  DollarSign,
-  LogOut,
-  TrendingUp,
-  FileText,
+  GraduationCap,
+  DollarSign, 
   Calendar,
+  FileText,
   Settings,
   BarChart3,
-  UserCheck,
-  CreditCard
+  UserPlus,
+  BookOpen,
+  CreditCard,
+  Activity,
+  ArrowLeft
 } from "lucide-react";
-import { InterLogo } from "@/components/InterLogo";
-import { useLocation } from "wouter";
-import type { Filial } from "@shared/schema";
+import { Link } from "wouter";
+
+// Import existing unit components
+import AlunosUnidade from "./AlunosUnidade";
+import ProfessoresUnidade from "./ProfessoresUnidade";
+import TurmasUnidade from "./TurmasUnidade";
+import FinanceiroUnidade from "./FinanceiroUnidade";
+import DashboardUnidade from "./DashboardUnidade";
 
 export default function SistemaUnidade() {
-  const [, setLocation] = useLocation();
+  const { filialId } = useParams();
+  const [activeTab, setActiveTab] = useState("dashboard");
 
-  // Recuperar unidade selecionada
-  const unidadeSelecionada = localStorage.getItem("unidade_selecionada");
-  const filialId = unidadeSelecionada ? parseInt(unidadeSelecionada) : null;
-
-  if (!filialId) {
-    setLocation("/login-unidade");
-    return null;
-  }
-
-  const { data: filial, isLoading: loadingFilial } = useQuery<Filial>({
-    queryKey: [`/api/filiais/${filialId}`],
+  const { data: filial, isLoading } = useQuery({
+    queryKey: ["/api/filiais", filialId],
+    enabled: !!filialId,
   });
 
-  // Métricas da unidade
-  const { data: alunos = [] } = useQuery({
-    queryKey: [`/api/filiais/${filialId}/alunos`],
-  });
-
-  const { data: professores = [] } = useQuery({
-    queryKey: [`/api/filiais/${filialId}/professores`],
-  });
-
-  const { data: turmas = [] } = useQuery({
-    queryKey: [`/api/filiais/${filialId}/turmas`],
-  });
-
-  const { data: pagamentos = [] } = useQuery({
-    queryKey: ["/api/pagamentos"],
-  });
-
-  // Calcular métricas
-  const totalAlunos = alunos.length || 0;
-  const totalProfessores = professores.length || 0;
-  const totalTurmas = turmas.length || 0;
-  const receitaMensal = pagamentos
-    .filter((p: any) => {
-      const aluno = alunos.find((a: any) => a.id === p.alunoId);
-      return aluno && aluno.filialId === filialId && p.dataPagamento;
-    })
-    .reduce((sum: number, p: any) => sum + parseFloat(p.valor || 0), 0);
-
-  const handleLogout = () => {
-    localStorage.removeItem("unidade_selecionada");
-    setLocation("/login-unidade");
-  };
-
-  const handleBackToMatrix = () => {
-    localStorage.removeItem("unidade_selecionada");
-    window.location.href = "/api/login";
-  };
-
-  if (loadingFilial) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+      <div className="flex items-center justify-center min-h-screen bg-blue-50">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full" />
       </div>
     );
   }
 
   if (!filial) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-2">Unidade não encontrada</h2>
-          <Button onClick={() => setLocation("/login-unidade")}>
-            Selecionar Outra Unidade
-          </Button>
-        </div>
+      <div className="min-h-screen bg-blue-50 flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <Building2 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            Unidade não encontrada
+          </h3>
+          <p className="text-gray-600 mb-4">
+            A unidade solicitada não foi encontrada no sistema.
+          </p>
+          <Link href="/portal-unidades">
+            <Button>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar ao Portal
+            </Button>
+          </Link>
+        </Card>
       </div>
     );
   }
 
-  const menuItems = [
-    {
-      title: "Gestão de Alunos",
-      description: "Cadastrar, editar e gerenciar alunos da unidade",
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      route: "/unidade/alunos",
-      count: totalAlunos
-    },
-    {
-      title: "Gestão de Professores", 
-      description: "Administrar professores e especialidades",
-      icon: GraduationCap,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      route: "/unidade/professores",
-      count: totalProfessores
-    },
-    {
-      title: "Gestão de Turmas",
-      description: "Criar e organizar turmas e horários",
-      icon: BookOpen,
-      color: "text-purple-600", 
-      bgColor: "bg-purple-50",
-      route: "/unidade/turmas",
-      count: totalTurmas
-    },
-    {
-      title: "Controle Financeiro",
-      description: "Gerenciar pagamentos e receitas",
-      icon: DollarSign,
-      color: "text-emerald-600",
-      bgColor: "bg-emerald-50",
-      route: "/unidade/financeiro",
-      count: `R$ ${receitaMensal.toFixed(2)}`
-    },
-    {
-      title: "Matrículas",
-      description: "Vincular alunos às turmas",
-      icon: UserCheck,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50", 
-      route: "/unidade/matriculas",
-      count: "Gerir"
-    },
-    {
-      title: "Relatórios",
-      description: "Gerar relatórios de presença e desempenho",
-      icon: FileText,
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-50",
-      route: "/unidade/relatorios", 
-      count: "Ver"
-    },
-    {
-      title: "Presenças",
-      description: "Controlar frequência dos alunos",
-      icon: Calendar,
-      color: "text-pink-600",
-      bgColor: "bg-pink-50",
-      route: "/unidade/presencas",
-      count: "Registrar"
-    },
-    {
-      title: "Dashboard",
-      description: "Visualizar métricas e indicadores",
-      icon: BarChart3,
-      color: "text-cyan-600", 
-      bgColor: "bg-cyan-50",
-      route: "/unidade/dashboard",
-      count: "Analytics"
-    }
-  ];
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header da Unidade */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center p-1 mr-3">
-                <InterLogo size={32} />
-              </div>
+    <div className="min-h-screen bg-blue-50">
+      {/* Header */}
+      <div className="bg-white border-b shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <Link href="/portal-unidades">
+                <Button variant="ghost" size="sm">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Portal das Unidades
+                </Button>
+              </Link>
+              <Separator orientation="vertical" className="h-6" />
               <div>
-                <h1 className="text-xl font-bold text-gray-900">{filial.nome}</h1>
-                <p className="text-sm text-gray-600">Sistema Completo de Gestão</p>
+                <h1 className="text-2xl font-bold text-gray-900 flex items-center">
+                  <Building2 className="h-6 w-6 mr-2 text-blue-600" />
+                  {filial.nome}
+                </h1>
+                <p className="text-gray-600">Sistema de gestão completo da unidade</p>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <Badge variant={filial.ativa ? "default" : "secondary"} className="px-3 py-1">
-                {filial.ativa ? "Unidade Ativa" : "Unidade Inativa"}
-              </Badge>
-              <Button variant="outline" size="sm" onClick={handleBackToMatrix}>
-                <Settings className="h-4 w-4 mr-2" />
-                Sistema Matriz
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleLogout}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Trocar Unidade
-              </Button>
-            </div>
+            <Badge variant={filial.ativo ? "default" : "secondary"}>
+              {filial.ativo ? "Ativo" : "Inativo"}
+            </Badge>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Informações da Unidade */}
-        <div className="mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
-                Informações da Unidade
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Endereço</p>
-                  <p className="font-medium">{filial.endereco}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Telefone</p>
-                  <p className="font-medium">{filial.telefone || "Não informado"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Responsável</p>
-                  <p className="font-medium">{filial.responsavel || "Não informado"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Status</p>
-                  <Badge variant={filial.ativa ? "default" : "secondary"}>
-                    {filial.ativa ? "Ativa" : "Inativa"}
-                  </Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Navigation Tabs */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:grid-cols-none lg:flex lg:space-x-2">
+            <TabsTrigger value="dashboard" className="flex items-center space-x-2">
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </TabsTrigger>
+            <TabsTrigger value="alunos" className="flex items-center space-x-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Alunos</span>
+            </TabsTrigger>
+            <TabsTrigger value="professores" className="flex items-center space-x-2">
+              <GraduationCap className="h-4 w-4" />
+              <span className="hidden sm:inline">Professores</span>
+            </TabsTrigger>
+            <TabsTrigger value="turmas" className="flex items-center space-x-2">
+              <BookOpen className="h-4 w-4" />
+              <span className="hidden sm:inline">Turmas</span>
+            </TabsTrigger>
+            <TabsTrigger value="financeiro" className="flex items-center space-x-2">
+              <DollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">Financeiro</span>
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Métricas Resumidas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-blue-50">
-                  <Users className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total de Alunos</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalAlunos}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-green-50">
-                  <GraduationCap className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Professores Ativos</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalProfessores}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-purple-50">
-                  <BookOpen className="h-6 w-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Turmas Ativas</p>
-                  <p className="text-2xl font-bold text-gray-900">{totalTurmas}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-3 rounded-lg bg-emerald-50">
-                  <DollarSign className="h-6 w-6 text-emerald-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Receita Mensal</p>
-                  <p className="text-2xl font-bold text-gray-900">R$ {receitaMensal.toFixed(2)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sistema Completo */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2 mb-6">
-            <TrendingUp className="h-6 w-6 text-blue-600" />
-            <h2 className="text-2xl font-bold text-gray-900">Sistema Completo de Gestão</h2>
-          </div>
-          <p className="text-gray-600 mb-6">
-            Todas as funcionalidades da matriz disponíveis para sua unidade. 
-            Os dados são sincronizados automaticamente com o sistema central.
-          </p>
-        </div>
-
-        {/* Menu de Funcionalidades */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {menuItems.map((item) => (
-            <Card 
-              key={item.title} 
-              className="hover:shadow-lg transition-all duration-200 cursor-pointer border-2 hover:border-blue-200"
-              onClick={() => setLocation(item.route)}
-            >
-              <CardContent className="p-6 text-center">
-                <div className={`p-4 rounded-lg ${item.bgColor} w-fit mx-auto mb-4`}>
-                  <item.icon className={`h-8 w-8 ${item.color}`} />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-600 mb-4 min-h-[40px]">
-                  {item.description}
-                </p>
-                <div className="flex items-center justify-between">
-                  <Badge variant="outline" className="text-xs">
-                    {item.count}
-                  </Badge>
-                  <Button size="sm" className="h-7 px-3 text-xs">
-                    Acessar
-                  </Button>
-                </div>
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <BarChart3 className="h-5 w-5 mr-2" />
+                  Dashboard da Unidade
+                </CardTitle>
+                <CardDescription>
+                  Visão geral dos indicadores e métricas da unidade
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DashboardUnidade />
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </TabsContent>
 
-        {/* Nota sobre Sincronização */}
-        <div className="mt-8">
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="p-6">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-blue-100">
-                  <TrendingUp className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-blue-900 mb-2">
-                    Sincronização Automática com a Matriz
-                  </h3>
-                  <p className="text-blue-800 text-sm">
-                    Todas as operações realizadas nesta unidade são automaticamente enviadas 
-                    para o sistema central da matriz. Isso garante que os dados estejam sempre 
-                    atualizados em todos os níveis da organização.
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          {/* Students Tab */}
+          <TabsContent value="alunos" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Users className="h-5 w-5 mr-2" />
+                  Gestão de Alunos
+                </CardTitle>
+                <CardDescription>
+                  Cadastro e gerenciamento completo dos alunos da unidade
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AlunosUnidade />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Teachers Tab */}
+          <TabsContent value="professores" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <GraduationCap className="h-5 w-5 mr-2" />
+                  Gestão de Professores
+                </CardTitle>
+                <CardDescription>
+                  Cadastro e gerenciamento da equipe de professores
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ProfessoresUnidade />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Classes Tab */}
+          <TabsContent value="turmas" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <BookOpen className="h-5 w-5 mr-2" />
+                  Gestão de Turmas
+                </CardTitle>
+                <CardDescription>
+                  Organização das turmas e horários de treino
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TurmasUnidade />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Financial Tab */}
+          <TabsContent value="financeiro" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <DollarSign className="h-5 w-5 mr-2" />
+                  Gestão Financeira
+                </CardTitle>
+                <CardDescription>
+                  Controle de pagamentos e receitas da unidade
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <FinanceiroUnidade />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Quick Actions Panel */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Settings className="h-5 w-5 mr-2" />
+              Ações Rápidas
+            </CardTitle>
+            <CardDescription>
+              Acesso rápido às principais funcionalidades da unidade
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Button 
+                variant="outline" 
+                className="h-20 flex-col space-y-2"
+                onClick={() => setActiveTab("alunos")}
+              >
+                <UserPlus className="h-6 w-6" />
+                <span className="text-sm">Novo Aluno</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="h-20 flex-col space-y-2"
+                onClick={() => setActiveTab("turmas")}
+              >
+                <BookOpen className="h-6 w-6" />
+                <span className="text-sm">Nova Turma</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="h-20 flex-col space-y-2"
+                onClick={() => setActiveTab("financeiro")}
+              >
+                <CreditCard className="h-6 w-6" />
+                <span className="text-sm">Registrar Pagamento</span>
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                className="h-20 flex-col space-y-2"
+                onClick={() => setActiveTab("dashboard")}
+              >
+                <FileText className="h-6 w-6" />
+                <span className="text-sm">Relatórios</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

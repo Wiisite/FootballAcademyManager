@@ -89,9 +89,15 @@ export default function Sidebar() {
       active: location === "/avaliacao-fisica",
     },
     {
+      name: "Portal das Unidades",
+      href: "/portal-unidades",
+      icon: Building2,
+      active: location === "/portal-unidades",
+    },
+    {
       name: "Gestão de Unidades",
       href: "/gestao-unidades",
-      icon: Building2,
+      icon: Settings,
       active: location === "/gestao-unidades",
     },
   ];

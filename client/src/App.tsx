@@ -33,6 +33,7 @@ import ResponsavelLogin from "@/pages/ResponsavelLogin";
 import ResponsavelCadastro from "@/pages/ResponsavelCadastro";
 import ResponsavelPortal from "@/pages/ResponsavelPortalSimples";
 import AvaliacaoFisica from "@/pages/AvaliacaoFisica";
+import PortalUnidades from "@/pages/PortalUnidades";
 import Layout from "@/components/Layout";
 
 function Router() {
@@ -75,10 +76,12 @@ function Router() {
             <Route path="/relatorios" component={Relatorios} />
             <Route path="/relatorio-presencas" component={RelatorioPresencas} />
             <Route path="/avaliacao-fisica" component={AvaliacaoFisica} />
+            <Route path="/portal-unidades" component={PortalUnidades} />
             <Route path="/gestao-unidades" component={GestaoUnidades} />
           </Layout>
           <Layout>
             <Route path="/unidade/:filialId" component={DashboardUnidadeWrapper} />
+            <Route path="/unidade/:filialId/sistema" component={SistemaUnidade} />
           </Layout>
         </>
       )}
