@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { addToSync } from "./sync";
 
 // Extend session type for responsavel
 declare module "express-session" {
@@ -107,6 +108,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertAlunoSchema.parse(req.body);
       const aluno = await storage.createAluno(validatedData);
+      
+      // Sincronização automática com sistema principal
+      if (validatedData.filialId) {
+        await addToSync(validatedData.filialId, 'aluno', 'create', aluno);
+      }
+      
       res.status(201).json(aluno);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -122,6 +129,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const id = parseInt(req.params.id);
       const validatedData = insertAlunoSchema.partial().parse(req.body);
       const aluno = await storage.updateAluno(id, validatedData);
+      
+      // Sincronização automática com sistema principal
+      if (aluno.filialId) {
+        await addToSync(aluno.filialId, 'aluno', 'update', aluno);
+      }
+      
       res.json(aluno);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -135,6 +148,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/alunos/:id", isAuthenticated, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Buscar aluno antes de deletar para sincronização
+      const aluno = await storage.getAluno(id);
+      if (aluno && aluno.filialId) {
+        await addToSync(aluno.filialId, 'aluno', 'delete', { id });
+      }
+      
       await storage.deleteAluno(id);
       res.status(204).send();
     } catch (error) {
@@ -178,6 +198,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertProfessorSchema.parse(req.body);
       const professor = await storage.createProfessor(validatedData);
+      
+      // Sincronização automática com sistema principal
+      if (validatedData.filialId) {
+        await addToSync(validatedData.filialId, 'professor', 'create', professor);
+      }
+      
       res.status(201).json(professor);
     } catch (error) {
       if (error instanceof z.ZodError) {
