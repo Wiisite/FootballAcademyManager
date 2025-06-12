@@ -434,22 +434,41 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Recent Activities */}
+        {/* Student Distribution by Unit */}
         <Card className="border-neutral-200">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">Atividades Recentes</CardTitle>
+            <CardTitle className="text-lg font-semibold">Distribuição de Alunos por Unidade</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 bg-secondary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Users className="w-4 h-4 text-secondary" />
+              {filiais?.map((filial: any) => {
+                const alunosCount = alunos?.filter((aluno: any) => aluno.filialId === filial.id).length || 0;
+                const maxAlunos = Math.max(...(filiais?.map((f: any) => 
+                  alunos?.filter((a: any) => a.filialId === f.id).length || 0
+                ) || [1]));
+                const percentage = maxAlunos > 0 ? (alunosCount / maxAlunos) * 100 : 0;
+                
+                return (
+                  <div key={filial.id} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">{filial.nome}</span>
+                      <span className="text-sm font-bold text-primary">{alunosCount}</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-primary h-3 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })}
+              {(!filiais || filiais.length === 0) && (
+                <div className="text-center py-8 text-gray-500">
+                  <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Nenhuma unidade cadastrada</p>
                 </div>
-                <div className="flex-1">
-                  <p className="text-sm text-neutral-800">Sistema iniciado</p>
-                  <p className="text-xs text-neutral-400">Pronto para cadastros</p>
-                </div>
-              </div>
+              )}
             </div>
             <Button variant="ghost" className="w-full mt-4 text-primary hover:text-primary/80">
               Ver todas as atividades

@@ -16,7 +16,8 @@ import {
   ClipboardList,
   Menu,
   X,
-  Activity
+  Activity,
+  Package
 } from "lucide-react";
 import { InterLogo } from "@/components/InterLogo";
 import { cn } from "@/lib/utils";
@@ -69,6 +70,12 @@ export default function Sidebar() {
       href: "/financeiro",
       icon: DollarSign,
       active: location === "/financeiro",
+    },
+    {
+      name: "Combos de Aulas",
+      href: "/combos-aulas",
+      icon: Package,
+      active: location === "/combos-aulas",
     },
     {
       name: "Relatórios",
