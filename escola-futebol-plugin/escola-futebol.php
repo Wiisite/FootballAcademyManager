@@ -47,6 +47,7 @@ class EscolaFutebolPlugin {
         require_once ESCOLA_FUTEBOL_PLUGIN_PATH . 'includes/class-professores.php';
         require_once ESCOLA_FUTEBOL_PLUGIN_PATH . 'includes/class-turmas.php';
         require_once ESCOLA_FUTEBOL_PLUGIN_PATH . 'includes/class-financeiro.php';
+        require_once ESCOLA_FUTEBOL_PLUGIN_PATH . 'includes/class-unidades.php';
         require_once ESCOLA_FUTEBOL_PLUGIN_PATH . 'admin/class-admin.php';
         require_once ESCOLA_FUTEBOL_PLUGIN_PATH . 'public/class-public.php';
     }
@@ -61,6 +62,8 @@ class EscolaFutebolPlugin {
         add_shortcode('escola_dashboard', array($this, 'dashboard_shortcode'));
         add_shortcode('escola_alunos', array($this, 'alunos_shortcode'));
         add_shortcode('escola_professores', array($this, 'professores_shortcode'));
+        add_shortcode('escola_turmas', array($this, 'turmas_shortcode'));
+        add_shortcode('escola_financeiro', array($this, 'financeiro_shortcode'));
     }
     
     public function enqueue_scripts() {
@@ -117,6 +120,18 @@ class EscolaFutebolPlugin {
     public function professores_shortcode($atts) {
         ob_start();
         include ESCOLA_FUTEBOL_PLUGIN_PATH . 'templates/professores.php';
+        return ob_get_clean();
+    }
+    
+    public function turmas_shortcode($atts) {
+        ob_start();
+        include ESCOLA_FUTEBOL_PLUGIN_PATH . 'templates/turmas.php';
+        return ob_get_clean();
+    }
+    
+    public function financeiro_shortcode($atts) {
+        ob_start();
+        include ESCOLA_FUTEBOL_PLUGIN_PATH . 'templates/financeiro.php';
         return ob_get_clean();
     }
 }
