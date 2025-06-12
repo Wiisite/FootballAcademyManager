@@ -1094,6 +1094,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Combos de Aulas Routes
+  app.get("/api/combos-aulas", isAuthenticated, async (req, res) => {
+    try {
+      const combos = await storage.getCombosAulas();
+      res.json(combos);
+    } catch (error) {
+      console.error("Error fetching combos aulas:", error);
+      res.status(500).json({ message: "Failed to fetch combos aulas" });
+    }
+  });
+
+  app.post("/api/combos-aulas", isAuthenticated, async (req, res) => {
+    try {
+      const combo = await storage.createComboAulas(req.body);
+      res.status(201).json(combo);
+    } catch (error) {
+      console.error("Error creating combo aulas:", error);
+      res.status(500).json({ message: "Failed to create combo aulas" });
+    }
+  });
+
+  app.put("/api/combos-aulas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const combo = await storage.updateComboAulas(id, req.body);
+      res.json(combo);
+    } catch (error) {
+      console.error("Error updating combo aulas:", error);
+      res.status(500).json({ message: "Failed to update combo aulas" });
+    }
+  });
+
+  app.delete("/api/combos-aulas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteComboAulas(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting combo aulas:", error);
+      res.status(500).json({ message: "Failed to delete combo aulas" });
+    }
+  });
+
   // Sync management routes
   app.get("/api/sync/status", isAuthenticated, async (req, res) => {
     try {

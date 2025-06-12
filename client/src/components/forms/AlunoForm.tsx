@@ -18,7 +18,10 @@ const formSchema = insertAlunoSchema.extend({
   dataNascimento: z.string().optional(),
   dataMatricula: z.string().optional(),
   filialId: z.number().optional(),
-  cpf: z.string().regex(/^\d{11}$/, "CPF deve ter 11 dígitos").optional(),
+  cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF deve estar no formato 000.000.000-00").optional(),
+  rg: z.string().optional(),
+  status: z.string().default("ativo"),
+  fotoUrl: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -278,6 +281,20 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                       field.onChange(formatted);
                     }}
                   />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="rg"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>RG do Aluno</FormLabel>
+                <FormControl>
+                  <Input placeholder="12.345.678-9" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

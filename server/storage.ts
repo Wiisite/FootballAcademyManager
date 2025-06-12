@@ -1316,6 +1316,36 @@ export class DatabaseStorage implements IStorage {
   async deleteMetaAluno(id: number): Promise<void> {
     await db.delete(metasAlunos).where(eq(metasAlunos.id, id));
   }
+
+  // Combos de Aulas operations
+  async getCombosAulas(): Promise<any[]> {
+    return await db
+      .select()
+      .from(combosAulas)
+      .where(eq(combosAulas.ativo, true))
+      .orderBy(desc(combosAulas.createdAt));
+  }
+
+  async createComboAulas(comboData: any): Promise<any> {
+    const [combo] = await db
+      .insert(combosAulas)
+      .values(comboData)
+      .returning();
+    return combo;
+  }
+
+  async updateComboAulas(id: number, comboData: any): Promise<any> {
+    const [combo] = await db
+      .update(combosAulas)
+      .set({ ...comboData, updatedAt: new Date() })
+      .where(eq(combosAulas.id, id))
+      .returning();
+    return combo;
+  }
+
+  async deleteComboAulas(id: number): Promise<void> {
+    await db.delete(combosAulas).where(eq(combosAulas.id, id));
+  }
 }
 
 export const storage = new DatabaseStorage();
