@@ -36,6 +36,14 @@ export default function Dashboard() {
     queryKey: ["/api/dashboard/metrics"],
   });
 
+  const { data: alunos } = useQuery({
+    queryKey: ["/api/alunos"],
+  });
+
+  const { data: filiais } = useQuery({
+    queryKey: ["/api/filiais"],
+  });
+
   const handleQuickAction = (action: string) => {
     setIsActionsDialogOpen(false);
     toast({
@@ -470,9 +478,6 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-            <Button variant="ghost" className="w-full mt-4 text-primary hover:text-primary/80">
-              Ver todas as atividades
-            </Button>
           </CardContent>
         </Card>
       </div>
