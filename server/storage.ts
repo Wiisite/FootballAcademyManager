@@ -373,10 +373,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteAluno(id: number): Promise<void> {
-    // First delete related records
+    // First delete all related records that reference the student
+    await db.delete(assinaturasPacotes).where(eq(assinaturasPacotes.alunoId, id));
     await db.delete(matriculas).where(eq(matriculas.alunoId, id));
     await db.delete(pagamentos).where(eq(pagamentos.alunoId, id));
     await db.delete(presencas).where(eq(presencas.alunoId, id));
+    await db.delete(resultadosTestes).where(eq(resultadosTestes.alunoId, id));
+    await db.delete(metasAlunos).where(eq(metasAlunos.alunoId, id));
+    await db.delete(avaliacoesFisicas).where(eq(avaliacoesFisicas.alunoId, id));
+    await db.delete(inscricoesEventos).where(eq(inscricoesEventos.alunoId, id));
+    await db.delete(comprasUniformes).where(eq(comprasUniformes.alunoId, id));
     
     // Then delete the student record
     await db.delete(alunos).where(eq(alunos.id, id));
