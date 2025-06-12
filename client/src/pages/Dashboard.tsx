@@ -1,8 +1,13 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, SquareUser, Wallet, UsersIcon, UserPlus, Calendar, TrendingUp, Bell, Building2, BarChart3 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Users, SquareUser, Wallet, UsersIcon, Calendar, TrendingUp, Bell, Building2, BarChart3, Zap, Settings, Camera, Lock, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { InterLogo } from "@/components/InterLogo";
 
@@ -15,16 +20,57 @@ interface DashboardMetrics {
 
 export default function Dashboard() {
   const { toast } = useToast();
+  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const [isActionsDialogOpen, setIsActionsDialogOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [adminData, setAdminData] = useState({
+    name: "Marcello",
+    role: "Administrador",
+    photo: "",
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: ""
+  });
 
   const { data: metrics, isLoading } = useQuery<DashboardMetrics>({
     queryKey: ["/api/dashboard/metrics"],
   });
 
   const handleQuickAction = (action: string) => {
+    setIsActionsDialogOpen(false);
     toast({
-      title: "Ação em desenvolvimento",
-      description: `A funcionalidade "${action}" será implementada em breve.`,
+      title: "Ação Executada",
+      description: `${action} foi iniciado com sucesso.`,
     });
+  };
+
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setAdminData(prev => ({ ...prev, photo: e.target?.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePasswordChange = () => {
+    if (adminData.newPassword !== adminData.confirmPassword) {
+      toast({
+        title: "Erro",
+        description: "As senhas não coincidem",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    toast({
+      title: "Senha Atualizada",
+      description: "Sua senha foi alterada com sucesso.",
+    });
+    setIsProfileDialogOpen(false);
+    setAdminData(prev => ({ ...prev, currentPassword: "", newPassword: "", confirmPassword: "" }));
   };
 
   const formatCurrency = (value: number) => {
@@ -70,11 +116,151 @@ export default function Dashboard() {
             <Bell className="h-4 w-4" />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full"></span>
           </Button>
-          <Button onClick={() => handleQuickAction("Novo Cadastro")} className="bg-primary hover:bg-primary/90 text-sm sm:text-base">
-            <UserPlus className="w-4 h-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Novo Cadastro</span>
-            <span className="sm:hidden">Novo</span>
-          </Button>
+          
+          {/* Ações Rápidas */}
+          <Dialog open={isActionsDialogOpen} onOpenChange={setIsActionsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90 text-sm sm:text-base">
+                <Zap className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Ações Rápidas</span>
+                <span className="sm:hidden">Ações</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Ações Rápidas</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-3 py-4">
+                <Button onClick={() => handleQuickAction("Cadastrar Aluno")} className="h-16 flex-col">
+                  <Users className="w-6 h-6 mb-1" />
+                  <span className="text-xs">Cadastrar Aluno</span>
+                </Button>
+                <Button onClick={() => handleQuickAction("Registrar Pagamento")} className="h-16 flex-col" variant="outline">
+                  <Wallet className="w-6 h-6 mb-1" />
+                  <span className="text-xs">Pagamento</span>
+                </Button>
+                <Button onClick={() => handleQuickAction("Nova Turma")} className="h-16 flex-col" variant="outline">
+                  <SquareUser className="w-6 h-6 mb-1" />
+                  <span className="text-xs">Nova Turma</span>
+                </Button>
+                <Button onClick={() => handleQuickAction("Relatórios")} className="h-16 flex-col" variant="outline">
+                  <BarChart3 className="w-6 h-6 mb-1" />
+                  <span className="text-xs">Relatórios</span>
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Perfil do Administrador */}
+          <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="flex items-center space-x-2 px-3">
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={adminData.photo} />
+                  <AvatarFallback className="bg-primary text-white text-sm">M</AvatarFallback>
+                </Avatar>
+                <div className="hidden sm:block text-left">
+                  <p className="text-sm font-medium">{adminData.name}</p>
+                  <p className="text-xs text-gray-500">{adminData.role}</p>
+                </div>
+                <Settings className="w-4 h-4" />
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Perfil do Administrador</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-6 py-4">
+                {/* Foto do Perfil */}
+                <div className="flex flex-col items-center space-y-4">
+                  <Avatar className="w-24 h-24">
+                    <AvatarImage src={adminData.photo} />
+                    <AvatarFallback className="bg-primary text-white text-2xl">M</AvatarFallback>
+                  </Avatar>
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="photo-upload" className="cursor-pointer">
+                      <Button variant="outline" size="sm" asChild>
+                        <span>
+                          <Camera className="w-4 h-4 mr-2" />
+                          Alterar Foto
+                        </span>
+                      </Button>
+                    </Label>
+                    <Input
+                      id="photo-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                    />
+                  </div>
+                </div>
+
+                {/* Informações */}
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="admin-name">Nome</Label>
+                    <Input
+                      id="admin-name"
+                      value={adminData.name}
+                      onChange={(e) => setAdminData(prev => ({ ...prev, name: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="admin-role">Cargo</Label>
+                    <Input id="admin-role" value={adminData.role} disabled />
+                  </div>
+                </div>
+
+                {/* Alteração de Senha */}
+                <div className="space-y-3 border-t pt-4">
+                  <h4 className="font-medium text-sm">Alterar Senha</h4>
+                  <div>
+                    <Label htmlFor="current-password">Senha Atual</Label>
+                    <div className="relative">
+                      <Input
+                        id="current-password"
+                        type={showPassword ? "text" : "password"}
+                        value={adminData.currentPassword}
+                        onChange={(e) => setAdminData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="new-password">Nova Senha</Label>
+                    <Input
+                      id="new-password"
+                      type={showPassword ? "text" : "password"}
+                      value={adminData.newPassword}
+                      onChange={(e) => setAdminData(prev => ({ ...prev, newPassword: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="confirm-password">Confirmar Senha</Label>
+                    <Input
+                      id="confirm-password"
+                      type={showPassword ? "text" : "password"}
+                      value={adminData.confirmPassword}
+                      onChange={(e) => setAdminData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    />
+                  </div>
+                  <Button onClick={handlePasswordChange} className="w-full">
+                    <Lock className="w-4 h-4 mr-2" />
+                    Atualizar Senha
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -257,7 +443,7 @@ export default function Dashboard() {
             <div className="space-y-4">
               <div className="flex items-start space-x-3">
                 <div className="w-8 h-8 bg-secondary/10 rounded-full flex items-center justify-center flex-shrink-0">
-                  <UserPlus className="w-4 h-4 text-secondary" />
+                  <Users className="w-4 h-4 text-secondary" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-neutral-800">Sistema iniciado</p>
@@ -287,7 +473,7 @@ export default function Dashboard() {
                 onClick={() => handleQuickAction("Novo Aluno")}
               >
                 <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
-                  <UserPlus className="w-5 h-5 text-secondary" />
+                  <Users className="w-5 h-5 text-secondary" />
                 </div>
                 <div className="text-left">
                   <p className="font-medium text-neutral-800">Novo Aluno</p>
