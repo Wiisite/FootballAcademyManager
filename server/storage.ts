@@ -21,6 +21,7 @@ import {
   resultadosTestes,
   metasAlunos,
   gestoresUnidade,
+  combosAulas,
   type User,
   type UpsertUser,
   type GestorUnidade,
@@ -217,6 +218,12 @@ export interface IStorage {
   createMetaAluno(meta: InsertMetaAluno): Promise<MetaAluno>;
   updateMetaAluno(id: number, meta: Partial<InsertMetaAluno>): Promise<MetaAluno>;
   deleteMetaAluno(id: number): Promise<void>;
+
+  // Combos de Aulas operations
+  getCombosAulas(): Promise<any[]>;
+  createComboAulas(combo: any): Promise<any>;
+  updateComboAulas(id: number, combo: any): Promise<any>;
+  deleteComboAulas(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -378,7 +385,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(matriculas).where(eq(matriculas.alunoId, id));
     await db.delete(pagamentos).where(eq(pagamentos.alunoId, id));
     await db.delete(presencas).where(eq(presencas.alunoId, id));
-    await db.delete(resultadosTestes).where(eq(resultadosTestes.alunoId, id));
+    // Note: resultadosTestes table doesn't have alunoId directly, it's linked through avaliacaoId
     await db.delete(metasAlunos).where(eq(metasAlunos.alunoId, id));
     await db.delete(avaliacoesFisicas).where(eq(avaliacoesFisicas.alunoId, id));
     await db.delete(inscricoesEventos).where(eq(inscricoesEventos.alunoId, id));

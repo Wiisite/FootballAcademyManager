@@ -492,6 +492,19 @@ export const assinaturasPacotesRelations = relations(assinaturasPacotes, ({ one 
   }),
 }));
 
+// Combos de Aulas
+export const combosAulas = pgTable("combos_aulas", {
+  id: serial("id").primaryKey(),
+  nome: varchar("nome", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  preco: decimal("preco", { precision: 10, scale: 2 }).notNull(),
+  aulasPorSemana: integer("aulas_por_semana").notNull(),
+  duracaoMeses: integer("duracao_meses").notNull(),
+  ativo: boolean("ativo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Physical evaluation relations
 export const categoriasTestesRelations = relations(categoriasTestes, ({ many }) => ({
   testes: many(testes),
