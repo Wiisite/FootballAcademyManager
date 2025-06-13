@@ -103,6 +103,12 @@ export const filiais = pgTable("filiais", {
   id: serial("id").primaryKey(),
   nome: varchar("nome", { length: 100 }).notNull(),
   endereco: text("endereco").notNull(),
+  bairro: varchar("bairro", { length: 100 }),
+  cidade: varchar("cidade", { length: 100 }),
+  estado: varchar("estado", { length: 2 }),
+  email: varchar("email", { length: 255 }),
+  cnpj: varchar("cnpj", { length: 18 }),
+  senha: varchar("senha", { length: 255 }), // Hash da senha para acesso ao painel
   telefone: varchar("telefone", { length: 20 }),
   responsavel: varchar("responsavel", { length: 100 }),
   ativa: boolean("ativa").default(true),
@@ -597,6 +603,17 @@ export const insertFilialSchema = createInsertSchema(filiais).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  senha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
+  confirmarSenha: z.string().optional(),
+}).refine((data) => {
+  if (data.senha && data.confirmarSenha) {
+    return data.senha === data.confirmarSenha;
+  }
+  return true;
+}, {
+  message: "As senhas não coincidem",
+  path: ["confirmarSenha"],
 });
 
 // New schemas for responsáveis portal
