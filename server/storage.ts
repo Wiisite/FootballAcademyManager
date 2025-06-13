@@ -258,6 +258,57 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
+  // Admin user operations for traditional authentication
+  async getAdminUser(id: number): Promise<AdminUser | undefined> {
+    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.id, id));
+    return user || undefined;
+  }
+
+  async getAdminUserByEmail(email: string): Promise<AdminUser | undefined> {
+    const [user] = await db.select().from(adminUsers).where(eq(adminUsers.email, email));
+    return user || undefined;
+  }
+
+  async createAdminUser(userData: InsertAdminUser): Promise<AdminUser> {
+    // Hash password before storing
+    const hashedPassword = await bcrypt.hash(userData.senha, 10);
+    
+    const [user] = await db
+      .insert(adminUsers)
+      .values({
+        ...userData,
+        senha: hashedPassword,
+      })
+      .returning();
+    return user;
+  }
+
+  async authenticateAdminUser(email: string, senha: string): Promise<AdminUser | null> {
+    const user = await this.getAdminUserByEmail(email);
+    if (!user || !user.ativo) {
+      return null;
+    }
+
+    const isValidPassword = await bcrypt.compare(senha, user.senha);
+    if (!isValidPassword) {
+      return null;
+    }
+
+    // Update last login
+    await this.updateAdminUserLastLogin(user.id);
+    return user;
+  }
+
+  async updateAdminUserLastLogin(id: number): Promise<void> {
+    await db
+      .update(adminUsers)
+      .set({
+        ultimoLogin: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(adminUsers.id, id));
+  }
+
   // Alunos operations
   async getAlunos(): Promise<AlunoWithFilial[]> {
     const alunosData = await db

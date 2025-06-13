@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
+import { adminLoginSchema } from "@shared/schema";
 import { addToSync } from "./sync";
 
 // Extend session type for responsavel and gestor
@@ -10,6 +11,13 @@ declare module "express-session" {
     responsavelId?: number;
     gestorUnidadeId?: number;
     filialId?: number;
+    adminId?: number;
+    adminUser?: {
+      id: number;
+      nome: string;
+      email: string;
+      papel: string;
+    };
   }
 }
 import {
@@ -60,7 +68,58 @@ const isGestorUnidadeAuthenticated = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
+  // Traditional admin authentication routes
+  app.post('/api/admin/login', async (req, res) => {
+    try {
+      const { email, senha } = adminLoginSchema.parse(req.body);
+      
+      const user = await storage.authenticateAdminUser(email, senha);
+      if (!user) {
+        return res.status(401).json({ message: "Email ou senha inválidos" });
+      }
+
+      // Store admin user in session
+      req.session.adminId = user.id;
+      req.session.adminUser = {
+        id: user.id,
+        nome: user.nome,
+        email: user.email,
+        papel: user.papel || 'admin'
+      };
+
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          nome: user.nome,
+          email: user.email,
+          papel: user.papel
+        }
+      });
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(400).json({ message: "Dados de login inválidos" });
+    }
+  });
+
+  app.post('/api/admin/logout', (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Erro ao fazer logout" });
+      }
+      res.json({ success: true });
+    });
+  });
+
+  app.get('/api/admin/user', (req, res) => {
+    if (!req.session.adminId || !req.session.adminUser) {
+      return res.status(401).json({ message: "Não autenticado" });
+    }
+    
+    res.json(req.session.adminUser);
+  });
+
+  // Auth middleware for OAuth (keeping for compatibility)
   await setupAuth(app);
 
   // Auth routes
