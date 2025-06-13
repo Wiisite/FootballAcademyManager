@@ -26,7 +26,7 @@ import { useUnidadeAuth } from "@/contexts/UnidadeContext";
 import AlunosTab from "@/components/unidade/AlunosTab";
 import ProfessoresTab from "@/components/unidade/ProfessoresTab";
 import TurmasTab from "@/components/unidade/TurmasTab";
-import FinanceiroUnidade from "./FinanceiroUnidade";
+import FinanceiroTab from "@/components/unidade/FinanceiroTab";
 
 export default function SistemaUnidadeNovo() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -262,7 +262,7 @@ export default function SistemaUnidadeNovo() {
           </TabsContent>
 
           <TabsContent value="financeiro">
-            <FinanceiroUnidade />
+            <FinanceiroTab />
           </TabsContent>
         </Tabs>
       </div>

@@ -4,46 +4,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { ArrowLeft, Plus, Search, DollarSign, TrendingUp, TrendingDown, Calendar } from "lucide-react";
-import { useLocation } from "wouter";
+import { Plus, Search, DollarSign, Calendar, CreditCard } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertPagamentoSchema } from "@shared/schema";
-import type { Pagamento, AlunoWithFilial, Filial } from "@shared/schema";
-import { z } from "zod";
+import type { Pagamento, AlunoWithFilial } from "@shared/schema";
 import { useUnidadeAuth } from "@/contexts/UnidadeContext";
 
-const pagamentoFormSchema = insertPagamentoSchema.extend({
-  valor: z.string().min(1, "Valor é obrigatório"),
-});
+type PagamentoFormData = {
+  alunoId: number;
+  valor: string;
+  mesReferencia: string;
+  dataPagamento: string;
+  formaPagamento: string;
+  observacoes?: string;
+};
 
-type PagamentoFormData = z.infer<typeof pagamentoFormSchema>;
-
-export default function FinanceiroUnidade() {
-  const [, setLocation] = useLocation();
+export default function FinanceiroTab() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const { gestorId, filialId, nomeGestor, nomeFilial, logout } = useUnidadeAuth();
-
-  if (!gestorId || !filialId) {
-    setLocation("/login-unidade");
-    return null;
-  }
-
-  const { data: filial } = useQuery<Filial>({
-    queryKey: [`/api/filiais/${filialId}`],
-  });
+  const { filialId } = useUnidadeAuth();
 
   const { data: alunos = [] } = useQuery<AlunoWithFilial[]>({
-    queryKey: [`/api/filiais/${filialId}/alunos`],
+    queryKey: ["/api/alunos"],
   });
 
   const { data: pagamentos = [], isLoading } = useQuery<Pagamento[]>({
@@ -51,12 +40,12 @@ export default function FinanceiroUnidade() {
   });
 
   const form = useForm<PagamentoFormData>({
-    resolver: zodResolver(pagamentoFormSchema),
     defaultValues: {
-      valor: 0,
-      dataVencimento: new Date().toISOString().split('T')[0],
-      dataPagamento: "",
-      status: "pendente",
+      valor: "",
+      mesReferencia: new Date().toISOString().slice(0, 7), // "2024-01"
+      dataPagamento: new Date().toISOString().split('T')[0],
+      formaPagamento: "PIX",
+      observacoes: "",
     },
   });
 
@@ -66,7 +55,6 @@ export default function FinanceiroUnidade() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/pagamentos"] });
-      queryClient.invalidateQueries({ queryKey: [`/api/filiais/${filialId}/alunos`] });
       setDialogOpen(false);
       form.reset();
       toast({
@@ -84,73 +72,32 @@ export default function FinanceiroUnidade() {
   });
 
   // Filtrar pagamentos da unidade
-  const pagamentosUnidade = pagamentos.filter(pagamento => {
-    const aluno = alunos.find(a => a.id === pagamento.alunoId);
-    return aluno && aluno.filialId === filialId;
-  });
+  const alunosUnidade = alunos.filter(aluno => aluno.filialId === filialId);
+  const alunosUnidadeIds = alunosUnidade.map(a => a.id);
+  const pagamentosUnidade = pagamentos.filter(pagamento => 
+    pagamento.alunoId && alunosUnidadeIds.includes(pagamento.alunoId)
+  );
 
   const filteredPagamentos = pagamentosUnidade.filter(pagamento => {
     const aluno = alunos.find(a => a.id === pagamento.alunoId);
     if (!aluno) return false;
-
-    const matchesSearch = aluno.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         pagamento.descricao?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = filterStatus === "todos" || pagamento.status === filterStatus;
-
-    return matchesSearch && matchesStatus;
+    return aluno.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+           (pagamento.observacoes && pagamento.observacoes.toLowerCase().includes(searchTerm.toLowerCase()));
   });
 
   const onSubmit = (data: PagamentoFormData) => {
     createMutation.mutate(data);
   };
 
-  // Calcular métricas financeiras
-  const totalReceita = pagamentosUnidade
-    .filter(p => p.status === "pago")
-    .reduce((sum, p) => sum + p.valor, 0);
-
-  const totalPendente = pagamentosUnidade
-    .filter(p => p.status === "pendente")
-    .reduce((sum, p) => sum + p.valor, 0);
-
-  const totalAtrasado = pagamentosUnidade
-    .filter(p => p.status === "atrasado")
-    .reduce((sum, p) => sum + p.valor, 0);
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "pago":
-        return <Badge variant="default" className="bg-green-500">Pago</Badge>;
-      case "pendente":
-        return <Badge variant="secondary">Pendente</Badge>;
-      case "atrasado":
-        return <Badge variant="destructive">Atrasado</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
+  // Calcular total
+  const totalReceita = pagamentosUnidade.reduce((sum, p) => sum + parseFloat(p.valor || "0"), 0);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/sistema-unidade")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar ao Painel
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Gestão Financeira</h1>
-            <p className="text-muted-foreground">
-              {filial?.nome} - Controle de pagamentos e receitas
-            </p>
-          </div>
+        <div>
+          <h2 className="text-2xl font-bold">Gestão Financeira</h2>
+          <p className="text-muted-foreground">Controle de pagamentos da unidade</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -178,7 +125,7 @@ export default function FinanceiroUnidade() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {alunos.map((aluno) => (
+                          {alunosUnidade.map((aluno) => (
                             <SelectItem key={aluno.id} value={aluno.id.toString()}>
                               {aluno.nome}
                             </SelectItem>
@@ -202,7 +149,6 @@ export default function FinanceiroUnidade() {
                           step="0.01"
                           placeholder="0,00"
                           {...field}
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                         />
                       </FormControl>
                       <FormMessage />
@@ -212,12 +158,12 @@ export default function FinanceiroUnidade() {
 
                 <FormField
                   control={form.control}
-                  name="descricao"
+                  name="mesReferencia"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Descrição</FormLabel>
+                      <FormLabel>Mês Referência</FormLabel>
                       <FormControl>
-                        <Input placeholder="Mensalidade Janeiro 2024" {...field} />
+                        <Input type="month" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -226,10 +172,10 @@ export default function FinanceiroUnidade() {
 
                 <FormField
                   control={form.control}
-                  name="dataVencimento"
+                  name="dataPagamento"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Data de Vencimento</FormLabel>
+                      <FormLabel>Data do Pagamento</FormLabel>
                       <FormControl>
                         <Input type="date" {...field} />
                       </FormControl>
@@ -240,10 +186,10 @@ export default function FinanceiroUnidade() {
 
                 <FormField
                   control={form.control}
-                  name="status"
+                  name="formaPagamento"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Status</FormLabel>
+                      <FormLabel>Forma de Pagamento</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl>
                           <SelectTrigger>
@@ -251,11 +197,26 @@ export default function FinanceiroUnidade() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="pendente">Pendente</SelectItem>
-                          <SelectItem value="pago">Pago</SelectItem>
-                          <SelectItem value="atrasado">Atrasado</SelectItem>
+                          <SelectItem value="PIX">PIX</SelectItem>
+                          <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                          <SelectItem value="Cartão">Cartão</SelectItem>
+                          <SelectItem value="Transferência">Transferência</SelectItem>
                         </SelectContent>
                       </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="observacoes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Observações</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Observações opcionais" {...field} />
+                      </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -288,45 +249,45 @@ export default function FinanceiroUnidade() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <CardTitle className="text-sm font-medium">Total de Pagamentos</CardTitle>
+            <DollarSign className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
               R$ {totalReceita.toFixed(2)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Pagamentos recebidos
+              {pagamentosUnidade.length} pagamentos registrados
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valores Pendentes</CardTitle>
-            <DollarSign className="h-4 w-4 text-yellow-600" />
+            <CardTitle className="text-sm font-medium">Alunos Ativos</CardTitle>
+            <CreditCard className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              R$ {totalPendente.toFixed(2)}
+            <div className="text-2xl font-bold text-blue-600">
+              {alunosUnidade.length}
             </div>
             <p className="text-xs text-muted-foreground">
-              Aguardando pagamento
+              Alunos matriculados na unidade
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Valores em Atraso</CardTitle>
-            <TrendingDown className="h-4 w-4 text-red-600" />
+            <CardTitle className="text-sm font-medium">Ticket Médio</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              R$ {totalAtrasado.toFixed(2)}
+            <div className="text-2xl font-bold text-purple-600">
+              R$ {pagamentosUnidade.length > 0 ? (totalReceita / pagamentosUnidade.length).toFixed(2) : "0,00"}
             </div>
             <p className="text-xs text-muted-foreground">
-              Pagamentos atrasados
+              Valor médio por pagamento
             </p>
           </CardContent>
         </Card>
@@ -337,23 +298,12 @@ export default function FinanceiroUnidade() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
           <Input
-            placeholder="Buscar por aluno ou descrição..."
+            placeholder="Buscar por aluno ou observação..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            <SelectItem value="pago">Pago</SelectItem>
-            <SelectItem value="pendente">Pendente</SelectItem>
-            <SelectItem value="atrasado">Atrasado</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* Lista de Pagamentos */}
@@ -396,25 +346,21 @@ export default function FinanceiroUnidade() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-semibold">{aluno?.nome}</h3>
-                        {getStatusBadge(pagamento.status)}
+                        <Badge variant="secondary">{pagamento.formaPagamento}</Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">{pagamento.descricao}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {pagamento.observacoes || "Sem observações"}
+                      </p>
                       <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="w-4 h-4" />
-                          Vencimento: {new Date(pagamento.dataVencimento).toLocaleDateString('pt-BR')}
+                          {pagamento.mesReferencia} - Pago em {new Date(pagamento.dataPagamento).toLocaleDateString('pt-BR')}
                         </div>
-                        {pagamento.dataPagamento && (
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            Pagamento: {new Date(pagamento.dataPagamento).toLocaleDateString('pt-BR')}
-                          </div>
-                        )}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold">
-                        R$ {pagamento.valor.toFixed(2)}
+                      <div className="text-lg font-bold text-green-600">
+                        R$ {parseFloat(pagamento.valor || "0").toFixed(2)}
                       </div>
                     </div>
                   </div>
