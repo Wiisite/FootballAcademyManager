@@ -694,6 +694,34 @@ export const loginGestorSchema = z.object({
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
+// Admin users table for traditional authentication
+export const adminUsers = pgTable("admin_users", {
+  id: serial("id").primaryKey(),
+  nome: varchar("nome").notNull(),
+  email: varchar("email").unique().notNull(),
+  senha: varchar("senha").notNull(),
+  ativo: boolean("ativo").default(true),
+  papel: varchar("papel").default("admin"), // admin, gestor, etc
+  ultimoLogin: timestamp("ultimo_login"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type AdminUser = typeof adminUsers.$inferSelect;
+export type InsertAdminUser = typeof adminUsers.$inferInsert;
+
+// Admin authentication schemas
+export const adminLoginSchema = z.object({
+  email: z.string().email("Email inválido"),
+  senha: z.string().min(1, "Senha é obrigatória"),
+});
+
+export const insertAdminUserSchema = createInsertSchema(adminUsers, {
+  nome: z.string().min(1, "Nome é obrigatório"),
+  email: z.string().email("Email inválido"),
+  senha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+});
+
 export type InsertGestorUnidade = z.infer<typeof insertGestorUnidadeSchema>;
 export type GestorUnidade = typeof gestoresUnidade.$inferSelect;
 export type GestorUnidadeWithFilial = GestorUnidade & {

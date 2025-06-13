@@ -24,6 +24,9 @@ import {
   combosAulas,
   type User,
   type UpsertUser,
+  adminUsers,
+  type AdminUser,
+  type InsertAdminUser,
   type GestorUnidade,
   type InsertGestorUnidade,
   type GestorUnidadeWithFilial,
@@ -85,6 +88,13 @@ export interface IStorage {
   // User operations (mandatory for Replit Auth)
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+
+  // Admin user operations for traditional authentication
+  getAdminUser(id: number): Promise<AdminUser | undefined>;
+  getAdminUserByEmail(email: string): Promise<AdminUser | undefined>;
+  createAdminUser(user: InsertAdminUser): Promise<AdminUser>;
+  authenticateAdminUser(email: string, senha: string): Promise<AdminUser | null>;
+  updateAdminUserLastLogin(id: number): Promise<void>;
 
   // Alunos operations
   getAlunos(): Promise<AlunoWithFilial[]>;
