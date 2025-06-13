@@ -89,20 +89,23 @@ export default function FilialForm({ filial, onSuccess }: FilialFormProps) {
   });
 
   const onSubmit = (data: FormData) => {
-    const submitData: InsertFilial = {
-      ...data,
-      telefone: data.telefone || null,
-      responsavel: data.responsavel || null,
-      bairro: data.bairro || null,
-      cidade: data.cidade || null,
-      estado: data.estado || null,
-      email: data.email || null,
-      cnpj: data.cnpj || null,
-      senha: data.senha || null,
+    const submitData: any = {
+      nome: data.nome,
+      endereco: data.endereco,
+      telefone: data.telefone || undefined,
+      responsavel: data.responsavel || undefined,
+      bairro: data.bairro || undefined,
+      cidade: data.cidade || undefined,
+      estado: data.estado || undefined,
+      email: data.email || undefined,
+      cnpj: data.cnpj || undefined,
+      ativa: data.ativa,
     };
 
-    // Remove confirmarSenha from submit data
-    delete (submitData as any).confirmarSenha;
+    // Only include password if it's provided
+    if (data.senha) {
+      submitData.senha = data.senha;
+    }
 
     if (filial) {
       updateMutation.mutate(submitData);
