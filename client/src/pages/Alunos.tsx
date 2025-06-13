@@ -160,7 +160,7 @@ export default function Alunos() {
                 Novo Aluno
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>
                   {editingAluno ? "Editar Aluno" : "Cadastrar Novo Aluno"}
