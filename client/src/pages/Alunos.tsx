@@ -5,18 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Users, Building2, Receipt, Filter } from "lucide-react";
+import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Building2, Receipt, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
 import type { AlunoWithFilial, Filial } from "@shared/schema";
 import AlunoForm from "@/components/forms/AlunoForm";
-import CadastroResponsavelForm from "@/components/forms/CadastroResponsavelForm";
+
 import ExtratoAluno from "@/components/ExtratoAluno";
 
 export default function Alunos() {
@@ -25,7 +25,7 @@ export default function Alunos() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [pagamentoFilter, setPagamentoFilter] = useState<string>("todos");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isResponsavelDialogOpen, setIsResponsavelDialogOpen] = useState(false);
+
   const [editingAluno, setEditingAluno] = useState<AlunoWithFilial | null>(null);
   const [viewingExtrato, setViewingExtrato] = useState<AlunoWithFilial | null>(null);
   const [, setLocation] = useLocation();
@@ -78,10 +78,6 @@ export default function Alunos() {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingAluno(null);
-  };
-
-  const handleResponsavelSuccess = () => {
-    setIsResponsavelDialogOpen(false);
   };
 
   const calculateAge = (birthDate: string | null) => {
@@ -139,30 +135,13 @@ export default function Alunos() {
           <h2 className="text-3xl font-bold text-neutral-800">Gestão de Alunos</h2>
           <p className="text-neutral-600">Cadastre e gerencie os alunos da escola</p>
         </div>
-        <div className="flex space-x-3">
-          <Dialog open={isResponsavelDialogOpen} onOpenChange={setIsResponsavelDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
-                <Users className="w-4 h-4 mr-2" />
-                Cadastro por Responsável
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Cadastro de Alunos por Responsável</DialogTitle>
-              </DialogHeader>
-              <CadastroResponsavelForm onSuccess={handleResponsavelSuccess} />
-            </DialogContent>
-          </Dialog>
-          
-          <Button 
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => setLocation("/cadastro-aluno")}
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            Novo Aluno
-          </Button>
-        </div>
+        <Button 
+          className="bg-primary hover:bg-primary/90"
+          onClick={() => setLocation("/cadastro-aluno")}
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Cadastrar
+        </Button>
       </div>
 
       {/* Search and Summary */}
