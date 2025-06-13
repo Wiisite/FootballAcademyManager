@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, SquareUser, Wallet, UsersIcon, Calendar, TrendingUp, Bell, Building2, BarChart3, Zap, Settings, Camera, Lock, Eye, EyeOff } from "lucide-react";
+import { Users, SquareUser, UsersIcon, Wallet, Bell, Building2, BarChart3, Settings, Camera, Lock, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { InterLogo } from "@/components/InterLogo";
 
@@ -21,7 +21,7 @@ interface DashboardMetrics {
 export default function Dashboard() {
   const { toast } = useToast();
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
-  const [isActionsDialogOpen, setIsActionsDialogOpen] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
   const [adminData, setAdminData] = useState({
     name: "Marcello",
@@ -143,44 +143,6 @@ export default function Dashboard() {
             <Bell className="h-4 w-4" />
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-accent rounded-full"></span>
           </Button>
-          
-          {/* Ações Rápidas */}
-          <Dialog open={isActionsDialogOpen} onOpenChange={setIsActionsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 text-sm sm:text-base">
-                <Zap className="w-4 h-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">Ações Rápidas</span>
-                <span className="sm:hidden">Ações</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Ações Rápidas</DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-2 gap-3 py-4">
-                <Button onClick={() => handleQuickAction("Cadastrar Aluno")} className="h-16 flex-col">
-                  <Users className="w-6 h-6 mb-1" />
-                  <span className="text-xs">Cadastrar Aluno</span>
-                </Button>
-                <Button onClick={() => handleQuickAction("Registrar Pagamento")} className="h-16 flex-col" variant="outline">
-                  <Wallet className="w-6 h-6 mb-1" />
-                  <span className="text-xs">Pagamento</span>
-                </Button>
-                <Button onClick={() => handleQuickAction("Nova Turma")} className="h-16 flex-col" variant="outline">
-                  <SquareUser className="w-6 h-6 mb-1" />
-                  <span className="text-xs">Nova Turma</span>
-                </Button>
-                <Button onClick={() => handleQuickAction("Relatórios")} className="h-16 flex-col" variant="outline">
-                  <BarChart3 className="w-6 h-6 mb-1" />
-                  <span className="text-xs">Relatórios</span>
-                </Button>
-                <Button onClick={() => handleQuickAction("Portal Unidades")} className="h-16 flex-col bg-blue-600 hover:bg-blue-700 text-white col-span-2">
-                  <Building2 className="w-6 h-6 mb-1" />
-                  <span className="text-xs">Portal das Unidades</span>
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
 
           {/* Perfil do Administrador */}
           <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
@@ -501,94 +463,6 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions and Upcoming Classes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick Actions */}
-        <Card className="border-neutral-200">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Ações Rápidas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-start space-y-2 hover:border-primary hover:bg-primary/5"
-                onClick={() => handleQuickAction("Novo Aluno")}
-              >
-                <div className="w-10 h-10 bg-secondary/10 rounded-lg flex items-center justify-center">
-                  <Users className="w-5 h-5 text-secondary" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-neutral-800">Novo Aluno</p>
-                  <p className="text-sm text-neutral-400">Cadastrar estudante</p>
-                </div>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-start space-y-2 hover:border-primary hover:bg-primary/5"
-                onClick={() => handleQuickAction("Nova Turma")}
-              >
-                <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
-                  <UsersIcon className="w-5 h-5 text-blue-500" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-neutral-800">Nova Turma</p>
-                  <p className="text-sm text-neutral-400">Criar turma</p>
-                </div>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-start space-y-2 hover:border-primary hover:bg-primary/5"
-                onClick={() => handleQuickAction("Pagamento")}
-              >
-                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                  <Wallet className="w-5 h-5 text-accent" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-neutral-800">Pagamento</p>
-                  <p className="text-sm text-neutral-400">Registrar pagamento</p>
-                </div>
-              </Button>
-
-              <Button
-                variant="outline"
-                className="h-auto p-4 flex flex-col items-start space-y-2 hover:border-primary hover:bg-primary/5"
-                onClick={() => handleQuickAction("Relatório")}
-              >
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium text-neutral-800">Relatório</p>
-                  <p className="text-sm text-neutral-400">Gerar relatório</p>
-                </div>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Upcoming Classes */}
-        <Card className="border-neutral-200">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">Próximas Aulas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="text-center py-8">
-                <Calendar className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
-                <p className="text-neutral-500">Nenhuma aula agendada</p>
-                <p className="text-sm text-neutral-400">Cadastre turmas para ver o cronograma</p>
-              </div>
-            </div>
-            <Button variant="ghost" className="w-full text-primary hover:text-primary/80">
-              Ver cronograma completo
-            </Button>
           </CardContent>
         </Card>
       </div>
