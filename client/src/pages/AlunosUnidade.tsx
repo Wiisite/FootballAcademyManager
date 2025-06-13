@@ -209,7 +209,6 @@ export default function AlunosUnidade() {
               </DialogHeader>
               <AlunoForm 
                 aluno={editingAluno} 
-                filialId={session.filialId}
                 onSuccess={handleDialogClose}
               />
             </DialogContent>

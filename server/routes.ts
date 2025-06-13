@@ -1466,13 +1466,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const aluno = await storage.createAluno(alunoData);
       
       // Adicionar à fila de sincronização
-      await addToSync({
-        unidadeId: req.session.filialId!,
-        tipo: 'aluno',
-        acao: 'create',
-        dados: aluno,
-        timestamp: new Date()
-      });
+      await addToSync(
+        req.session.filialId!,
+        'aluno',
+        'create',
+        aluno
+      );
 
       res.status(201).json(aluno);
     } catch (error) {
@@ -1499,13 +1498,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const aluno = await storage.updateAluno(id, validatedData);
       
       // Adicionar à fila de sincronização
-      await addToSync({
-        unidadeId: req.session.filialId!,
-        tipo: 'aluno',
-        acao: 'update',
-        dados: aluno,
-        timestamp: new Date()
-      });
+      await addToSync(
+        req.session.filialId!,
+        'aluno',
+        'update',
+        aluno
+      );
 
       res.json(aluno);
     } catch (error) {
@@ -1531,13 +1529,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const professor = await storage.createProfessor(professorData);
       
       // Adicionar à fila de sincronização
-      await addToSync({
-        unidadeId: req.session.filialId!,
-        tipo: 'professor',
-        acao: 'create',
-        dados: professor,
-        timestamp: new Date()
-      });
+      await addToSync(
+        req.session.filialId!,
+        'professor',
+        'create',
+        professor
+      );
 
       res.status(201).json(professor);
     } catch (error) {
@@ -1555,6 +1552,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const validatedData = insertPagamentoSchema.parse(req.body);
       
       // Verificar se o aluno pertence à filial do gestor
+      if (!validatedData.alunoId) {
+        return res.status(400).json({ message: "ID do aluno é obrigatório" });
+      }
+      
       const aluno = await storage.getAluno(validatedData.alunoId);
       if (!aluno || aluno.filialId !== req.session.filialId) {
         return res.status(403).json({ message: "Acesso negado a este aluno" });
@@ -1563,13 +1564,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pagamento = await storage.createPagamento(validatedData);
       
       // Adicionar à fila de sincronização
-      await addToSync({
-        unidadeId: req.session.filialId!,
-        tipo: 'pagamento',
-        acao: 'create',
-        dados: pagamento,
-        timestamp: new Date()
-      });
+      await addToSync(
+        req.session.filialId!,
+        'pagamento',
+        'create',
+        pagamento
+      );
 
       res.status(201).json(pagamento);
     } catch (error) {

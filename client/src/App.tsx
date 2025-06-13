@@ -52,21 +52,19 @@ function Router() {
       <Route path="/responsavel/login" component={ResponsavelLogin} />
       <Route path="/portal" component={ResponsavelPortal} />
       
-      {/* Acesso de Gestores de Unidade - Rotas independentes */}
-      <Route path="/unidade/login" component={LoginUnidade} />
-      <Route path="/unidade/cadastro" component={CadastroGestorUnidade} />
-      
-      {/* Sistema Completo da Unidade com ID */}
-      <Route path="/unidade/:filialId/sistema" component={SistemaUnidade} />
-      <Route path="/unidade/:filialId/alunos" component={UnidadeAlunos} />
-      <Route path="/unidade/:filialId/professores" component={UnidadeProfessores} />
+      {/* Portal da Unidade - Sistema Independente */}
+      <Route path="/portal-unidade" component={PortalUnidade} />
+      <Route path="/unidade/:filialId/dashboard" component={DashboardPortalUnidade} />
+      <Route path="/unidade/:filialId/alunos" component={AlunosUnidadePortal} />
+      <Route path="/unidade/:filialId/professores" component={ProfessoresUnidade} />
       <Route path="/unidade/:filialId/turmas" component={TurmasUnidade} />
       <Route path="/unidade/:filialId/financeiro" component={FinanceiroUnidade} />
-      <Route path="/unidade/:filialId/matriculas" component={GestaoTurmas} />
-      <Route path="/unidade/:filialId/relatorios" component={Relatorios} />
       <Route path="/unidade/:filialId/presencas" component={RelatorioPresencas} />
-      <Route path="/unidade/:filialId/dashboard" component={DashboardUnidadeWrapper} />
-      <Route path="/unidade/:filialId" component={DashboardUnidadeWrapper} />
+      <Route path="/unidade/:filialId/relatorios" component={Relatorios} />
+      
+      {/* Rotas antigas para compatibilidade */}
+      <Route path="/unidade/login" component={LoginUnidade} />
+      <Route path="/unidade/cadastro" component={CadastroGestorUnidade} />
       
       {/* Sistema Completo da Unidade sem ID (compatibilidade) */}
       <Route path="/login-unidade" component={LoginUnidade} />
