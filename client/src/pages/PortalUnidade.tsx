@@ -29,19 +29,19 @@ export default function PortalUnidade() {
       const data = await response.json();
       
       if (response.ok) {
-        // Get additional gestor information for the session
-        const gestorResponse = await apiRequest("GET", `/api/gestores-unidade/${data.gestorId}`);
-        const gestorData = await gestorResponse.json();
+        const gestorId = data.gestor.id;
+        const filialId = data.gestor.filialId;
+        const nomeGestor = data.gestor.nome;
         
         // Get filial information
-        const filialResponse = await apiRequest("GET", `/api/filiais/${data.filialId}`);
+        const filialResponse = await apiRequest("GET", `/api/filiais/${filialId}`);
         const filialData = await filialResponse.json();
         
         // Salvar dados da sessão no localStorage
         localStorage.setItem('unidadeSession', JSON.stringify({
-          gestorId: data.gestorId,
-          filialId: data.filialId,
-          nomeGestor: gestorData.nome || 'Gestor',
+          gestorId: gestorId,
+          filialId: filialId,
+          nomeGestor: nomeGestor,
           nomeFilial: filialData.nome || 'Unidade',
           loginTime: new Date().toISOString()
         }));
@@ -51,8 +51,8 @@ export default function PortalUnidade() {
           description: `Bem-vindo ao portal da ${filialData.nome || 'Unidade'}`,
         });
         
-        // Redirecionar para o dashboard da unidade
-        window.location.href = `/unidade/${data.filialId}/dashboard`;
+        // Redirecionar para o sistema da unidade
+        window.location.href = `/unidade/${filialId}/sistema`;
       } else {
         toast({
           title: "Erro no login",

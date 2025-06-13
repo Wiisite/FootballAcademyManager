@@ -214,6 +214,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/filiais/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const filial = await storage.getFilial(id);
+      if (!filial) {
+        return res.status(404).json({ message: "Filial not found" });
+      }
+      res.json(filial);
+    } catch (error) {
+      console.error("Error fetching filial:", error);
+      res.status(500).json({ message: "Failed to fetch filial" });
+    }
+  });
+
   app.get("/api/sync/status", requireAdminAuth, async (req, res) => {
     try {
       // Return sync status for portal
