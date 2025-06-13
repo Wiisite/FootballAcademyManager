@@ -57,7 +57,12 @@ export default function DashboardPortalUnidade() {
     }
   }, [params, setLocation, toast]);
 
-  const { data: metrics, isLoading } = useQuery({
+  const { data: metrics, isLoading } = useQuery<{
+    totalAlunos: number;
+    totalProfessores: number;
+    totalTurmas: number;
+    receitaMensal: number;
+  }>({
     queryKey: ["/api/unidade/dashboard/metrics", session?.filialId],
     enabled: !!session?.filialId,
   });

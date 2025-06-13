@@ -46,10 +46,29 @@ export default function Dashboard() {
 
   const handleQuickAction = (action: string) => {
     setIsActionsDialogOpen(false);
-    toast({
-      title: "Ação Executada",
-      description: `${action} foi iniciado com sucesso.`,
-    });
+    
+    switch (action) {
+      case "Cadastrar Aluno":
+        window.location.href = "/cadastro-aluno";
+        break;
+      case "Portal Unidades":
+        window.location.href = "/portal-unidades";
+        break;
+      case "Registrar Pagamento":
+        window.location.href = "/financeiro";
+        break;
+      case "Nova Turma":
+        window.location.href = "/turmas";
+        break;
+      case "Relatórios":
+        window.location.href = "/relatorios";
+        break;
+      default:
+        toast({
+          title: "Ação Executada",
+          description: `${action} foi iniciado com sucesso.`,
+        });
+    }
   };
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,6 +173,10 @@ export default function Dashboard() {
                 <Button onClick={() => handleQuickAction("Relatórios")} className="h-16 flex-col" variant="outline">
                   <BarChart3 className="w-6 h-6 mb-1" />
                   <span className="text-xs">Relatórios</span>
+                </Button>
+                <Button onClick={() => handleQuickAction("Portal Unidades")} className="h-16 flex-col bg-blue-600 hover:bg-blue-700 text-white col-span-2">
+                  <Building2 className="w-6 h-6 mb-1" />
+                  <span className="text-xs">Portal das Unidades</span>
                 </Button>
               </div>
             </DialogContent>

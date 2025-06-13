@@ -39,6 +39,7 @@ import CombosAulas from "@/pages/CombosAulas";
 import CadastroAluno from "@/pages/CadastroAluno";
 import PortalUnidade from "@/pages/PortalUnidade";
 import DashboardPortalUnidade from "@/pages/DashboardPortalUnidade";
+import CadastroGestorUnidadePortal from "@/pages/CadastroGestorUnidadePortal";
 import Layout from "@/components/Layout";
 
 function Router() {
@@ -54,6 +55,7 @@ function Router() {
       
       {/* Portal da Unidade - Sistema Independente */}
       <Route path="/portal-unidade" component={PortalUnidade} />
+      <Route path="/cadastro-gestor-unidade" component={CadastroGestorUnidadePortal} />
       <Route path="/unidade/:filialId/dashboard" component={DashboardPortalUnidade} />
       <Route path="/unidade/:filialId/alunos" component={AlunosUnidadePortal} />
       <Route path="/unidade/:filialId/professores" component={ProfessoresUnidade} />
