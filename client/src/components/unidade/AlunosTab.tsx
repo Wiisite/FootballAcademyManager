@@ -5,18 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Filter, ExternalLink } from "lucide-react";
+import { UserPlus, Search, Trash2, Phone, Mail, Calendar, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
 import { useUnidadeAuth } from "@/contexts/UnidadeContext";
 import type { AlunoWithFilial } from "@shared/schema";
-import AlunoUnidadeForm from "./forms/AlunoUnidadeForm";
 
 export default function AlunosTab() {
   const { filialId } = useUnidadeAuth();
@@ -24,8 +23,6 @@ export default function AlunosTab() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [pagamentoFilter, setPagamentoFilter] = useState<string>("todos");
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingAluno, setEditingAluno] = useState<AlunoWithFilial | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -64,15 +61,7 @@ export default function AlunosTab() {
     }
   };
 
-  const handleEditAluno = (aluno: AlunoWithFilial) => {
-    setEditingAluno(aluno);
-    setIsDialogOpen(true);
-  };
 
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
-    setEditingAluno(null);
-  };
 
   const alunosArray = Array.isArray(alunos) ? alunos : [];
 
@@ -117,35 +106,13 @@ export default function AlunosTab() {
           <h2 className="text-2xl font-bold text-gray-900">Alunos da Unidade</h2>
           <p className="text-gray-600">Gerencie os alunos matriculados na sua unidade</p>
         </div>
-        <div className="flex gap-2">
-          <Button 
-            onClick={() => setLocation('/unidade/cadastro-aluno')}
-            className="flex items-center gap-2"
-          >
-            <UserPlus className="w-4 h-4" />
-            Novo Aluno
-            <ExternalLink className="w-3 h-3" />
-          </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Edit className="w-4 h-4" />
-                Edição Rápida
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  Editar Aluno
-                </DialogTitle>
-              </DialogHeader>
-              <AlunoUnidadeForm 
-                initialData={editingAluno} 
-                onSuccess={handleCloseDialog}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Button 
+          onClick={() => setLocation('/unidade/cadastro-aluno')}
+          className="flex items-center gap-2"
+        >
+          <UserPlus className="w-4 h-4" />
+          Cadastrar Primeiro Aluno
+        </Button>
       </div>
 
       <Card>
