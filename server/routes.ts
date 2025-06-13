@@ -68,6 +68,10 @@ const isGestorUnidadeAuthenticated = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup session middleware first for admin authentication
+  const { getSession } = await import("./replitAuth");
+  app.use(getSession());
+
   // Traditional admin authentication routes
   app.post('/api/admin/login', async (req, res) => {
     try {
@@ -112,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/admin/user', (req, res) => {
-    if (!req.session.adminId || !req.session.adminUser) {
+    if (!req.session || !req.session.adminId || !req.session.adminUser) {
       return res.status(401).json({ message: "Não autenticado" });
     }
     
