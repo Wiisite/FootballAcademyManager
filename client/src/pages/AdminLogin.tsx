@@ -42,7 +42,8 @@ export default function AdminLogin() {
         title: "Login realizado com sucesso",
         description: "Bem-vindo ao sistema!",
       });
-      navigate("/dashboard");
+      // Force reload to ensure authentication state is updated
+      window.location.href = "/dashboard";
     },
     onError: (error: Error) => {
       console.error("Login error:", error);

@@ -80,33 +80,35 @@ function Router() {
       <Route path="/unidade/presencas" component={RelatorioPresencas} />
       <Route path="/unidade/dashboard" component={DashboardUnidadeWrapper} />
       
-      {/* Sistema Administrativo */}
-      {isLoading || !isAuthenticated ? (
+      {/* Sistema Administrativo Principal */}
+      <Route path="/admin-login" component={AdminLogin} />
+      
+      {/* Rotas do Sistema Administrativo Principal - Protegidas */}
+      {isLoading ? (
+        <Route path="/" component={AdminLogin} />
+      ) : !isAuthenticated ? (
         <Route path="/" component={AdminLogin} />
       ) : (
-        <>
-          <Layout>
-            <Route path="/" component={Dashboard} />
-            <Route path="/alunos" component={Alunos} />
-            <Route path="/professores" component={Professores} />
-            <Route path="/turmas" component={Turmas} />
-            <Route path="/gestao-turmas" component={GestaoTurmas} />
-            <Route path="/filiais" component={Filiais} />
-            <Route path="/dashboard-unidades" component={DashboardUnidades} />
-            <Route path="/financeiro" component={FinanceiroCompleto} />
-            <Route path="/relatorios" component={Relatorios} />
-            <Route path="/relatorio-presencas" component={RelatorioPresencas} />
-            <Route path="/avaliacao-fisica" component={AvaliacaoFisica} />
-            <Route path="/portal-unidades" component={PortalUnidades} />
-            <Route path="/gestao-unidades" component={GestaoUnidades} />
-            <Route path="/combos-aulas" component={CombosAulas} />
-            <Route path="/cadastro-aluno" component={CadastroAluno} />
-          </Layout>
-          <Layout>
-            <Route path="/unidade/:filialId" component={DashboardUnidadeWrapper} />
-            <Route path="/unidade/:filialId/sistema" component={SistemaUnidade} />
-          </Layout>
-        </>
+        <Layout>
+          <Route path="/" component={Dashboard} />
+          <Route path="/dashboard" component={Dashboard} />
+          <Route path="/alunos" component={Alunos} />
+          <Route path="/professores" component={Professores} />
+          <Route path="/turmas" component={Turmas} />
+          <Route path="/gestao-turmas" component={GestaoTurmas} />
+          <Route path="/filiais" component={Filiais} />
+          <Route path="/dashboard-unidades" component={DashboardUnidades} />
+          <Route path="/financeiro" component={FinanceiroCompleto} />
+          <Route path="/relatorios" component={Relatorios} />
+          <Route path="/relatorio-presencas" component={RelatorioPresencas} />
+          <Route path="/avaliacao-fisica" component={AvaliacaoFisica} />
+          <Route path="/portal-unidades" component={PortalUnidades} />
+          <Route path="/gestao-unidades" component={GestaoUnidades} />
+          <Route path="/combos-aulas" component={CombosAulas} />
+          <Route path="/cadastro-aluno" component={CadastroAluno} />
+          <Route path="/unidade/:filialId" component={DashboardUnidadeWrapper} />
+          <Route path="/unidade/:filialId/sistema" component={SistemaUnidade} />
+        </Layout>
       )}
       <Route component={NotFound} />
     </Switch>
