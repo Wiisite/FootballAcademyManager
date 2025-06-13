@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUnidadeAuth } from "@/contexts/UnidadeContext";
 import type { TurmaWithProfessor } from "@shared/schema";
-import TurmaForm from "@/components/forms/TurmaForm";
 
 export default function TurmasTab() {
   const { filialId } = useUnidadeAuth();
@@ -111,11 +110,19 @@ export default function TurmasTab() {
                 {editingTurma ? "Editar Turma" : "Cadastrar Nova Turma"}
               </DialogTitle>
             </DialogHeader>
-            <TurmaForm 
-              initialData={editingTurma} 
-              onSuccess={handleCloseDialog}
-              filialId={filialId}
-            />
+            <div className="p-4">
+              <p className="text-center text-gray-600">
+                Formulário de turma será implementado em breve.
+              </p>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={handleCloseDialog}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleCloseDialog}>
+                  Salvar
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>

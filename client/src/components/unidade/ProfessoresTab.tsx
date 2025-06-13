@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useUnidadeAuth } from "@/contexts/UnidadeContext";
 import type { Professor } from "@shared/schema";
-import ProfessorForm from "@/components/forms/ProfessorForm";
 
 export default function ProfessoresTab() {
   const { filialId } = useUnidadeAuth();
@@ -112,11 +111,19 @@ export default function ProfessoresTab() {
                 {editingProfessor ? "Editar Professor" : "Cadastrar Novo Professor"}
               </DialogTitle>
             </DialogHeader>
-            <ProfessorForm 
-              initialData={editingProfessor} 
-              onSuccess={handleCloseDialog}
-              filialId={filialId}
-            />
+            <div className="p-4">
+              <p className="text-center text-gray-600">
+                Formulário de professor será implementado em breve.
+              </p>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={handleCloseDialog}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleCloseDialog}>
+                  Salvar
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
