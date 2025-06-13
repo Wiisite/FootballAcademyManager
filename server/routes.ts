@@ -214,7 +214,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/filiais/:id", requireAdminAuth, async (req, res) => {
+  app.get("/api/filiais/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const filial = await storage.getFilial(id);
