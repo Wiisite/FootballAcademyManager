@@ -33,7 +33,7 @@ export default function CombosAulas() {
     defaultValues: {
       nome: "",
       descricao: "",
-      preco: "0",
+      preco: "0.00",
       aulasPorSemana: 1,
       duracaoMeses: 1,
       ativo: true,
@@ -107,12 +107,12 @@ export default function CombosAulas() {
     },
   });
 
-  const handleEdit = (combo: Combo) => {
+  const handleEdit = (combo: ComboAulas) => {
     setEditingCombo(combo);
     form.reset({
       nome: combo.nome,
       descricao: combo.descricao || "",
-      preco: combo.preco,
+      preco: combo.preco.toString(),
       aulasPorSemana: combo.aulasPorSemana,
       duracaoMeses: combo.duracaoMeses,
       ativo: combo.ativo,
@@ -134,11 +134,12 @@ export default function CombosAulas() {
     }
   };
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: string | number) => {
+    const numValue = typeof value === 'string' ? parseFloat(value) : value;
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(value);
+    }).format(numValue);
   };
 
   const handleDialogClose = () => {
@@ -193,6 +194,7 @@ export default function CombosAulas() {
                         <Textarea 
                           placeholder="Descrição do combo de aulas..."
                           {...field}
+                          value={field.value || ""}
                         />
                       </FormControl>
                       <FormMessage />
@@ -209,12 +211,10 @@ export default function CombosAulas() {
                         <FormLabel>Preço (R$)</FormLabel>
                         <FormControl>
                           <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
+                            type="text"
                             placeholder="0,00"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            onChange={(e) => field.onChange(e.target.value)}
                           />
                         </FormControl>
                         <FormMessage />
