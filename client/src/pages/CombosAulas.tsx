@@ -142,10 +142,23 @@ export default function CombosAulas() {
     }).format(numValue);
   };
 
+  const handleDialogChange = (open: boolean) => {
+    setIsDialogOpen(open);
+    if (!open) {
+      setEditingCombo(null);
+      form.reset({
+        nome: "",
+        descricao: "",
+        preco: "0.00",
+        aulasPorSemana: 1,
+        duracaoMeses: 1,
+        ativo: true,
+      });
+    }
+  };
+
   const handleDialogClose = () => {
-    setIsDialogOpen(false);
-    setEditingCombo(null);
-    form.reset();
+    handleDialogChange(false);
   };
 
   return (
@@ -155,7 +168,7 @@ export default function CombosAulas() {
           <h2 className="text-3xl font-bold text-neutral-800">Combos de Aulas</h2>
           <p className="text-neutral-600">Gerencie os pacotes de aulas da escola</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={handleDialogClose}>
+        <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="w-4 h-4 mr-2" />
@@ -276,7 +289,7 @@ export default function CombosAulas() {
                       </div>
                       <FormControl>
                         <Switch
-                          checked={field.value}
+                          checked={!!field.value}
                           onCheckedChange={field.onChange}
                         />
                       </FormControl>
