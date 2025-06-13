@@ -17,7 +17,7 @@ const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   telefone: z.string().optional(),
-  cpf: z.string().min(1, "CPF é obrigatório para acesso ao portal"),
+  cpf: z.string().optional(),
   rg: z.string().optional(),
   dataNascimento: z.string().optional(),
   dataMatricula: z.string().optional(),
@@ -32,6 +32,7 @@ const formSchema = z.object({
   ativo: z.boolean().default(true),
   filialId: z.number(),
   // Campos para portal do responsável
+  cpfResponsavel: z.string().min(1, "CPF do responsável é obrigatório para acesso ao portal"),
   emailResponsavel: z.string().email("Email inválido").min(1, "Email é obrigatório para acesso ao portal"),
   senhaResponsavel: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
@@ -68,6 +69,7 @@ export default function AlunoUnidadeForm({ initialData, onSuccess }: AlunoUnidad
       observacoes: "",
       ativo: initialData?.ativo ?? true,
       filialId: filialId || 0,
+      cpfResponsavel: "",
       emailResponsavel: "",
       senhaResponsavel: "",
     },
@@ -184,7 +186,7 @@ export default function AlunoUnidadeForm({ initialData, onSuccess }: AlunoUnidad
             name="cpf"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>CPF *</FormLabel>
+                <FormLabel>CPF</FormLabel>
                 <FormControl>
                   <Input placeholder="000.000.000-00" {...field} />
                 </FormControl>
@@ -382,7 +384,24 @@ export default function AlunoUnidadeForm({ initialData, onSuccess }: AlunoUnidad
           <p className="text-sm text-gray-600">
             Estes dados serão utilizados pelo responsável para acessar o portal e acompanhar o desenvolvimento do aluno.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FormField
+              control={form.control}
+              name="cpfResponsavel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CPF do Responsável *</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="000.000.000-00" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="emailResponsavel"

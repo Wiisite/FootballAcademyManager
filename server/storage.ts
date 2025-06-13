@@ -99,7 +99,7 @@ export interface IStorage {
   // Alunos operations
   getAlunos(): Promise<AlunoWithFilial[]>;
   getAluno(id: number): Promise<AlunoWithTurmas | undefined>;
-  createAluno(aluno: InsertAluno & { emailResponsavel?: string; senhaResponsavel?: string }): Promise<Aluno>;
+  createAluno(aluno: InsertAluno & { cpfResponsavel?: string; emailResponsavel?: string; senhaResponsavel?: string }): Promise<Aluno>;
   updateAluno(id: number, aluno: Partial<InsertAluno>): Promise<Aluno>;
   deleteAluno(id: number): Promise<void>;
 
@@ -427,12 +427,12 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async createAluno(aluno: InsertAluno & { emailResponsavel?: string; senhaResponsavel?: string }): Promise<Aluno> {
-    const { emailResponsavel, senhaResponsavel, ...alunoData } = aluno;
+  async createAluno(aluno: InsertAluno & { cpfResponsavel?: string; emailResponsavel?: string; senhaResponsavel?: string }): Promise<Aluno> {
+    const { cpfResponsavel, emailResponsavel, senhaResponsavel, ...alunoData } = aluno;
     
     // Create responsável if portal access data is provided
     let responsavelId: number | undefined;
-    if (emailResponsavel && senhaResponsavel && alunoData.cpf) {
+    if (cpfResponsavel && emailResponsavel && senhaResponsavel) {
       const hashedPassword = await bcrypt.hash(senhaResponsavel, 10);
       
       const [newResponsavel] = await db.insert(responsaveis).values({
@@ -440,7 +440,7 @@ export class DatabaseStorage implements IStorage {
         email: emailResponsavel,
         senha: hashedPassword,
         telefone: alunoData.telefoneResponsavel,
-        cpf: alunoData.cpf,
+        cpf: cpfResponsavel,
         endereco: alunoData.endereco,
         bairro: alunoData.bairro,
         cep: alunoData.cep,
