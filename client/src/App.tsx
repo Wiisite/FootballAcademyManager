@@ -19,7 +19,7 @@ import DashboardUnidadeWrapper from "@/pages/DashboardUnidadeWrapper";
 import PainelUnidade from "@/pages/PainelUnidade";
 import LoginUnidade from "@/pages/LoginUnidade";
 import CadastroGestorUnidade from "@/pages/CadastroGestorUnidade";
-import AlunosUnidadePortal from "@/pages/AlunosUnidade";
+import AlunosUnidade from "@/pages/AlunosUnidade";
 import ProfessoresUnidade from "@/pages/ProfessoresUnidade";
 import TurmasUnidade from "@/pages/TurmasUnidade";
 import FinanceiroUnidade from "@/pages/FinanceiroUnidade";
@@ -57,7 +57,7 @@ function Router() {
       <Route path="/portal-unidade" component={PortalUnidade} />
       <Route path="/cadastro-gestor-unidade" component={CadastroGestorUnidadePortal} />
       <Route path="/unidade/:filialId/dashboard" component={DashboardPortalUnidade} />
-      <Route path="/unidade/:filialId/alunos" component={AlunosUnidadePortal} />
+      <Route path="/unidade/:filialId/alunos" component={AlunosUnidade} />
       <Route path="/unidade/:filialId/professores" component={ProfessoresUnidade} />
       <Route path="/unidade/:filialId/turmas" component={TurmasUnidade} />
       <Route path="/unidade/:filialId/financeiro" component={FinanceiroUnidade} />
