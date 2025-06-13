@@ -17,7 +17,7 @@ const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   telefone: z.string().optional(),
-  cpf: z.string().optional(),
+  cpf: z.string().min(1, "CPF é obrigatório para acesso ao portal"),
   rg: z.string().optional(),
   dataNascimento: z.string().optional(),
   dataMatricula: z.string().optional(),
@@ -31,6 +31,9 @@ const formSchema = z.object({
   observacoes: z.string().optional(),
   ativo: z.boolean().default(true),
   filialId: z.number(),
+  // Campos para portal do responsável
+  emailResponsavel: z.string().email("Email inválido").min(1, "Email é obrigatório para acesso ao portal"),
+  senhaResponsavel: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -65,6 +68,8 @@ export default function AlunoUnidadeForm({ initialData, onSuccess }: AlunoUnidad
       observacoes: "",
       ativo: initialData?.ativo ?? true,
       filialId: filialId || 0,
+      emailResponsavel: "",
+      senhaResponsavel: "",
     },
   });
 
@@ -179,7 +184,7 @@ export default function AlunoUnidadeForm({ initialData, onSuccess }: AlunoUnidad
             name="cpf"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>CPF</FormLabel>
+                <FormLabel>CPF *</FormLabel>
                 <FormControl>
                   <Input placeholder="000.000.000-00" {...field} />
                 </FormControl>
@@ -364,6 +369,50 @@ export default function AlunoUnidadeForm({ initialData, onSuccess }: AlunoUnidad
                   <FormLabel>Telefone do Responsável</FormLabel>
                   <FormControl>
                     <Input placeholder="(11) 99999-9999" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Acesso ao Portal do Responsável</h3>
+          <p className="text-sm text-gray-600">
+            Estes dados serão utilizados pelo responsável para acessar o portal e acompanhar o desenvolvimento do aluno.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="emailResponsavel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email para Acesso *</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="email" 
+                      placeholder="email@exemplo.com" 
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="senhaResponsavel"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Senha para Acesso *</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="password" 
+                      placeholder="Mínimo 6 caracteres" 
+                      {...field} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

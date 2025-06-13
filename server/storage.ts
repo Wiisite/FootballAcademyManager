@@ -427,8 +427,36 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async createAluno(aluno: InsertAluno): Promise<Aluno> {
-    const [newAluno] = await db.insert(alunos).values(aluno).returning();
+  async createAluno(aluno: InsertAluno & { emailResponsavel?: string; senhaResponsavel?: string }): Promise<Aluno> {
+    const { emailResponsavel, senhaResponsavel, ...alunoData } = aluno;
+    
+    // Create responsável if portal access data is provided
+    let responsavelId: number | undefined;
+    if (emailResponsavel && senhaResponsavel && alunoData.cpf) {
+      const hashedPassword = await bcrypt.hash(senhaResponsavel, 10);
+      
+      const [newResponsavel] = await db.insert(responsaveis).values({
+        nome: alunoData.nomeResponsavel || "Responsável",
+        email: emailResponsavel,
+        senha: hashedPassword,
+        telefone: alunoData.telefoneResponsavel,
+        cpf: alunoData.cpf,
+        endereco: alunoData.endereco,
+        bairro: alunoData.bairro,
+        cep: alunoData.cep,
+        cidade: alunoData.cidade,
+        estado: alunoData.estado,
+        ativo: true,
+      }).returning();
+      
+      responsavelId = newResponsavel.id;
+    }
+    
+    const [newAluno] = await db.insert(alunos).values({
+      ...alunoData,
+      responsavelId,
+    }).returning();
+    
     return newAluno;
   }
 

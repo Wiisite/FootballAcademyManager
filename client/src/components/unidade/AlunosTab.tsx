@@ -168,7 +168,7 @@ export default function AlunosTab() {
                 }
               </p>
               {alunosArray.length === 0 && (
-                <Button onClick={() => setIsDialogOpen(true)}>
+                <Button onClick={() => setLocation('/unidade/cadastro-aluno')}>
                   <UserPlus className="w-4 h-4 mr-2" />
                   Cadastrar Primeiro Aluno
                 </Button>
@@ -243,23 +243,14 @@ export default function AlunosTab() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditAluno(aluno)}
-                          >
-                            <Edit className="w-3 h-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteAluno(aluno.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteAluno(aluno.id)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
