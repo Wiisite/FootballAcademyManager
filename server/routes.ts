@@ -147,9 +147,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Alunos routes - protected by admin authentication
-  app.get("/api/alunos", requireAdminAuth, async (req, res) => {
+  app.get("/api/alunos", async (req, res) => {
     try {
-      const alunos = await storage.getAlunos();
+      // Check if it's admin or unit manager auth
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      let alunos = await storage.getAlunos();
+      
+      // If it's a unit manager, filter by filial
+      if (isGestor && !isAdmin) {
+        alunos = alunos.filter(aluno => aluno.filialId === req.session.filialId);
+      }
+      
       res.json(alunos);
     } catch (error) {
       console.error("Error fetching alunos:", error);
@@ -171,10 +185,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Professores routes - protected by admin authentication
-  app.get("/api/professores", requireAdminAuth, async (req, res) => {
+  // Professores routes - protected by admin or unit manager authentication
+  app.get("/api/professores", async (req, res) => {
     try {
-      const professores = await storage.getProfessores();
+      // Check if it's admin or unit manager auth
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      let professores = await storage.getProfessores();
+      
+      // If it's a unit manager, filter by filial
+      if (isGestor && !isAdmin) {
+        professores = professores.filter(professor => professor.filialId === req.session.filialId);
+      }
+      
       res.json(professores);
     } catch (error) {
       console.error("Error fetching professores:", error);
@@ -182,10 +210,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Turmas routes - protected by admin authentication
-  app.get("/api/turmas", requireAdminAuth, async (req, res) => {
+  // Turmas routes - protected by admin or unit manager authentication
+  app.get("/api/turmas", async (req, res) => {
     try {
-      const turmas = await storage.getTurmas();
+      // Check if it's admin or unit manager auth
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      let turmas = await storage.getTurmas();
+      
+      // If it's a unit manager, filter by filial
+      if (isGestor && !isAdmin) {
+        turmas = turmas.filter(turma => turma.filialId === req.session.filialId);
+      }
+      
       res.json(turmas);
     } catch (error) {
       console.error("Error fetching turmas:", error);
@@ -193,10 +235,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Filiais routes - protected by admin authentication
-  app.get("/api/filiais", requireAdminAuth, async (req, res) => {
+  // Filiais routes - protected by admin or unit manager authentication
+  app.get("/api/filiais", async (req, res) => {
     try {
-      const filiais = await storage.getFiliais();
+      // Check if it's admin or unit manager auth
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      let filiais = await storage.getFiliais();
+      
+      // If it's a unit manager, filter to only their filial
+      if (isGestor && !isAdmin) {
+        filiais = filiais.filter(filial => filial.id === req.session.filialId);
+      }
+      
       res.json(filiais);
     } catch (error) {
       console.error("Error fetching filiais:", error);
