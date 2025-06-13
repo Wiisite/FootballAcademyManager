@@ -664,6 +664,12 @@ export const insertAssinaturaPacoteSchema = createInsertSchema(assinaturasPacote
   updatedAt: true,
 });
 
+export const insertComboAulasSchema = createInsertSchema(combosAulas).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Physical evaluation schemas
 export const insertCategoriaTesteSchema = createInsertSchema(categoriasTestes).omit({
   id: true,
@@ -858,6 +864,9 @@ export type AssinaturaPacoteComplete = AssinaturaPacote & {
   aluno: Aluno;
   pacote: PacoteTreino;
 };
+
+export type InsertComboAulas = z.infer<typeof insertComboAulasSchema>;
+export type ComboAulas = typeof combosAulas.$inferSelect;
 
 // Physical evaluation types
 export type InsertCategoriaTeste = z.infer<typeof insertCategoriaTesteSchema>;

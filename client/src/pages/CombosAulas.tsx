@@ -8,52 +8,32 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Plus, Edit, Trash2, Package, Clock, DollarSign } from "lucide-react";
+import { Plus, Edit, Trash2, Package, Clock, DollarSign, Calendar, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { insertComboAulasSchema, type InsertComboAulas, type ComboAulas } from "@shared/schema";
 
-const comboSchema = z.object({
-  nome: z.string().min(1, "Nome é obrigatório"),
-  descricao: z.string().optional(),
-  preco: z.number().min(0, "Preço deve ser positivo"),
-  aulasPorSemana: z.number().min(1, "Deve ter pelo menos 1 aula por semana"),
-  duracaoMeses: z.number().min(1, "Duração deve ser de pelo menos 1 mês"),
-  ativo: z.boolean().default(true),
-});
-
-type ComboFormData = z.infer<typeof comboSchema>;
-
-interface Combo {
-  id: number;
-  nome: string;
-  descricao?: string;
-  preco: number;
-  aulasPorSemana: number;
-  duracaoMeses: number;
-  ativo: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
+type ComboFormData = InsertComboAulas;
 
 export default function CombosAulas() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingCombo, setEditingCombo] = useState<Combo | null>(null);
+  const [editingCombo, setEditingCombo] = useState<ComboAulas | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: combos, isLoading } = useQuery<Combo[]>({
+  const { data: combos, isLoading } = useQuery<ComboAulas[]>({
     queryKey: ["/api/combos-aulas"],
   });
 
   const form = useForm<ComboFormData>({
-    resolver: zodResolver(comboSchema),
+    resolver: zodResolver(insertComboAulasSchema),
     defaultValues: {
       nome: "",
       descricao: "",
-      preco: 0,
+      preco: "0",
       aulasPorSemana: 1,
       duracaoMeses: 1,
       ativo: true,
