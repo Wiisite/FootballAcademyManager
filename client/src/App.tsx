@@ -42,6 +42,7 @@ import PortalUnidade from "@/pages/PortalUnidade";
 import PortalUnidadeNovo from "@/pages/PortalUnidadeNovo";
 import SistemaUnidadeNovo from "@/pages/SistemaUnidadeNovo";
 import UnidadeProtectedRoute from "@/components/UnidadeProtectedRoute";
+import UnidadeRedirect from "@/components/UnidadeRedirect";
 import DashboardPortalUnidade from "@/pages/DashboardPortalUnidade";
 import CadastroGestorUnidadePortal from "@/pages/CadastroGestorUnidadePortal";
 import Landing from "@/pages/Landing";
@@ -68,6 +69,7 @@ function Router() {
       
       {/* Rotas antigas para compatibilidade - mantidas temporariamente */}
       <Route path="/portal-unidade-antigo" component={PortalUnidade} />
+      <Route path="/unidade/:filialId/sistema" component={UnidadeRedirect} />
       <Route path="/cadastro-gestor-unidade" component={CadastroGestorUnidadePortal} />
       <Route path="/unidade/:filialId/dashboard" component={DashboardPortalUnidade} />
       <Route path="/unidade/:filialId/alunos" component={AlunosUnidade} />

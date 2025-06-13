@@ -51,8 +51,8 @@ export default function PortalUnidade() {
           description: `Bem-vindo ao portal da ${filialData.nome || 'Unidade'}`,
         });
         
-        // Redirecionar para o sistema da unidade
-        window.location.href = `/unidade/${filialId}/sistema`;
+        // Redirecionar para o novo sistema da unidade
+        setLocation("/unidade/sistema");
       } else {
         toast({
           title: "Erro no login",
