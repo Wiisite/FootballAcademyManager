@@ -111,7 +111,7 @@ export default function AlunosTab() {
           className="flex items-center gap-2"
         >
           <UserPlus className="w-4 h-4" />
-          Cadastrar Primeiro Aluno
+          {alunosArray.length === 0 ? "Cadastrar Primeiro Aluno" : "Novo Aluno"}
         </Button>
       </div>
 

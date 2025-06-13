@@ -99,7 +99,7 @@ export interface IStorage {
   // Alunos operations
   getAlunos(): Promise<AlunoWithFilial[]>;
   getAluno(id: number): Promise<AlunoWithTurmas | undefined>;
-  createAluno(aluno: InsertAluno): Promise<Aluno>;
+  createAluno(aluno: InsertAluno & { emailResponsavel?: string; senhaResponsavel?: string }): Promise<Aluno>;
   updateAluno(id: number, aluno: Partial<InsertAluno>): Promise<Aluno>;
   deleteAluno(id: number): Promise<void>;
 
