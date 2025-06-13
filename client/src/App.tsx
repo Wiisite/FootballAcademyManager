@@ -81,12 +81,7 @@ function Router() {
       <Route path="/unidade/dashboard" component={DashboardUnidadeWrapper} />
       
       {/* Sistema Administrativo Principal */}
-      <Route path="/admin-login" component={AdminLogin} />
-      
-      {/* Rotas do Sistema Administrativo Principal - Protegidas */}
-      {isLoading ? (
-        <Route path="/" component={AdminLogin} />
-      ) : !isAuthenticated ? (
+      {!isAuthenticated ? (
         <Route path="/" component={AdminLogin} />
       ) : (
         <Layout>
@@ -110,6 +105,8 @@ function Router() {
           <Route path="/unidade/:filialId/sistema" component={SistemaUnidade} />
         </Layout>
       )}
+      
+      <Route path="/admin-login" component={AdminLogin} />
       <Route component={NotFound} />
     </Switch>
   );
