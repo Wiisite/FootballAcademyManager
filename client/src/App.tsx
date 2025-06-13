@@ -83,7 +83,10 @@ function Router() {
       
       {/* Sistema Administrativo Principal */}
       {!isAuthenticated ? (
-        <Route path="/" component={AdminLogin} />
+        <>
+          <Route path="/" component={Landing} />
+          <Route path="/admin-login" component={AdminLogin} />
+        </>
       ) : (
         <Layout>
           <Route path="/" component={Dashboard} />
@@ -107,7 +110,6 @@ function Router() {
         </Layout>
       )}
       
-      <Route path="/admin-login" component={AdminLogin} />
       <Route component={NotFound} />
     </Switch>
   );
