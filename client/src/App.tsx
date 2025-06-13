@@ -19,7 +19,7 @@ import DashboardUnidadeWrapper from "@/pages/DashboardUnidadeWrapper";
 import PainelUnidade from "@/pages/PainelUnidade";
 import LoginUnidade from "@/pages/LoginUnidade";
 import CadastroGestorUnidade from "@/pages/CadastroGestorUnidade";
-import AlunosUnidade from "@/pages/AlunosUnidade";
+import AlunosUnidadePortal from "@/pages/AlunosUnidade";
 import ProfessoresUnidade from "@/pages/ProfessoresUnidade";
 import TurmasUnidade from "@/pages/TurmasUnidade";
 import FinanceiroUnidade from "@/pages/FinanceiroUnidade";
@@ -37,6 +37,8 @@ import AvaliacaoFisica from "@/pages/AvaliacaoFisica";
 import PortalUnidades from "@/pages/PortalUnidades";
 import CombosAulas from "@/pages/CombosAulas";
 import CadastroAluno from "@/pages/CadastroAluno";
+import PortalUnidade from "@/pages/PortalUnidade";
+import DashboardPortalUnidade from "@/pages/DashboardPortalUnidade";
 import Layout from "@/components/Layout";
 
 function Router() {

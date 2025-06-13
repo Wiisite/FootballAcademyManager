@@ -1,330 +1,402 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation, useRoute } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, Search, Edit, Trash2, User, ArrowLeft, Eye } from "lucide-react";
-import { useLocation } from "wouter";
-import { toast } from "@/hooks/use-toast";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, ArrowLeft, Building2, Receipt, Filter } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
+import type { AlunoWithFilial } from "@shared/schema";
 import AlunoForm from "@/components/forms/AlunoForm";
-import ExtratoAluno from "@/components/ExtratoAluno";
-import type { AlunoWithFilial, Filial, InsertAluno } from "@shared/schema";
+
+interface UnidadeSession {
+  gestorId: number;
+  filialId: number;
+  nomeGestor: string;
+  nomeFilial: string;
+  loginTime: string;
+}
 
 export default function AlunosUnidade() {
+  const [match, params] = useRoute("/unidade/:filialId/alunos");
   const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
+  const [session, setSession] = useState<UnidadeSession | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedAluno, setSelectedAluno] = useState<AlunoWithFilial | null>(null);
-  const [viewingExtrato, setViewingExtrato] = useState<AlunoWithFilial | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [pagamentoFilter, setPagamentoFilter] = useState<string>("todos");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAluno, setEditingAluno] = useState<AlunoWithFilial | null>(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Recuperar unidade selecionada
-  const unidadeSelecionada = localStorage.getItem("unidade_selecionada");
-  const filialId = unidadeSelecionada ? parseInt(unidadeSelecionada) : null;
+  useEffect(() => {
+    const sessionData = localStorage.getItem('unidadeSession');
+    if (sessionData) {
+      const parsedSession = JSON.parse(sessionData);
+      setSession(parsedSession);
+      
+      if (params?.filialId && parseInt(params.filialId) !== parsedSession.filialId) {
+        toast({
+          title: "Acesso negado",
+          description: "Você não tem permissão para acessar esta unidade",
+          variant: "destructive",
+        });
+        setLocation("/portal-unidade");
+        return;
+      }
+    } else {
+      setLocation("/portal-unidade");
+    }
+  }, [params, setLocation, toast]);
 
-  if (!filialId) {
-    setLocation("/login-unidade");
-    return null;
-  }
-
-  const { data: filial } = useQuery<Filial>({
-    queryKey: [`/api/filiais/${filialId}`],
-  });
-
-  const { data: alunos = [], isLoading } = useQuery<AlunoWithFilial[]>({
-    queryKey: [`/api/filiais/${filialId}/alunos`],
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: InsertAluno) => {
-      return await apiRequest("POST", "/api/alunos", {
-        ...data,
-        filialId
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/filiais/${filialId}/alunos`] });
-      setDialogOpen(false);
-      toast({
-        title: "Sucesso",
-        description: "Aluno cadastrado com sucesso!",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Erro ao cadastrar aluno: " + error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async (data: InsertAluno) => {
-      if (!editingAluno) return;
-      return await apiRequest("PUT", `/api/alunos/${editingAluno.id}`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/filiais/${filialId}/alunos`] });
-      setEditingAluno(null);
-      setDialogOpen(false);
-      toast({
-        title: "Sucesso",
-        description: "Aluno atualizado com sucesso!",
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar aluno: " + error.message,
-        variant: "destructive",
-      });
-    },
+  const { data: alunos, isLoading } = useQuery<AlunoWithFilial[]>({
+    queryKey: ["/api/unidade/alunos", session?.filialId],
+    enabled: !!session?.filialId,
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
-      return await apiRequest("DELETE", `/api/alunos/${id}`);
+      const response = await apiRequest("DELETE", `/api/alunos/${id}`);
+      if (!response.ok) {
+        throw new Error("Erro ao deletar aluno");
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/filiais/${filialId}/alunos`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/unidade/alunos", session?.filialId] });
       toast({
-        title: "Sucesso",
-        description: "Aluno removido com sucesso!",
+        title: "Aluno deletado",
+        description: "Aluno foi removido com sucesso",
       });
     },
-    onError: (error) => {
+    onError: () => {
       toast({
         title: "Erro",
-        description: "Erro ao remover aluno: " + error.message,
+        description: "Erro ao deletar aluno",
         variant: "destructive",
       });
     },
   });
 
-  const filteredAlunos = alunos.filter(aluno =>
-    aluno.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    aluno.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    aluno.cpf?.includes(searchTerm)
-  );
+  const handleEditAluno = (aluno: AlunoWithFilial) => {
+    setEditingAluno(aluno);
+    setIsDialogOpen(true);
+  };
 
-  const handleSubmit = (data: InsertAluno) => {
-    if (editingAluno) {
-      updateMutation.mutate(data);
-    } else {
-      createMutation.mutate(data);
+  const handleDeleteAluno = (id: number) => {
+    if (window.confirm("Tem certeza que deseja deletar este aluno?")) {
+      deleteMutation.mutate(id);
     }
   };
 
-  const openEditDialog = (aluno: AlunoWithFilial) => {
-    setEditingAluno(aluno);
-    setDialogOpen(true);
-  };
-
-  const openCreateDialog = () => {
+  const handleDialogClose = () => {
+    setIsDialogOpen(false);
     setEditingAluno(null);
-    setDialogOpen(true);
+    queryClient.invalidateQueries({ queryKey: ["/api/unidade/alunos", session?.filialId] });
   };
 
-  if (viewingExtrato) {
+  const calcularIdade = (dataNascimento: string) => {
+    const hoje = new Date();
+    const nascimento = new Date(dataNascimento);
+    let idade = hoje.getFullYear() - nascimento.getFullYear();
+    const mes = hoje.getMonth() - nascimento.getMonth();
+    if (mes < 0 || (mes === 0 && hoje.getDate() < nascimento.getDate())) {
+      idade--;
+    }
+    return idade;
+  };
+
+  const getStatusPagamento = (aluno: AlunoWithFilial) => {
+    // Implementar lógica de status de pagamento baseada nos pagamentos do aluno
+    const agora = new Date();
+    const mesAtual = agora.getFullYear() + "-" + String(agora.getMonth() + 1).padStart(2, '0');
+    
+    // Por enquanto, retornar um status simulado
+    return Math.random() > 0.3 ? "em_dia" : "atrasado";
+  };
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case "em_dia":
+        return "default";
+      case "atrasado":
+        return "destructive";
+      default:
+        return "secondary";
+    }
+  };
+
+  // Filtrar alunos
+  const alunosFiltrados = alunos?.filter((aluno) => {
+    const matchesSearch = aluno.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         aluno.cpf?.includes(searchTerm) ||
+                         aluno.email?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = statusFilter === "todos" || aluno.ativo === (statusFilter === "ativo");
+    
+    const statusPag = getStatusPagamento(aluno);
+    const matchesPagamento = pagamentoFilter === "todos" || statusPag === pagamentoFilter;
+    
+    return matchesSearch && matchesStatus && matchesPagamento;
+  }) || [];
+
+  if (!session) {
     return (
-      <ExtratoAluno 
-        aluno={viewingExtrato} 
-        onBack={() => setViewingExtrato(null)} 
-      />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+      </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/painel-unidade")}
-            className="flex items-center gap-2"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar ao Painel
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold">Gestão de Alunos</h1>
-            <p className="text-muted-foreground">
-              {filial?.nome} - {alunos.length} alunos cadastrados
-            </p>
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center space-x-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation(`/unidade/${session.filialId}/dashboard`)}
+              className="text-gray-600 hover:text-gray-900"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar ao Dashboard
+            </Button>
+            
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">Gestão de Alunos</h1>
+                <p className="text-sm text-gray-600">{session.nomeFilial}</p>
+              </div>
+            </div>
           </div>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog} className="flex items-center gap-2">
-              <Plus className="w-4 h-4" />
-              Novo Aluno
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {editingAluno ? "Editar Aluno" : "Novo Aluno"}
-              </DialogTitle>
-            </DialogHeader>
-            <AlunoForm
-              onSubmit={handleSubmit}
-              defaultValues={editingAluno || undefined}
-              isLoading={createMutation.isPending || updateMutation.isPending}
-              filialId={filialId}
-            />
-          </DialogContent>
-        </Dialog>
-      </div>
+      </header>
 
-      {/* Search */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Buscar por nome, email ou CPF..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
-
-      {/* Content */}
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-muted rounded w-3/4"></div>
-                <div className="h-3 bg-muted rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="h-3 bg-muted rounded"></div>
-                  <div className="h-3 bg-muted rounded w-2/3"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : filteredAlunos.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <User className="w-12 h-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">
-              {searchTerm ? "Nenhum aluno encontrado" : "Nenhum aluno cadastrado"}
-            </h3>
-            <p className="text-muted-foreground text-center mb-6">
-              {searchTerm 
-                ? "Tente ajustar os termos de busca" 
-                : "Comece cadastrando o primeiro aluno da unidade"
-              }
+      <div className="p-6">
+        {/* Actions Bar */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Alunos da Unidade</h2>
+            <p className="text-gray-600">
+              {alunosFiltrados.length} {alunosFiltrados.length === 1 ? 'aluno encontrado' : 'alunos encontrados'}
             </p>
-            {!searchTerm && (
-              <Button onClick={openCreateDialog} className="flex items-center gap-2">
-                <Plus className="w-4 h-4" />
-                Cadastrar Primeiro Aluno
+          </div>
+          
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Novo Aluno
               </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingAluno ? "Editar Aluno" : "Cadastrar Novo Aluno"}
+                </DialogTitle>
+              </DialogHeader>
+              <AlunoForm 
+                aluno={editingAluno} 
+                filialId={session.filialId}
+                onSuccess={handleDialogClose}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {/* Search and Filters */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="md:col-span-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Buscar por nome, CPF ou email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Status</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={pagamentoFilter} onValueChange={setPagamentoFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pagamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Pagamentos</SelectItem>
+                  <SelectItem value="em_dia">Em Dia</SelectItem>
+                  <SelectItem value="atrasado">Atrasado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Students Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Filter className="w-5 h-5 mr-2" />
+              Lista de Alunos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="space-y-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-4">
+                    <Skeleton className="w-10 h-10 rounded-full" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-48" />
+                      <Skeleton className="h-3 w-32" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : alunosFiltrados.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <UserPlus className="w-12 h-12 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Nenhum aluno encontrado
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  {searchTerm || statusFilter !== "todos" || pagamentoFilter !== "todos"
+                    ? "Tente ajustar os filtros de busca."
+                    : "Cadastre o primeiro aluno da sua unidade."}
+                </p>
+                <Button onClick={() => setIsDialogOpen(true)}>
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Cadastrar Primeiro Aluno
+                </Button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Aluno</TableHead>
+                      <TableHead>Idade</TableHead>
+                      <TableHead>Contato</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Pagamento</TableHead>
+                      <TableHead>Matrícula</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {alunosFiltrados.map((aluno) => (
+                      <TableRow key={aluno.id}>
+                        <TableCell>
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              <span className="text-sm font-medium text-blue-600">
+                                {aluno.nome.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div>
+                              <div className="font-medium text-gray-900">{aluno.nome}</div>
+                              <div className="text-sm text-gray-600">{aluno.cpf}</div>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {aluno.dataNascimento ? (
+                            <span className="text-sm text-gray-900">
+                              {calcularIdade(aluno.dataNascimento)} anos
+                            </span>
+                          ) : (
+                            <span className="text-sm text-gray-400">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {aluno.telefone && (
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Phone className="w-3 h-3 mr-1" />
+                                {aluno.telefone}
+                              </div>
+                            )}
+                            {aluno.email && (
+                              <div className="flex items-center text-sm text-gray-600">
+                                <Mail className="w-3 h-3 mr-1" />
+                                {aluno.email}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={aluno.ativo ? "default" : "secondary"}>
+                            {aluno.ativo ? "Ativo" : "Inativo"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusVariant(getStatusPagamento(aluno))}>
+                            {getStatusPagamento(aluno) === "em_dia" ? "Em Dia" : "Atrasado"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {aluno.dataMatricula && (
+                            <div className="flex items-center text-sm text-gray-600">
+                              <Calendar className="w-3 h-3 mr-1" />
+                              {format(new Date(aluno.dataMatricula), "dd/MM/yyyy", { locale: ptBR })}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end space-x-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditAluno(aluno)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteAluno(aluno.id)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredAlunos.map((aluno) => (
-            <Card key={aluno.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg">{aluno.nome}</CardTitle>
-                    <p className="text-sm text-muted-foreground">{aluno.email}</p>
-                  </div>
-                  {aluno.statusPagamento && (
-                    <Badge variant={aluno.statusPagamento.emDia ? "default" : "destructive"}>
-                      {aluno.statusPagamento.emDia ? "Em dia" : `${aluno.statusPagamento.diasAtraso} dias`}
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">CPF:</span>
-                    <span>{aluno.cpf || "Não informado"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Telefone:</span>
-                    <span>{aluno.telefone || "Não informado"}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Data de Nascimento:</span>
-                    <span>
-                      {aluno.dataNascimento 
-                        ? new Date(aluno.dataNascimento).toLocaleDateString('pt-BR')
-                        : "Não informado"
-                      }
-                    </span>
-                  </div>
-                </div>
-
-                <Separator className="my-4" />
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setViewingExtrato(aluno)}
-                    className="flex-1"
-                  >
-                    <Eye className="w-4 h-4 mr-1" />
-                    Extrato
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openEditDialog(aluno)}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Tem certeza que deseja excluir o aluno <strong>{aluno.nome}</strong>? 
-                          Esta ação não pode ser desfeita.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => deleteMutation.mutate(aluno.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

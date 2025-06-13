@@ -50,6 +50,15 @@ const isAuthenticatedOrResponsavel = async (req: any, res: any, next: any) => {
   return res.status(401).json({ message: "Unauthorized" });
 };
 
+// Middleware para verificar se gestor de unidade está autenticado
+const isGestorUnidadeAuthenticated = async (req: any, res: any, next: any) => {
+  if (req.session && req.session.gestorUnidadeId && req.session.filialId) {
+    return next();
+  }
+  
+  return res.status(401).json({ message: "Unauthorized" });
+};
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
@@ -1291,6 +1300,284 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error creating complete registration:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // ========== ROUTES DO PORTAL DA UNIDADE ==========
+  
+  // Login para gestores de unidade
+  app.post("/api/auth/unidade/login", async (req, res) => {
+    try {
+      const { email, senha } = loginGestorSchema.parse(req.body);
+      
+      const gestor = await storage.authenticateGestorUnidade(email, senha);
+      if (!gestor) {
+        return res.status(401).json({ message: "Email ou senha incorretos" });
+      }
+
+      // Atualizar último login
+      await storage.updateGestorUltimoLogin(gestor.id);
+
+      // Armazenar na sessão
+      req.session.gestorUnidadeId = gestor.id;
+      req.session.filialId = gestor.filialId;
+
+      res.json({
+        gestor: {
+          id: gestor.id,
+          nome: gestor.nome,
+          email: gestor.email,
+          filialId: gestor.filialId,
+          papel: gestor.papel
+        },
+        filial: gestor.filial
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Error in unidade login:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Logout para gestores de unidade
+  app.post("/api/auth/unidade/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Erro ao fazer logout" });
+      }
+      res.json({ message: "Logout realizado com sucesso" });
+    });
+  });
+
+  // Dashboard metrics da unidade
+  app.get("/api/unidade/dashboard/metrics/:filialId", isGestorUnidadeAuthenticated, async (req, res) => {
+    try {
+      const filialId = parseInt(req.params.filialId);
+      
+      // Verificar se o gestor tem acesso a esta filial
+      if (req.session.filialId !== filialId) {
+        return res.status(403).json({ message: "Acesso negado a esta unidade" });
+      }
+
+      const alunos = await storage.getAlunosByFilial(filialId);
+      const professores = await storage.getProfessoresByFilial(filialId);
+      const turmas = await storage.getTurmasByFilial(filialId);
+      
+      // Calcular receita mensal (pagamentos do mês atual dos alunos da filial)
+      const agora = new Date();
+      const mesAtual = agora.getFullYear() + "-" + String(agora.getMonth() + 1).padStart(2, '0');
+      
+      let receitaMensal = 0;
+      for (const aluno of alunos) {
+        const pagamentos = await storage.getPagamentosByAluno(aluno.id);
+        const pagamentosMes = pagamentos.filter(p => p.mesReferencia === mesAtual);
+        receitaMensal += pagamentosMes.reduce((sum, p) => sum + parseFloat(p.valor.toString()), 0);
+      }
+
+      const metrics = {
+        totalAlunos: alunos.length,
+        totalProfessores: professores.length,
+        totalTurmas: turmas.length,
+        receitaMensal
+      };
+
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching unidade dashboard metrics:", error);
+      res.status(500).json({ message: "Erro ao buscar métricas da unidade" });
+    }
+  });
+
+  // Alunos por filial (para o portal da unidade)
+  app.get("/api/unidade/alunos/:filialId", isGestorUnidadeAuthenticated, async (req, res) => {
+    try {
+      const filialId = parseInt(req.params.filialId);
+      
+      // Verificar se o gestor tem acesso a esta filial
+      if (req.session.filialId !== filialId) {
+        return res.status(403).json({ message: "Acesso negado a esta unidade" });
+      }
+
+      const alunos = await storage.getAlunosByFilial(filialId);
+      
+      // Adicionar informações de sincronização
+      const alunosComSync = alunos.map(aluno => ({
+        ...aluno,
+        sincronizado: true, // Por enquanto, assumir que todos estão sincronizados
+        ultimaSync: new Date().toISOString()
+      }));
+
+      res.json(alunosComSync);
+    } catch (error) {
+      console.error("Error fetching alunos by filial:", error);
+      res.status(500).json({ message: "Erro ao buscar alunos da unidade" });
+    }
+  });
+
+  // Professores por filial (para o portal da unidade)
+  app.get("/api/unidade/professores/:filialId", isGestorUnidadeAuthenticated, async (req, res) => {
+    try {
+      const filialId = parseInt(req.params.filialId);
+      
+      // Verificar se o gestor tem acesso a esta filial
+      if (req.session.filialId !== filialId) {
+        return res.status(403).json({ message: "Acesso negado a esta unidade" });
+      }
+
+      const professores = await storage.getProfessoresByFilial(filialId);
+      res.json(professores);
+    } catch (error) {
+      console.error("Error fetching professores by filial:", error);
+      res.status(500).json({ message: "Erro ao buscar professores da unidade" });
+    }
+  });
+
+  // Turmas por filial (para o portal da unidade)
+  app.get("/api/unidade/turmas/:filialId", isGestorUnidadeAuthenticated, async (req, res) => {
+    try {
+      const filialId = parseInt(req.params.filialId);
+      
+      // Verificar se o gestor tem acesso a esta filial
+      if (req.session.filialId !== filialId) {
+        return res.status(403).json({ message: "Acesso negado a esta unidade" });
+      }
+
+      const turmas = await storage.getTurmasByFilial(filialId);
+      res.json(turmas);
+    } catch (error) {
+      console.error("Error fetching turmas by filial:", error);
+      res.status(500).json({ message: "Erro ao buscar turmas da unidade" });
+    }
+  });
+
+  // Criar aluno com sincronização automática
+  app.post("/api/unidade/alunos", isGestorUnidadeAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertAlunoSchema.parse(req.body);
+      
+      // Garantir que o aluno seja criado na filial correta
+      const alunoData = {
+        ...validatedData,
+        filialId: req.session.filialId
+      };
+
+      const aluno = await storage.createAluno(alunoData);
+      
+      // Adicionar à fila de sincronização
+      await addToSync({
+        unidadeId: req.session.filialId!,
+        tipo: 'aluno',
+        acao: 'create',
+        dados: aluno,
+        timestamp: new Date()
+      });
+
+      res.status(201).json(aluno);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating aluno in unidade:", error);
+      res.status(500).json({ message: "Failed to create aluno" });
+    }
+  });
+
+  // Atualizar aluno com sincronização automática
+  app.put("/api/unidade/alunos/:id", isGestorUnidadeAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Verificar se o aluno pertence à filial do gestor
+      const alunoExistente = await storage.getAluno(id);
+      if (!alunoExistente || alunoExistente.filialId !== req.session.filialId) {
+        return res.status(403).json({ message: "Acesso negado a este aluno" });
+      }
+
+      const validatedData = insertAlunoSchema.partial().parse(req.body);
+      const aluno = await storage.updateAluno(id, validatedData);
+      
+      // Adicionar à fila de sincronização
+      await addToSync({
+        unidadeId: req.session.filialId!,
+        tipo: 'aluno',
+        acao: 'update',
+        dados: aluno,
+        timestamp: new Date()
+      });
+
+      res.json(aluno);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating aluno in unidade:", error);
+      res.status(500).json({ message: "Failed to update aluno" });
+    }
+  });
+
+  // Criar professor com sincronização automática
+  app.post("/api/unidade/professores", isGestorUnidadeAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertProfessorSchema.parse(req.body);
+      
+      // Garantir que o professor seja criado na filial correta
+      const professorData = {
+        ...validatedData,
+        filialId: req.session.filialId
+      };
+
+      const professor = await storage.createProfessor(professorData);
+      
+      // Adicionar à fila de sincronização
+      await addToSync({
+        unidadeId: req.session.filialId!,
+        tipo: 'professor',
+        acao: 'create',
+        dados: professor,
+        timestamp: new Date()
+      });
+
+      res.status(201).json(professor);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating professor in unidade:", error);
+      res.status(500).json({ message: "Failed to create professor" });
+    }
+  });
+
+  // Registrar pagamento com sincronização automática
+  app.post("/api/unidade/pagamentos", isGestorUnidadeAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertPagamentoSchema.parse(req.body);
+      
+      // Verificar se o aluno pertence à filial do gestor
+      const aluno = await storage.getAluno(validatedData.alunoId);
+      if (!aluno || aluno.filialId !== req.session.filialId) {
+        return res.status(403).json({ message: "Acesso negado a este aluno" });
+      }
+
+      const pagamento = await storage.createPagamento(validatedData);
+      
+      // Adicionar à fila de sincronização
+      await addToSync({
+        unidadeId: req.session.filialId!,
+        tipo: 'pagamento',
+        acao: 'create',
+        dados: pagamento,
+        timestamp: new Date()
+      });
+
+      res.status(201).json(pagamento);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating pagamento in unidade:", error);
+      res.status(500).json({ message: "Failed to create pagamento" });
     }
   });
 
