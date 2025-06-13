@@ -52,6 +52,11 @@ export default function AlunoUnidadeForm({ initialData, onSuccess }: AlunoUnidad
   const { filialId } = useUnidadeAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [photoPreview, setPhotoPreview] = useState<string | null>(initialData?.fotoUrl || null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -73,6 +78,7 @@ export default function AlunoUnidadeForm({ initialData, onSuccess }: AlunoUnidad
       observacoes: "",
       ativo: initialData?.ativo ?? true,
       filialId: filialId || 0,
+      fotoUrl: initialData?.fotoUrl || "",
       cpfResponsavel: "",
       emailResponsavel: "",
       senhaResponsavel: "",
@@ -129,6 +135,69 @@ export default function AlunoUnidadeForm({ initialData, onSuccess }: AlunoUnidad
     },
   });
 
+  // Photo upload functions
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setPhotoPreview(result);
+        form.setValue('fotoUrl', result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      setIsCapturing(true);
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível acessar a câmera.",
+        variant: "destructive",
+      });
+      setIsCapturing(false);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx?.drawImage(video, 0, 0);
+      const photoData = canvas.toDataURL('image/jpeg', 0.8);
+      setPhotoPreview(photoData);
+      form.setValue('fotoUrl', photoData);
+      stopCamera();
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setIsCapturing(false);
+  };
+
+  const removePhoto = () => {
+    setPhotoPreview(null);
+    form.setValue('fotoUrl', '');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const onSubmit = (data: FormData) => {
     if (initialData) {
       updateAlunoMutation.mutate(data);
@@ -142,6 +211,100 @@ export default function AlunoUnidadeForm({ initialData, onSuccess }: AlunoUnidad
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Photo Upload Section */}
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold">Foto do Aluno</h3>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex flex-col items-center space-y-4">
+                {/* Photo Preview */}
+                <div className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden">
+                  {photoPreview ? (
+                    <img
+                      src={photoPreview}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="w-16 h-16 text-gray-400" />
+                  )}
+                </div>
+
+                {/* Camera Feed */}
+                {isCapturing && (
+                  <div className="relative">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      muted
+                      className="w-64 h-48 bg-black rounded"
+                    />
+                    <div className="flex gap-2 mt-2">
+                      <Button
+                        type="button"
+                        onClick={capturePhoto}
+                        className="flex items-center gap-2"
+                      >
+                        <Camera className="w-4 h-4" />
+                        Capturar
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={stopCamera}
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload Buttons */}
+                {!isCapturing && (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      Selecionar Arquivo
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={startCamera}
+                      className="flex items-center gap-2"
+                    >
+                      <Camera className="w-4 h-4" />
+                      Tirar Foto
+                    </Button>
+                    {photoPreview && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={removePhoto}
+                        className="flex items-center gap-2 text-red-600 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                        Remover
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -491,6 +654,9 @@ export default function AlunoUnidadeForm({ initialData, onSuccess }: AlunoUnidad
             {isLoading ? "Salvando..." : initialData ? "Atualizar" : "Cadastrar"}
           </Button>
         </div>
+
+        {/* Hidden canvas for photo capture */}
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
       </form>
     </Form>
   );

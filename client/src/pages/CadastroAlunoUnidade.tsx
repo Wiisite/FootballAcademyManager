@@ -96,7 +96,7 @@ export default function CadastroAlunoUnidade() {
           
           <CardContent className="pb-8">
             <AlunoUnidadeForm 
-              initialData={alunoData}
+              initialData={alunoData as any}
               onSuccess={handleSuccess}
             />
           </CardContent>
