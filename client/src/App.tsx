@@ -40,6 +40,7 @@ import CadastroAluno from "@/pages/CadastroAluno";
 import PortalUnidade from "@/pages/PortalUnidade";
 import DashboardPortalUnidade from "@/pages/DashboardPortalUnidade";
 import CadastroGestorUnidadePortal from "@/pages/CadastroGestorUnidadePortal";
+import Landing from "@/pages/Landing";
 import Layout from "@/components/Layout";
 
 function Router() {
