@@ -60,6 +60,7 @@ export const alunos = pgTable("alunos", {
   id: serial("id").primaryKey(),
   nome: varchar("nome", { length: 255 }).notNull(),
   cpf: varchar("cpf", { length: 14 }).unique(),
+  rg: varchar("rg", { length: 20 }),
   email: varchar("email", { length: 255 }),
   telefone: varchar("telefone", { length: 20 }),
   dataNascimento: date("data_nascimento"),

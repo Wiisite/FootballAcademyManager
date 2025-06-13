@@ -128,6 +128,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota para cadastro completo (aluno + responsável)
+  app.post("/api/alunos-completo", isAuthenticated, async (req, res) => {
+    try {
+      const { aluno: alunoData, responsavel: responsavelData } = req.body;
+      
+      // Primeiro, criar o responsável
+      const responsavel = await storage.createResponsavel(responsavelData);
+      
+      // Depois, criar o aluno vinculado ao responsável
+      const alunoCompleto = {
+        ...alunoData,
+        responsavelId: responsavel.id,
+      };
+      
+      const aluno = await storage.createAluno(alunoCompleto);
+      
+      // Sincronização automática com sistema principal
+      if (alunoData.filialId) {
+        await addToSync(alunoData.filialId, 'aluno', 'create', aluno);
+      }
+      
+      res.status(201).json({
+        aluno,
+        responsavel,
+        message: "Aluno e responsável cadastrados com sucesso"
+      });
+    } catch (error) {
+      console.error("Error creating aluno completo:", error);
+      res.status(500).json({ message: "Failed to create aluno and responsavel" });
+    }
+  });
+
   app.patch("/api/alunos/:id", isAuthenticatedOrResponsavel, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
