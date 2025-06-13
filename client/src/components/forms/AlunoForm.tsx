@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertAlunoSchema, type Aluno, type InsertAluno, type Filial } from "@shared/schema";
 import { z } from "zod";
-import { Camera, Download, Upload, ImageIcon } from "lucide-react";
+import { Camera, Download, Upload, ImageIcon, User } from "lucide-react";
 import { useRef, useState } from "react";
 
 const formSchema = insertAlunoSchema.extend({
@@ -22,6 +22,13 @@ const formSchema = insertAlunoSchema.extend({
   rg: z.string().optional(),
   status: z.string().default("ativo"),
   fotoUrl: z.string().optional(),
+  // Campos do responsável
+  responsavelNome: z.string().min(1, "Nome do responsável é obrigatório"),
+  responsavelEmail: z.string().email("Email inválido"),
+  responsavelTelefone: z.string().min(10, "Telefone deve ter pelo menos 10 dígitos"),
+  responsavelCpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF deve estar no formato 000.000.000-00"),
+  responsavelEndereco: z.string().min(1, "Endereço é obrigatório"),
+  responsavelSenha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -161,6 +168,13 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
       fotoUrl: aluno?.fotoUrl || "",
       endereco: aluno?.endereco || "",
       nomeResponsavel: aluno?.nomeResponsavel || "",
+      // Campos do responsável
+      responsavelNome: "",
+      responsavelEmail: "",
+      responsavelTelefone: "",
+      responsavelCpf: "",
+      responsavelEndereco: "",
+      responsavelSenha: "",
       telefoneResponsavel: aluno?.telefoneResponsavel || "",
       filialId: aluno?.filialId || undefined,
       ativo: Boolean(aluno?.ativo ?? true),
@@ -168,8 +182,37 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: InsertAluno) => {
-      const response = await apiRequest("POST", "/api/alunos", data);
+    mutationFn: async (data: FormData) => {
+      // Separar dados do aluno e do responsável
+      const alunoData = {
+        nome: data.nome,
+        cpf: data.cpf,
+        rg: data.rg,
+        email: data.email,
+        telefone: data.telefone,
+        dataNascimento: data.dataNascimento,
+        dataMatricula: data.dataMatricula,
+        fotoUrl: data.fotoUrl,
+        endereco: data.endereco,
+        nomeResponsavel: data.responsavelNome,
+        telefoneResponsavel: data.responsavelTelefone,
+        filialId: data.filialId,
+        ativo: true,
+      };
+
+      const responsavelData = {
+        nome: data.responsavelNome,
+        email: data.responsavelEmail,
+        telefone: data.responsavelTelefone,
+        cpf: data.responsavelCpf,
+        endereco: data.responsavelEndereco,
+        senha: data.responsavelSenha,
+      };
+
+      const response = await apiRequest("POST", "/api/alunos-completo", {
+        aluno: alunoData,
+        responsavel: responsavelData,
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -177,14 +220,14 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
       toast({
         title: "Sucesso",
-        description: "Aluno cadastrado com sucesso.",
+        description: "Aluno e responsável cadastrados com sucesso.",
       });
       onSuccess();
     },
     onError: (error) => {
       toast({
         title: "Erro",
-        description: "Erro ao cadastrar aluno. Verifique os dados e tente novamente.",
+        description: "Erro ao cadastrar aluno e responsável. Verifique os dados e tente novamente.",
         variant: "destructive",
       });
     },
@@ -213,20 +256,21 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
   });
 
   const onSubmit = (data: FormData) => {
-    const submitData: InsertAluno = {
-      ...data,
-      dataNascimento: data.dataNascimento || null,
-      email: data.email || null,
-      telefone: data.telefone || null,
-      endereco: data.endereco || null,
-      nomeResponsavel: data.nomeResponsavel || null,
-      telefoneResponsavel: data.telefoneResponsavel || null,
-    };
-
     if (aluno) {
+      // Se estiver editando, usar a lógica antiga
+      const submitData: InsertAluno = {
+        ...data,
+        dataNascimento: data.dataNascimento || null,
+        email: data.email || null,
+        telefone: data.telefone || null,
+        endereco: data.endereco || null,
+        nomeResponsavel: data.nomeResponsavel || null,
+        telefoneResponsavel: data.telefoneResponsavel || null,
+      };
       updateMutation.mutate(submitData);
     } else {
-      createMutation.mutate(submitData);
+      // Se for novo cadastro, usar a nova lógica unificada
+      createMutation.mutate(data);
     }
   };
 
@@ -571,6 +615,133 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
             </FormItem>
           )}
         />
+
+        {/* Seção do Responsável - apenas para novos cadastros */}
+        {!aluno && (
+          <>
+            <div className="border-t pt-6 mt-6">
+              <div className="flex items-center space-x-2 mb-4">
+                <User className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-semibold text-gray-800">Dados do Responsável</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="responsavelNome"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Responsável *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome completo do responsável" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="responsavelEmail"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email do Responsável *</FormLabel>
+                      <FormControl>
+                        <Input type="email" placeholder="email@exemplo.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="responsavelTelefone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Telefone do Responsável *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="(11) 99999-9999" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="responsavelCpf"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>CPF do Responsável *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="999.999.999-99" 
+                          maxLength={14}
+                          {...field}
+                          onChange={(e) => {
+                            const numbers = e.target.value.replace(/\D/g, '');
+                            let formatted = numbers;
+                            if (numbers.length > 3) {
+                              formatted = numbers.slice(0, 3) + '.' + numbers.slice(3);
+                            }
+                            if (numbers.length > 6) {
+                              formatted = numbers.slice(0, 3) + '.' + numbers.slice(3, 6) + '.' + numbers.slice(6);
+                            }
+                            if (numbers.length > 9) {
+                              formatted = numbers.slice(0, 3) + '.' + numbers.slice(3, 6) + '.' + numbers.slice(6, 9) + '-' + numbers.slice(9, 11);
+                            }
+                            field.onChange(formatted);
+                          }}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="responsavelEndereco"
+                  render={({ field }) => (
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Endereço do Responsável *</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Endereço completo do responsável"
+                          className="min-h-[80px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="responsavelSenha"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Senha para Portal *</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="password" 
+                          placeholder="Mínimo 6 caracteres" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                      <div className="text-xs text-gray-500">
+                        Esta senha será usada para acessar o portal do responsável
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         <FormField
           control={form.control}
