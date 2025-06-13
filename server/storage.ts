@@ -316,6 +316,7 @@ export class DatabaseStorage implements IStorage {
         id: alunos.id,
         nome: alunos.nome,
         cpf: alunos.cpf,
+        rg: alunos.rg,
         email: alunos.email,
         telefone: alunos.telefone,
         dataNascimento: alunos.dataNascimento,
@@ -345,7 +346,6 @@ export class DatabaseStorage implements IStorage {
         const statusPagamento = await this.calcularStatusPagamento(aluno.id);
         return {
           ...aluno,
-          rg: aluno.rg || null,
           statusPagamento,
         };
       })
@@ -788,6 +788,7 @@ export class DatabaseStorage implements IStorage {
         id: alunos.id,
         nome: alunos.nome,
         cpf: alunos.cpf,
+        rg: alunos.rg,
         email: alunos.email,
         telefone: alunos.telefone,
         dataNascimento: alunos.dataNascimento,
@@ -817,7 +818,6 @@ export class DatabaseStorage implements IStorage {
         const statusPagamento = await this.calcularStatusPagamento(aluno.id);
         return {
           ...aluno,
-          rg: aluno.rg || null,
           statusPagamento,
         };
       })
