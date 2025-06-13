@@ -1,9 +1,9 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
 import { adminLoginSchema } from "@shared/schema";
 import { addToSync } from "./sync";
+import { requireAdminAuth, requireGestorAuth, requireResponsavelAuth } from "./auth";
 
 // Extend session type for responsavel and gestor
 declare module "express-session" {
@@ -44,9 +44,9 @@ import {
 import { z } from "zod";
 
 // Middleware para verificar se usuário admin ou responsável está autenticado
-const isAuthenticatedOrResponsavel = async (req: any, res: any, next: any) => {
+const requireAdminAuthOrResponsavel = async (req: any, res: any, next: any) => {
   // Verificar se é usuário administrativo autenticado
-  if (req.isAuthenticated && req.isAuthenticated()) {
+  if (req.requireAdminAuth && req.requireAdminAuth()) {
     return next();
   }
   
@@ -68,9 +68,28 @@ const isGestorUnidadeAuthenticated = async (req: any, res: any, next: any) => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup session middleware first for admin authentication
-  const { getSession } = await import("./replitAuth");
-  app.use(getSession());
+  // Setup session middleware for traditional authentication
+  const expressSession = (await import('express-session')).default;
+  const connectPgSimple = (await import('connect-pg-simple')).default;
+  const PostgresSessionStore = connectPgSimple(expressSession);
+  
+  const sessionStore = new PostgresSessionStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    ttl: 7 * 24 * 60 * 60, // 7 days
+  });
+
+  app.use(expressSession({
+    secret: process.env.SESSION_SECRET || 'escola-futebol-secret-2024',
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false, // Set to true in production with HTTPS
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    },
+  }));
 
   // Traditional admin authentication routes
   app.post('/api/admin/login', async (req, res) => {
@@ -123,23 +142,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(req.session.adminUser);
   });
 
-  // Auth middleware for OAuth (keeping for compatibility)
-  await setupAuth(app);
-
-  // Auth routes
-  app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  // Remove OAuth completely - using only traditional authentication
 
   // Dashboard routes
-  app.get("/api/dashboard/metrics", isAuthenticated, async (req, res) => {
+  app.get("/api/dashboard/metrics", requireAdminAuth, async (req, res) => {
     try {
       const metrics = await storage.getDashboardMetrics();
       res.json(metrics);
@@ -150,7 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Alunos routes
-  app.get("/api/alunos", isAuthenticatedOrResponsavel, async (req, res) => {
+  app.get("/api/alunos", requireAdminAuthOrResponsavel, async (req, res) => {
     try {
       const { filialId } = req.query;
       if (filialId) {
@@ -166,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/alunos/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/alunos/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const aluno = await storage.getAluno(id);
@@ -180,7 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/alunos", isAuthenticatedOrResponsavel, async (req, res) => {
+  app.post("/api/alunos", requireAdminAuthOrResponsavel, async (req, res) => {
     try {
       const validatedData = insertAlunoSchema.parse(req.body);
       const aluno = await storage.createAluno(validatedData);
@@ -201,7 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rota para cadastro completo (aluno + responsável)
-  app.post("/api/alunos-completo", isAuthenticated, async (req, res) => {
+  app.post("/api/alunos-completo", requireAdminAuth, async (req, res) => {
     try {
       const { aluno: alunoData, responsavel: responsavelData } = req.body;
       
@@ -232,7 +238,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/alunos/:id", isAuthenticatedOrResponsavel, async (req, res) => {
+  app.patch("/api/alunos/:id", requireAdminAuthOrResponsavel, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertAlunoSchema.partial().parse(req.body);
@@ -253,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/alunos/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/alunos/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -272,7 +278,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Professores routes
-  app.get("/api/professores", isAuthenticated, async (req, res) => {
+  app.get("/api/professores", requireAdminAuth, async (req, res) => {
     try {
       const { filialId } = req.query;
       if (filialId) {
@@ -288,7 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/professores/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/professores/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const professor = await storage.getProfessor(id);
@@ -302,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/professores", isAuthenticated, async (req, res) => {
+  app.post("/api/professores", requireAdminAuth, async (req, res) => {
     try {
       const validatedData = insertProfessorSchema.parse(req.body);
       const professor = await storage.createProfessor(validatedData);
@@ -322,7 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/professores/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/professores/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertProfessorSchema.partial().parse(req.body);
@@ -343,7 +349,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/professores/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/professores/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -362,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Turmas routes
-  app.get("/api/turmas", isAuthenticated, async (req, res) => {
+  app.get("/api/turmas", requireAdminAuth, async (req, res) => {
     try {
       const { filialId } = req.query;
       if (filialId) {
@@ -378,7 +384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/turmas/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/turmas/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const turma = await storage.getTurma(id);
@@ -392,7 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/turmas", isAuthenticated, async (req, res) => {
+  app.post("/api/turmas", requireAdminAuth, async (req, res) => {
     try {
       const validatedData = insertTurmaSchema.parse(req.body);
       const turma = await storage.createTurma(validatedData);
@@ -406,7 +412,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/turmas/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/turmas/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertTurmaSchema.partial().parse(req.body);
@@ -421,7 +427,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/turmas/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/turmas/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteTurma(id);
@@ -433,7 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Matriculas routes
-  app.get("/api/matriculas", isAuthenticated, async (req, res) => {
+  app.get("/api/matriculas", requireAdminAuth, async (req, res) => {
     try {
       const matriculas = await storage.getMatriculas();
       res.json(matriculas);
@@ -443,7 +449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/matriculas", isAuthenticated, async (req, res) => {
+  app.post("/api/matriculas", requireAdminAuth, async (req, res) => {
     try {
       const validatedData = insertMatriculaSchema.parse(req.body);
       const matricula = await storage.createMatricula(validatedData);
@@ -457,7 +463,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/matriculas/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/matriculas/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteMatricula(id);
@@ -469,7 +475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Pagamentos routes
-  app.get("/api/pagamentos", isAuthenticated, async (req, res) => {
+  app.get("/api/pagamentos", requireAdminAuth, async (req, res) => {
     try {
       const pagamentos = await storage.getPagamentos();
       res.json(pagamentos);
@@ -479,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/pagamentos/aluno/:alunoId", isAuthenticated, async (req, res) => {
+  app.get("/api/pagamentos/aluno/:alunoId", requireAdminAuth, async (req, res) => {
     try {
       const alunoId = parseInt(req.params.alunoId);
       const pagamentos = await storage.getPagamentosByAluno(alunoId);
@@ -490,7 +496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/pagamentos", isAuthenticated, async (req, res) => {
+  app.post("/api/pagamentos", requireAdminAuth, async (req, res) => {
     try {
       const validatedData = insertPagamentoSchema.parse(req.body);
       const pagamento = await storage.createPagamento(validatedData);
@@ -513,7 +519,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/pagamentos/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/pagamentos/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -536,7 +542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Filiais routes
-  app.get("/api/filiais", isAuthenticatedOrResponsavel, async (req, res) => {
+  app.get("/api/filiais", requireAdminAuthOrResponsavel, async (req, res) => {
     try {
       const filiais = await storage.getFiliais();
       res.json(filiais);
@@ -546,7 +552,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/filiais/detalhadas", isAuthenticated, async (req, res) => {
+  app.get("/api/filiais/detalhadas", requireAdminAuth, async (req, res) => {
     try {
       const filiais = await storage.getFiliaisDetalhadas();
       res.json(filiais);
@@ -556,7 +562,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/filiais/:id", isAuthenticated, async (req, res) => {
+  app.get("/api/filiais/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const filial = await storage.getFilial(id);
@@ -570,7 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/filiais", isAuthenticated, async (req, res) => {
+  app.post("/api/filiais", requireAdminAuth, async (req, res) => {
     try {
       const validatedData = insertFilialSchema.parse(req.body);
       const filial = await storage.createFilial(validatedData);
@@ -584,7 +590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/filiais/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/filiais/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertFilialSchema.partial().parse(req.body);
@@ -599,7 +605,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/filiais/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/filiais/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteFilial(id);
@@ -791,7 +797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Presenças routes
-  app.get("/api/presencas/:turmaId/:data", isAuthenticated, async (req, res) => {
+  app.get("/api/presencas/:turmaId/:data", requireAdminAuth, async (req, res) => {
     try {
       const turmaId = parseInt(req.params.turmaId);
       const data = req.params.data;
@@ -803,7 +809,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/presencas/lote", isAuthenticated, async (req, res) => {
+  app.post("/api/presencas/lote", requireAdminAuth, async (req, res) => {
     try {
       const { presencas } = req.body;
       if (!Array.isArray(presencas)) {
@@ -828,7 +834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/presencas/detalhadas", isAuthenticated, async (req, res) => {
+  app.get("/api/presencas/detalhadas", requireAdminAuth, async (req, res) => {
     try {
       const presencas = await storage.getPresencasDetalhadas();
       res.json(presencas);
@@ -849,7 +855,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/pacotes-treino", isAuthenticated, async (req, res) => {
+  app.post("/api/pacotes-treino", requireAdminAuth, async (req, res) => {
     try {
       const pacote = await storage.createPacoteTreino(req.body);
       res.json(pacote);
@@ -880,7 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Physical Evaluation Routes - Categorias de Testes
-  app.get("/api/categorias-testes", isAuthenticated, async (req, res) => {
+  app.get("/api/categorias-testes", requireAdminAuth, async (req, res) => {
     try {
       const categorias = await storage.getCategoriasTestes();
       res.json(categorias);
@@ -890,7 +896,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/categorias-testes", isAuthenticated, async (req, res) => {
+  app.post("/api/categorias-testes", requireAdminAuth, async (req, res) => {
     try {
       const validatedData = insertCategoriaTesteSchema.parse(req.body);
       const categoria = await storage.createCategoriaTeste(validatedData);
@@ -904,7 +910,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/categorias-testes/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/categorias-testes/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertCategoriaTesteSchema.partial().parse(req.body);
@@ -919,7 +925,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/categorias-testes/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/categorias-testes/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteCategoriaTeste(id);
@@ -931,7 +937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Testes Routes
-  app.get("/api/testes", isAuthenticated, async (req, res) => {
+  app.get("/api/testes", requireAdminAuth, async (req, res) => {
     try {
       const testes = await storage.getTestes();
       res.json(testes);
@@ -941,7 +947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/testes/categoria/:categoriaId", isAuthenticated, async (req, res) => {
+  app.get("/api/testes/categoria/:categoriaId", requireAdminAuth, async (req, res) => {
     try {
       const categoriaId = parseInt(req.params.categoriaId);
       const testes = await storage.getTestesByCategoria(categoriaId);
@@ -952,7 +958,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/testes", isAuthenticated, async (req, res) => {
+  app.post("/api/testes", requireAdminAuth, async (req, res) => {
     try {
       const validatedData = insertTesteSchema.parse(req.body);
       const teste = await storage.createTeste(validatedData);
@@ -966,7 +972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/testes/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/testes/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertTesteSchema.partial().parse(req.body);
@@ -981,7 +987,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/testes/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/testes/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteTeste(id);
@@ -993,7 +999,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Avaliacoes Fisicas Routes
-  app.get("/api/avaliacoes-fisicas", isAuthenticated, async (req, res) => {
+  app.get("/api/avaliacoes-fisicas", requireAdminAuth, async (req, res) => {
     try {
       const avaliacoes = await storage.getAvaliacoesFisicas();
       res.json(avaliacoes);
@@ -1003,7 +1009,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/avaliacoes-fisicas/aluno/:alunoId", isAuthenticated, async (req, res) => {
+  app.get("/api/avaliacoes-fisicas/aluno/:alunoId", requireAdminAuth, async (req, res) => {
     try {
       const alunoId = parseInt(req.params.alunoId);
       const avaliacoes = await storage.getAvaliacoesByAluno(alunoId);
@@ -1014,7 +1020,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/avaliacoes-fisicas/filial/:filialId", isAuthenticated, async (req, res) => {
+  app.get("/api/avaliacoes-fisicas/filial/:filialId", requireAdminAuth, async (req, res) => {
     try {
       const filialId = parseInt(req.params.filialId);
       const avaliacoes = await storage.getAvaliacoesByFilial(filialId);
@@ -1025,7 +1031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/avaliacoes-fisicas", isAuthenticated, async (req, res) => {
+  app.post("/api/avaliacoes-fisicas", requireAdminAuth, async (req, res) => {
     try {
       const validatedData = insertAvaliacaoFisicaSchema.parse(req.body);
       const avaliacao = await storage.createAvaliacaoFisica(validatedData);
@@ -1048,7 +1054,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/avaliacoes-fisicas/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/avaliacoes-fisicas/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertAvaliacaoFisicaSchema.partial().parse(req.body);
@@ -1063,7 +1069,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/avaliacoes-fisicas/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/avaliacoes-fisicas/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteAvaliacaoFisica(id);
@@ -1075,7 +1081,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Resultados Testes Routes
-  app.get("/api/resultados-testes", isAuthenticated, async (req, res) => {
+  app.get("/api/resultados-testes", requireAdminAuth, async (req, res) => {
     try {
       const resultados = await storage.getResultadosTestes();
       res.json(resultados);
@@ -1085,7 +1091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/resultados-testes/avaliacao/:avaliacaoId", isAuthenticated, async (req, res) => {
+  app.get("/api/resultados-testes/avaliacao/:avaliacaoId", requireAdminAuth, async (req, res) => {
     try {
       const avaliacaoId = parseInt(req.params.avaliacaoId);
       const resultados = await storage.getResultadosByAvaliacao(avaliacaoId);
@@ -1096,7 +1102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/resultados-testes", isAuthenticated, async (req, res) => {
+  app.post("/api/resultados-testes", requireAdminAuth, async (req, res) => {
     try {
       const validatedData = insertResultadoTesteSchema.parse(req.body);
       const resultado = await storage.createResultadoTeste(validatedData);
@@ -1110,7 +1116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/resultados-testes/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/resultados-testes/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertResultadoTesteSchema.partial().parse(req.body);
@@ -1125,7 +1131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/resultados-testes/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/resultados-testes/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteResultadoTeste(id);
@@ -1137,7 +1143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Metas Alunos Routes
-  app.get("/api/metas-alunos", isAuthenticated, async (req, res) => {
+  app.get("/api/metas-alunos", requireAdminAuth, async (req, res) => {
     try {
       const metas = await storage.getMetasAlunos();
       res.json(metas);
@@ -1147,7 +1153,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/metas-alunos/aluno/:alunoId", isAuthenticated, async (req, res) => {
+  app.get("/api/metas-alunos/aluno/:alunoId", requireAdminAuth, async (req, res) => {
     try {
       const alunoId = parseInt(req.params.alunoId);
       const metas = await storage.getMetasByAluno(alunoId);
@@ -1158,7 +1164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/metas-alunos", isAuthenticated, async (req, res) => {
+  app.post("/api/metas-alunos", requireAdminAuth, async (req, res) => {
     try {
       const validatedData = insertMetaAlunoSchema.parse(req.body);
       const meta = await storage.createMetaAluno(validatedData);
@@ -1172,7 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/metas-alunos/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/metas-alunos/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertMetaAlunoSchema.partial().parse(req.body);
@@ -1187,7 +1193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/metas-alunos/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/metas-alunos/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteMetaAluno(id);
@@ -1199,7 +1205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Combos de Aulas Routes
-  app.get("/api/combos-aulas", isAuthenticated, async (req, res) => {
+  app.get("/api/combos-aulas", requireAdminAuth, async (req, res) => {
     try {
       const combos = await storage.getCombosAulas();
       res.json(combos);
@@ -1209,7 +1215,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/combos-aulas", isAuthenticated, async (req, res) => {
+  app.post("/api/combos-aulas", requireAdminAuth, async (req, res) => {
     try {
       const combo = await storage.createComboAulas(req.body);
       res.status(201).json(combo);
@@ -1219,7 +1225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/combos-aulas/:id", isAuthenticated, async (req, res) => {
+  app.put("/api/combos-aulas/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const combo = await storage.updateComboAulas(id, req.body);
@@ -1230,7 +1236,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/combos-aulas/:id", isAuthenticated, async (req, res) => {
+  app.delete("/api/combos-aulas/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       await storage.deleteComboAulas(id);
@@ -1242,7 +1248,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sync management routes
-  app.get("/api/sync/status", isAuthenticated, async (req, res) => {
+  app.get("/api/sync/status", requireAdminAuth, async (req, res) => {
     try {
       const { syncManager } = await import("./sync");
       const stats = syncManager.getSyncStats();
@@ -1253,7 +1259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/sync/force", isAuthenticated, async (req, res) => {
+  app.post("/api/sync/force", requireAdminAuth, async (req, res) => {
     try {
       const { syncManager } = await import("./sync");
       await syncManager.forceSyncNow();
