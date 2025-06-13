@@ -15,6 +15,7 @@ import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
 import { useUnidadeAuth } from "@/contexts/UnidadeContext";
 import type { AlunoWithFilial } from "@shared/schema";
+import AlunoUnidadeForm from "./forms/AlunoUnidadeForm";
 
 export default function AlunosTab() {
   const { filialId } = useUnidadeAuth();
@@ -127,19 +128,10 @@ export default function AlunosTab() {
                 {editingAluno ? "Editar Aluno" : "Cadastrar Novo Aluno"}
               </DialogTitle>
             </DialogHeader>
-            <div className="p-4">
-              <p className="text-center text-gray-600">
-                Formulário de aluno será implementado em breve.
-              </p>
-              <div className="flex justify-end gap-2 mt-4">
-                <Button variant="outline" onClick={handleCloseDialog}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleCloseDialog}>
-                  Salvar
-                </Button>
-              </div>
-            </div>
+            <AlunoUnidadeForm 
+              initialData={editingAluno} 
+              onSuccess={handleCloseDialog}
+            />
           </DialogContent>
         </Dialog>
       </div>

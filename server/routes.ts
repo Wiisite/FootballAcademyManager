@@ -171,17 +171,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/alunos/:id", requireAdminAuth, async (req, res) => {
+  app.get("/api/alunos/:id", async (req, res) => {
     try {
+      // Check if it's admin or unit manager auth
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
       const id = parseInt(req.params.id);
       const aluno = await storage.getAluno(id);
       if (!aluno) {
         return res.status(404).json({ message: "Aluno not found" });
       }
+
+      // If it's a unit manager, check if aluno belongs to their filial
+      if (isGestor && !isAdmin && aluno.filialId !== req.session.filialId) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       res.json(aluno);
     } catch (error) {
       console.error("Error fetching aluno:", error);
       res.status(500).json({ message: "Failed to fetch aluno" });
+    }
+  });
+
+  app.post("/api/alunos", async (req, res) => {
+    try {
+      // Check if it's admin or unit manager auth
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const alunoData = req.body;
+
+      // If it's a unit manager, ensure filialId matches their unit
+      if (isGestor && !isAdmin) {
+        alunoData.filialId = req.session.filialId;
+      }
+
+      const aluno = await storage.createAluno(alunoData);
+      res.status(201).json(aluno);
+    } catch (error) {
+      console.error("Error creating aluno:", error);
+      res.status(500).json({ message: "Failed to create aluno" });
+    }
+  });
+
+  app.put("/api/alunos/:id", async (req, res) => {
+    try {
+      // Check if it's admin or unit manager auth
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const alunoData = req.body;
+
+      // If it's a unit manager, verify the aluno belongs to their filial
+      if (isGestor && !isAdmin) {
+        const existingAluno = await storage.getAluno(id);
+        if (!existingAluno || existingAluno.filialId !== req.session.filialId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        // Ensure filialId cannot be changed
+        alunoData.filialId = req.session.filialId;
+      }
+
+      const aluno = await storage.updateAluno(id, alunoData);
+      res.json(aluno);
+    } catch (error) {
+      console.error("Error updating aluno:", error);
+      res.status(500).json({ message: "Failed to update aluno" });
+    }
+  });
+
+  app.delete("/api/alunos/:id", async (req, res) => {
+    try {
+      // Check if it's admin or unit manager auth
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+
+      // If it's a unit manager, verify the aluno belongs to their filial
+      if (isGestor && !isAdmin) {
+        const existingAluno = await storage.getAluno(id);
+        if (!existingAluno || existingAluno.filialId !== req.session.filialId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
+
+      await storage.deleteAluno(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting aluno:", error);
+      res.status(500).json({ message: "Failed to delete aluno" });
     }
   });
 
