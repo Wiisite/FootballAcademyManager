@@ -36,6 +36,7 @@ import ResponsavelPortal from "@/pages/ResponsavelPortalSimples";
 import AvaliacaoFisica from "@/pages/AvaliacaoFisica";
 import PortalUnidades from "@/pages/PortalUnidades";
 import CombosAulas from "@/pages/CombosAulas";
+import CadastroAluno from "@/pages/CadastroAluno";
 import Layout from "@/components/Layout";
 
 function Router() {
@@ -97,6 +98,7 @@ function Router() {
             <Route path="/portal-unidades" component={PortalUnidades} />
             <Route path="/gestao-unidades" component={GestaoUnidades} />
             <Route path="/combos-aulas" component={CombosAulas} />
+            <Route path="/cadastro-aluno" component={CadastroAluno} />
           </Layout>
           <Layout>
             <Route path="/unidade/:filialId" component={DashboardUnidadeWrapper} />

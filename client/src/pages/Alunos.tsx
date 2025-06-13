@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ export default function Alunos() {
   const [isResponsavelDialogOpen, setIsResponsavelDialogOpen] = useState(false);
   const [editingAluno, setEditingAluno] = useState<AlunoWithFilial | null>(null);
   const [viewingExtrato, setViewingExtrato] = useState<AlunoWithFilial | null>(null);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -153,25 +155,13 @@ export default function Alunos() {
             </DialogContent>
           </Dialog>
           
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Novo Aluno
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingAluno ? "Editar Aluno" : "Cadastrar Novo Aluno"}
-                </DialogTitle>
-              </DialogHeader>
-              <AlunoForm 
-                aluno={editingAluno} 
-                onSuccess={handleDialogClose}
-              />
-            </DialogContent>
-          </Dialog>
+          <Button 
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => setLocation("/cadastro-aluno")}
+          >
+            <UserPlus className="w-4 h-4 mr-2" />
+            Novo Aluno
+          </Button>
         </div>
       </div>
 
