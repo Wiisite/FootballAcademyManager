@@ -169,6 +169,15 @@ export default function PortalUnidade() {
                   Solicitar suporte
                 </button>
               </p>
+              
+              <Button
+                variant="ghost"
+                onClick={() => window.location.href = "/"}
+                className="mt-4 text-sm text-gray-600 hover:text-gray-800"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar para Página de Apresentação
+              </Button>
             </div>
           </CardContent>
         </Card>
