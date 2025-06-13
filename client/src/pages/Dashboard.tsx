@@ -44,32 +44,7 @@ export default function Dashboard() {
     queryKey: ["/api/filiais"],
   });
 
-  const handleQuickAction = (action: string) => {
-    setIsActionsDialogOpen(false);
-    
-    switch (action) {
-      case "Cadastrar Aluno":
-        window.location.href = "/cadastro-aluno";
-        break;
-      case "Portal Unidades":
-        window.location.href = "/portal-unidades";
-        break;
-      case "Registrar Pagamento":
-        window.location.href = "/financeiro";
-        break;
-      case "Nova Turma":
-        window.location.href = "/turmas";
-        break;
-      case "Relatórios":
-        window.location.href = "/relatorios";
-        break;
-      default:
-        toast({
-          title: "Ação Executada",
-          description: `${action} foi iniciado com sucesso.`,
-        });
-    }
-  };
+
 
   const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
