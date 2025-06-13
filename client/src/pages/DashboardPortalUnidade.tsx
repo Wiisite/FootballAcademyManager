@@ -37,24 +37,47 @@ export default function DashboardPortalUnidade() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const sessionData = localStorage.getItem('unidadeSession');
-    if (sessionData) {
-      const parsedSession = JSON.parse(sessionData);
-      setSession(parsedSession);
-      
-      // Verificar se o filialId da URL corresponde ao da sessão
-      if (params?.filialId && parseInt(params.filialId) !== parsedSession.filialId) {
-        toast({
-          title: "Acesso negado",
-          description: "Você não tem permissão para acessar esta unidade",
-          variant: "destructive",
-        });
+    const checkAuthentication = async () => {
+      try {
+        // First check localStorage for session data
+        const sessionData = localStorage.getItem('unidadeSession');
+        if (!sessionData) {
+          setLocation("/portal-unidade");
+          return;
+        }
+
+        const parsedSession = JSON.parse(sessionData);
+        
+        // Verify session with server
+        const response = await apiRequest("GET", "/api/unidade/auth/check");
+        const authData = await response.json();
+        
+        if (authData.authenticated) {
+          setSession(parsedSession);
+          
+          // Verify filialId matches URL parameter
+          if (params?.filialId && parseInt(params.filialId) !== parsedSession.filialId) {
+            toast({
+              title: "Acesso negado",
+              description: "Você não tem permissão para acessar esta unidade",
+              variant: "destructive",
+            });
+            setLocation("/portal-unidade");
+            return;
+          }
+        } else {
+          // Server session expired, clear localStorage and redirect
+          localStorage.removeItem('unidadeSession');
+          setLocation("/portal-unidade");
+        }
+      } catch (error) {
+        console.error("Authentication check failed:", error);
+        localStorage.removeItem('unidadeSession');
         setLocation("/portal-unidade");
-        return;
       }
-    } else {
-      setLocation("/portal-unidade");
-    }
+    };
+
+    checkAuthentication();
   }, [params, setLocation, toast]);
 
   const { data: metrics, isLoading } = useQuery<{

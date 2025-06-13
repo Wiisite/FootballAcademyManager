@@ -1351,6 +1351,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Check unit authentication status
+  app.get("/api/unidade/auth/check", async (req, res) => {
+    if (req.session && req.session.gestorUnidadeId && req.session.filialId) {
+      try {
+        const gestor = await storage.getGestorUnidade(req.session.gestorUnidadeId);
+        if (gestor) {
+          res.json({
+            authenticated: true,
+            gestor: {
+              id: gestor.id,
+              nome: gestor.nome,
+              email: gestor.email,
+              filialId: gestor.filialId
+            }
+          });
+        } else {
+          res.json({ authenticated: false });
+        }
+      } catch (error) {
+        res.json({ authenticated: false });
+      }
+    } else {
+      res.json({ authenticated: false });
+    }
+  });
+
   // Dashboard metrics da unidade
   app.get("/api/unidade/dashboard/metrics/:filialId", isGestorUnidadeAuthenticated, async (req, res) => {
     try {

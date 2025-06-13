@@ -44,7 +44,7 @@ export default function PortalUnidade() {
         });
         
         // Redirecionar para o dashboard da unidade
-        setLocation(`/unidade/${data.gestor.filialId}/dashboard`);
+        window.location.href = `/unidade/${data.gestor.filialId}/dashboard`;
       } else {
         toast({
           title: "Erro no login",
@@ -53,6 +53,7 @@ export default function PortalUnidade() {
         });
       }
     } catch (error) {
+      console.error("Login error:", error);
       toast({
         title: "Erro de conexão",
         description: "Não foi possível conectar ao servidor",
