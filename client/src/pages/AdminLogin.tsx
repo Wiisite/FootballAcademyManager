@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { Eye, EyeOff, LogIn, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 
 const loginSchema = z.object({
@@ -143,6 +143,17 @@ export default function AdminLogin() {
             <p>Credenciais padrão:</p>
             <p>Email: admin@escola.com</p>
             <p>Senha: password</p>
+          </div>
+          
+          <div className="mt-4 text-center">
+            <Button
+              variant="ghost"
+              onClick={() => navigate("/")}
+              className="text-sm text-gray-600 hover:text-gray-800"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar para Página de Apresentação
+            </Button>
           </div>
         </CardContent>
       </Card>

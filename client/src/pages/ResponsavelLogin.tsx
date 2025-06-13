@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Eye, EyeOff, User, Lock, School } from "lucide-react";
+import { Eye, EyeOff, User, Lock, School, ArrowLeft } from "lucide-react";
 import { InterLogo } from "@/components/InterLogo";
 
 const loginSchema = z.object({
@@ -233,6 +233,15 @@ export default function ResponsavelLogin() {
           <p className="text-sm text-gray-500">
             Precisa de ajuda? Entre em contato com a escola.
           </p>
+          
+          <Button
+            variant="ghost"
+            onClick={() => window.location.href = "/"}
+            className="mt-4 text-sm text-gray-600 hover:text-gray-800"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar para Página de Apresentação
+          </Button>
         </div>
       </div>
     </div>

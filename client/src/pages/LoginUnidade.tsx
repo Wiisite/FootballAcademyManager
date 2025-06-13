@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { loginGestorSchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { useLocation } from "wouter";
-import { Building2, LogIn, Eye, EyeOff } from "lucide-react";
+import { Building2, LogIn, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { z } from "zod";
 
 type LoginFormData = z.infer<typeof loginGestorSchema>;
@@ -160,6 +160,15 @@ export default function LoginUnidade() {
                   Solicitar cadastro
                 </Button>
               </p>
+              
+              <Button
+                variant="ghost"
+                onClick={() => window.location.href = "/"}
+                className="mt-4 text-sm text-gray-600 hover:text-gray-800"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Voltar para Página de Apresentação
+              </Button>
             </div>
           </CardContent>
         </Card>
