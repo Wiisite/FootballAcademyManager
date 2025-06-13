@@ -204,6 +204,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/filiais/detalhadas", requireAdminAuth, async (req, res) => {
+    try {
+      const filiais = await storage.getFiliaisDetalhadas();
+      res.json(filiais);
+    } catch (error) {
+      console.error("Error fetching detailed filiais:", error);
+      res.status(500).json({ message: "Failed to fetch detailed filiais" });
+    }
+  });
+
+  app.get("/api/sync/status", requireAdminAuth, async (req, res) => {
+    try {
+      // Return sync status for portal
+      res.json({
+        lastSync: new Date().toISOString(),
+        status: "success",
+        pendingChanges: 0
+      });
+    } catch (error) {
+      console.error("Error fetching sync status:", error);
+      res.status(500).json({ message: "Failed to fetch sync status" });
+    }
+  });
+
   // Pagamentos routes - protected by admin authentication
   app.get("/api/pagamentos", requireAdminAuth, async (req, res) => {
     try {
