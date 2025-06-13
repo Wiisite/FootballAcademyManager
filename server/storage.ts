@@ -284,6 +284,7 @@ export class DatabaseStorage implements IStorage {
         const statusPagamento = await this.calcularStatusPagamento(aluno.id);
         return {
           ...aluno,
+          rg: aluno.rg || null,
           statusPagamento,
         };
       })
@@ -755,6 +756,7 @@ export class DatabaseStorage implements IStorage {
         const statusPagamento = await this.calcularStatusPagamento(aluno.id);
         return {
           ...aluno,
+          rg: aluno.rg || null,
           statusPagamento,
         };
       })

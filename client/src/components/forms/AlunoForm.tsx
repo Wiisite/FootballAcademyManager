@@ -568,53 +568,113 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="nomeResponsavel"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome do Responsável</FormLabel>
-                <FormControl>
-                  <Input placeholder="Digite o nome do responsável" {...field} value={field.value || ""} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="telefoneResponsavel"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Telefone do Responsável</FormLabel>
-                <FormControl>
-                  <Input placeholder="(11) 99999-9999" {...field} value={field.value || ""} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
 
-        <FormField
-          control={form.control}
-          name="endereco"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Endereço</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Digite o endereço completo"
-                  className="min-h-[80px]"
-                  {...field}
-                  value={field.value || ""}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        {/* Seção de Endereço com campos separados */}
+        <div className="border-t pt-6 mt-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Endereço</h3>
+          
+          <FormField
+            control={form.control}
+            name="endereco"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Endereço Completo</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Digite o endereço completo"
+                    {...field}
+                    value={field.value || ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <FormField
+              control={form.control}
+              name="bairro"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bairro</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Digite o bairro" {...field} value={field.value || ""} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="cep"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CEP</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="00000-000" 
+                      maxLength={9}
+                      {...field}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        // Remove todos os caracteres não numéricos
+                        const numbers = e.target.value.replace(/\D/g, '');
+                        
+                        // Aplica a máscara do CEP
+                        let formatted = numbers;
+                        if (numbers.length > 5) {
+                          formatted = numbers.slice(0, 5) + '-' + numbers.slice(5, 8);
+                        }
+                        
+                        field.onChange(formatted);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="cidade"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cidade</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Digite a cidade" {...field} value={field.value || ""} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="estado"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estado</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="SP" 
+                      maxLength={2}
+                      {...field} 
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        field.onChange(e.target.value.toUpperCase());
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
 
         {/* Seção do Responsável - apenas para novos cadastros */}
         {!aluno && (
