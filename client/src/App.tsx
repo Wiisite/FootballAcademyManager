@@ -45,6 +45,7 @@ import UnidadeProtectedRoute from "@/components/UnidadeProtectedRoute";
 import UnidadeRedirect from "@/components/UnidadeRedirect";
 import DashboardPortalUnidade from "@/pages/DashboardPortalUnidade";
 import CadastroGestorUnidadePortal from "@/pages/CadastroGestorUnidadePortal";
+import CadastroAlunoUnidade from "@/pages/CadastroAlunoUnidade";
 import Landing from "@/pages/Landing";
 import Layout from "@/components/Layout";
 
@@ -64,6 +65,11 @@ function Router() {
       <Route path="/unidade/sistema">
         <UnidadeProtectedRoute>
           <SistemaUnidadeNovo />
+        </UnidadeProtectedRoute>
+      </Route>
+      <Route path="/unidade/cadastro-aluno">
+        <UnidadeProtectedRoute>
+          <CadastroAlunoUnidade />
         </UnidadeProtectedRoute>
       </Route>
       

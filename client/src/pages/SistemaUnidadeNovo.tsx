@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,6 +31,16 @@ import FinanceiroUnidade from "./FinanceiroUnidade";
 export default function SistemaUnidadeNovo() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const { gestorId, filialId, nomeGestor, nomeFilial, logout } = useUnidadeAuth();
+  const [location] = useLocation();
+
+  // Handle URL parameters for tab navigation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    if (tab && ['dashboard', 'alunos', 'professores', 'turmas', 'financeiro'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location]);
 
   const { data: filial, isLoading } = useQuery({
     queryKey: ["/api/filiais", filialId],
