@@ -22,9 +22,9 @@ import {
   LogOut
 } from "lucide-react";
 import { useUnidadeAuth } from "@/contexts/UnidadeContext";
-import AlunosUnidade from "./AlunosUnidade";
-import ProfessoresUnidade from "./ProfessoresUnidade";
-import TurmasUnidade from "./TurmasUnidade";
+import AlunosTab from "@/components/unidade/AlunosTab";
+import ProfessoresTab from "@/components/unidade/ProfessoresTab";
+import TurmasTab from "@/components/unidade/TurmasTab";
 import FinanceiroUnidade from "./FinanceiroUnidade";
 
 export default function SistemaUnidadeNovo() {
@@ -239,15 +239,15 @@ export default function SistemaUnidadeNovo() {
           </TabsContent>
 
           <TabsContent value="alunos">
-            <AlunosUnidade />
+            <AlunosTab />
           </TabsContent>
 
           <TabsContent value="professores">
-            <ProfessoresUnidade />
+            <ProfessoresTab />
           </TabsContent>
 
           <TabsContent value="turmas">
-            <TurmasUnidade />
+            <TurmasTab />
           </TabsContent>
 
           <TabsContent value="financeiro">
