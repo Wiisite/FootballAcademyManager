@@ -263,8 +263,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Credenciais inválidas" });
       }
 
+      // Get filial data
+      const filial = await storage.getFilial(gestor.filialId);
+      if (!filial) {
+        return res.status(404).json({ message: "Filial não encontrada" });
+      }
+
       req.session.gestorUnidadeId = gestor.id;
       req.session.filialId = gestor.filialId;
+
+      await storage.updateGestorUltimoLogin(gestor.id);
 
       res.json({
         success: true,
@@ -273,10 +281,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
           nome: gestor.nome,
           email: gestor.email,
           filialId: gestor.filialId
+        },
+        filial: {
+          id: filial.id,
+          nome: filial.nome
         }
       });
     } catch (error) {
       console.error("Unit login error:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  app.get("/api/unidade/me", requireGestorAuth, async (req, res) => {
+    try {
+      const gestorId = req.session.gestorUnidadeId!;
+      const filialId = req.session.filialId!;
+      
+      const gestor = await storage.getGestorUnidade(gestorId);
+      const filial = await storage.getFilial(filialId);
+      
+      if (!gestor || !filial) {
+        return res.status(404).json({ message: "Dados não encontrados" });
+      }
+
+      res.json({
+        gestor: {
+          id: gestor.id,
+          nome: gestor.nome,
+          email: gestor.email,
+          filialId: gestor.filialId
+        },
+        filial: {
+          id: filial.id,
+          nome: filial.nome
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching unidade session:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
   });
