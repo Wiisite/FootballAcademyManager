@@ -1,17 +1,20 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertAlunoSchema, type AlunoWithFilial } from "@shared/schema";
 import { z } from "zod";
 import { useUnidadeAuth } from "@/contexts/UnidadeContext";
+import { Camera, Upload, X, User } from "lucide-react";
 
 const formSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
@@ -31,6 +34,7 @@ const formSchema = z.object({
   observacoes: z.string().optional(),
   ativo: z.boolean().default(true),
   filialId: z.number(),
+  fotoUrl: z.string().optional(),
   // Campos para portal do responsável
   cpfResponsavel: z.string().min(1, "CPF do responsável é obrigatório para acesso ao portal"),
   emailResponsavel: z.string().email("Email inválido").min(1, "Email é obrigatório para acesso ao portal"),

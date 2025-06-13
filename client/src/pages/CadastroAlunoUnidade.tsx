@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { useLocation, useParams } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, UserPlus, Building2 } from "lucide-react";
@@ -9,6 +10,22 @@ import AlunoUnidadeForm from "@/components/unidade/forms/AlunoUnidadeForm";
 export default function CadastroAlunoUnidade() {
   const [, setLocation] = useLocation();
   const { nomeFilial, isAuthenticated } = useUnidadeAuth();
+  const [editingAlunoId, setEditingAlunoId] = useState<number | null>(null);
+
+  // Get edit ID from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editId = urlParams.get('edit');
+    if (editId) {
+      setEditingAlunoId(parseInt(editId));
+    }
+  }, []);
+
+  // Fetch student data if editing
+  const { data: alunoData, isLoading: isLoadingAluno } = useQuery({
+    queryKey: ["/api/alunos", editingAlunoId],
+    enabled: !!editingAlunoId,
+  });
 
   const handleSuccess = () => {
     setLocation('/unidade/sistema?tab=alunos');
@@ -18,7 +35,7 @@ export default function CadastroAlunoUnidade() {
     setLocation('/unidade/sistema?tab=alunos');
   };
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || (editingAlunoId && isLoadingAluno)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-blue-50">
         <div className="animate-spin w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full" />
@@ -68,10 +85,10 @@ export default function CadastroAlunoUnidade() {
               </div>
               <div>
                 <CardTitle className="text-2xl text-gray-900">
-                  Novo Aluno
+                  {editingAlunoId ? "Editar Aluno" : "Novo Aluno"}
                 </CardTitle>
                 <p className="text-gray-600 mt-1">
-                  Preencha os dados completos do aluno para realizar o cadastro
+                  {editingAlunoId ? "Edite os dados do aluno" : "Preencha os dados completos do aluno para realizar o cadastro"}
                 </p>
               </div>
             </div>
@@ -79,6 +96,7 @@ export default function CadastroAlunoUnidade() {
           
           <CardContent className="pb-8">
             <AlunoUnidadeForm 
+              initialData={alunoData}
               onSuccess={handleSuccess}
             />
           </CardContent>
