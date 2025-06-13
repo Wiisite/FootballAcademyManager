@@ -21,7 +21,7 @@ export default function PortalUnidade() {
     setIsLoading(true);
 
     try {
-      const response = await apiRequest("POST", "/api/auth/unidade/login", {
+      const response = await apiRequest("POST", "/api/unidade/login", {
         email,
         senha
       });
@@ -29,22 +29,30 @@ export default function PortalUnidade() {
       const data = await response.json();
       
       if (response.ok) {
+        // Get additional gestor information for the session
+        const gestorResponse = await apiRequest("GET", `/api/gestores-unidade/${data.gestorId}`);
+        const gestorData = await gestorResponse.json();
+        
+        // Get filial information
+        const filialResponse = await apiRequest("GET", `/api/filiais/${data.filialId}`);
+        const filialData = await filialResponse.json();
+        
         // Salvar dados da sessão no localStorage
         localStorage.setItem('unidadeSession', JSON.stringify({
-          gestorId: data.gestor.id,
-          filialId: data.gestor.filialId,
-          nomeGestor: data.gestor.nome,
-          nomeFilial: data.filial.nome,
+          gestorId: data.gestorId,
+          filialId: data.filialId,
+          nomeGestor: gestorData.nome || 'Gestor',
+          nomeFilial: filialData.nome || 'Unidade',
           loginTime: new Date().toISOString()
         }));
         
         toast({
           title: "Login realizado com sucesso!",
-          description: `Bem-vindo ao portal da ${data.filial.nome}`,
+          description: `Bem-vindo ao portal da ${filialData.nome || 'Unidade'}`,
         });
         
         // Redirecionar para o dashboard da unidade
-        window.location.href = `/unidade/${data.gestor.filialId}/dashboard`;
+        window.location.href = `/unidade/${data.filialId}/dashboard`;
       } else {
         toast({
           title: "Erro no login",

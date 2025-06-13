@@ -1351,6 +1351,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Get gestor unidade by ID
+  app.get("/api/gestores-unidade/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const gestor = await storage.getGestorUnidade(id);
+      if (!gestor) {
+        return res.status(404).json({ message: "Gestor not found" });
+      }
+      res.json(gestor);
+    } catch (error) {
+      console.error("Error fetching gestor unidade:", error);
+      res.status(500).json({ message: "Failed to fetch gestor" });
+    }
+  });
+
   // Check unit authentication status
   app.get("/api/unidade/auth/check", async (req, res) => {
     if (req.session && req.session.gestorUnidadeId && req.session.filialId) {
