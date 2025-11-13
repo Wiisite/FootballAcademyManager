@@ -612,6 +612,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Get responsavel data with students
+  app.get("/api/responsaveis/me", requireResponsavelAuth, async (req, res) => {
+    try {
+      const responsavelId = req.session.responsavelId!;
+      const responsavel = await storage.getResponsavelWithAlunos(responsavelId);
+      
+      if (!responsavel) {
+        return res.status(404).json({ message: "Responsável não encontrado" });
+      }
+
+      res.json(responsavel);
+    } catch (error) {
+      console.error("Error fetching responsavel data:", error);
+      res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Logout responsavel
+  app.post("/api/responsaveis/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Erro ao fazer logout" });
+      }
+      res.json({ success: true });
+    });
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
