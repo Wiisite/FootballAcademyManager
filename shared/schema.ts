@@ -597,6 +597,14 @@ export const insertPagamentoSchema = createInsertSchema(pagamentos).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  valor: z.union([
+    z.string().refine((val) => {
+      const num = parseFloat(val.replace(',', '.'));
+      return !isNaN(num) && num > 0;
+    }, "Valor deve ser um número maior que zero"),
+    z.number().positive("Valor deve ser maior que zero").transform(val => val.toString())
+  ]),
 });
 
 export const insertFilialSchema = createInsertSchema(filiais).omit({

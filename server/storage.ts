@@ -124,6 +124,7 @@ export interface IStorage {
 
   // Pagamentos operations
   getPagamentos(): Promise<Pagamento[]>;
+  getPagamento(id: number): Promise<Pagamento | undefined>;
   getPagamentosByAluno(alunoId: number): Promise<Pagamento[]>;
   createPagamento(pagamento: InsertPagamento): Promise<Pagamento>;
   deletePagamento(id: number): Promise<void>;
@@ -608,6 +609,11 @@ export class DatabaseStorage implements IStorage {
   // Pagamentos operations
   async getPagamentos(): Promise<Pagamento[]> {
     return await db.select().from(pagamentos).orderBy(desc(pagamentos.createdAt));
+  }
+
+  async getPagamento(id: number): Promise<Pagamento | undefined> {
+    const [pagamento] = await db.select().from(pagamentos).where(eq(pagamentos.id, id));
+    return pagamento;
   }
 
   async getPagamentosByAluno(alunoId: number): Promise<Pagamento[]> {

@@ -396,14 +396,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Pagamentos routes - protected by admin authentication
-  app.get("/api/pagamentos", requireAdminAuth, async (req, res) => {
+  // Pagamentos routes - protected by admin or unit manager authentication
+  app.get("/api/pagamentos", async (req, res) => {
     try {
-      const pagamentos = await storage.getPagamentos();
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      let pagamentos = await storage.getPagamentos();
+      
+      // If it's a unit manager, filter payments by students from their filial
+      if (isGestor && !isAdmin) {
+        const alunosDaFilial = await storage.getAlunosByFilial(req.session.filialId!);
+        const alunoIds = alunosDaFilial.map(a => a.id);
+        pagamentos = pagamentos.filter(p => p.alunoId && alunoIds.includes(p.alunoId));
+      }
+      
       res.json(pagamentos);
     } catch (error) {
       console.error("Error fetching pagamentos:", error);
       res.status(500).json({ message: "Failed to fetch pagamentos" });
+    }
+  });
+
+  app.post("/api/pagamentos", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      // Validate and transform the request body
+      const { insertPagamentoSchema } = await import("@shared/schema");
+      const validationResult = insertPagamentoSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid payment data", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const pagamentoData = validationResult.data;
+
+      // If it's a unit manager, verify the student belongs to their filial
+      if (isGestor && !isAdmin && pagamentoData.alunoId) {
+        const aluno = await storage.getAluno(pagamentoData.alunoId);
+        if (!aluno || aluno.filialId !== req.session.filialId) {
+          return res.status(403).json({ message: "Access denied - student not in your unit" });
+        }
+      }
+
+      const pagamento = await storage.createPagamento(pagamentoData);
+      res.status(201).json(pagamento);
+    } catch (error) {
+      console.error("Error creating pagamento:", error);
+      res.status(500).json({ message: "Failed to create pagamento" });
+    }
+  });
+
+  app.delete("/api/pagamentos/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      
+      // Fetch the specific payment instead of loading all payments
+      const pagamento = await storage.getPagamento(id);
+      
+      if (!pagamento) {
+        return res.status(404).json({ message: "Payment not found" });
+      }
+      
+      // If it's a unit manager, verify the payment belongs to a student from their filial
+      if (isGestor && !isAdmin) {
+        if (pagamento.alunoId) {
+          const aluno = await storage.getAluno(pagamento.alunoId);
+          if (!aluno || aluno.filialId !== req.session.filialId) {
+            return res.status(403).json({ message: "Access denied - payment not from your unit" });
+          }
+        } else {
+          return res.status(403).json({ message: "Access denied" });
+        }
+      }
+
+      await storage.deletePagamento(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting pagamento:", error);
+      res.status(500).json({ message: "Failed to delete pagamento" });
     }
   });
 
