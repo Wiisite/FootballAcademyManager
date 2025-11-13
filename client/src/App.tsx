@@ -24,7 +24,6 @@ import AlunosUnidade from "@/pages/AlunosUnidade";
 import ProfessoresUnidade from "@/pages/ProfessoresUnidade";
 import TurmasUnidade from "@/pages/TurmasUnidade";
 import FinanceiroUnidade from "@/pages/FinanceiroUnidade";
-import SistemaUnidade from "@/pages/SistemaUnidade";
 import UnidadeAlunos from "@/pages/UnidadeAlunos";
 import UnidadeProfessores from "@/pages/UnidadeProfessores";
 import FinanceiroCompleto from "@/pages/FinanceiroCompleto";
@@ -38,7 +37,6 @@ import AvaliacaoFisica from "@/pages/AvaliacaoFisica";
 import PortalUnidades from "@/pages/PortalUnidades";
 import CombosAulas from "@/pages/CombosAulas";
 import CadastroAluno from "@/pages/CadastroAluno";
-import PortalUnidade from "@/pages/PortalUnidade";
 import PortalUnidadeNovo from "@/pages/PortalUnidadeNovo";
 import SistemaUnidadeNovo from "@/pages/SistemaUnidadeNovo";
 import UnidadeProtectedRoute from "@/components/UnidadeProtectedRoute";
@@ -73,8 +71,7 @@ function Router() {
         </UnidadeProtectedRoute>
       </Route>
       
-      {/* Rotas antigas para compatibilidade - mantidas temporariamente */}
-      <Route path="/portal-unidade-antigo" component={PortalUnidade} />
+      {/* Redirect para compatibilidade */}
       <Route path="/unidade/:filialId/sistema" component={UnidadeRedirect} />
       <Route path="/cadastro-gestor-unidade" component={CadastroGestorUnidadePortal} />
       <Route path="/unidade/:filialId/dashboard" component={DashboardPortalUnidade} />
@@ -121,7 +118,6 @@ function Router() {
           <Route path="/combos-aulas" component={CombosAulas} />
           <Route path="/cadastro-aluno" component={CadastroAluno} />
           <Route path="/unidade/:filialId" component={DashboardUnidadeWrapper} />
-          <Route path="/unidade/:filialId/sistema" component={SistemaUnidade} />
         </Layout>
       )}
       
