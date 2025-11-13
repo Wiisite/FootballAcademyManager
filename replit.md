@@ -152,3 +152,33 @@ Each authentication type has dedicated login endpoints and middleware for access
 - bcrypt for secure password hashing
 - Zod for runtime type validation
 - nanoid for unique ID generation
+
+## Recent Changes
+
+### Guardian Portal Fix (November 2025)
+**Problem**: Guardians (responsáveis) could register and login, but the portal failed to load data after authentication.
+
+**Root Cause**: Missing API endpoint GET `/api/responsaveis/me` to fetch guardian data with associated students.
+
+**Solution Implemented**:
+1. **Backend** (`server/routes.ts`):
+   - Added GET `/api/responsaveis/me` endpoint with `requireResponsavelAuth` middleware
+   - Returns complete `ResponsavelWithAlunos` object including list of students
+   - Leverages existing `storage.getResponsavelWithAlunos()` function
+
+2. **Frontend** (`client/src/hooks/useResponsavel.ts`):
+   - Added TypeScript typing: `useQuery<ResponsavelWithAlunos | null>`
+   - Fixed logout endpoint to use correct route `/api/responsavel/logout`
+   - Improved type safety across the guardian authentication flow
+
+3. **UI** (`client/src/pages/ResponsavelPortal.tsx`):
+   - Removed duplicate loading state code
+   - Removed unnecessary type casting
+   - Updated logout handler to use proper API call instead of localStorage manipulation
+
+**Authentication Flow**:
+- POST `/api/responsavel/login` → creates session with `responsavelId`
+- GET `/api/responsaveis/me` → fetches guardian data (requires session)
+- POST `/api/responsavel/logout` → destroys session
+
+**Impact**: Guardian portal now loads correctly after login, displaying student information and payment status.
