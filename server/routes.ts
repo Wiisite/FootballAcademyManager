@@ -629,16 +629,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Logout responsavel
-  app.post("/api/responsaveis/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ message: "Erro ao fazer logout" });
-      }
-      res.json({ success: true });
-    });
-  });
-
   const httpServer = createServer(app);
   return httpServer;
 }
