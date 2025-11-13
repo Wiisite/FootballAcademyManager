@@ -708,6 +708,31 @@ export const insertMetaAlunoSchema = createInsertSchema(metasAlunos).omit({
   updatedAt: true,
 });
 
+// Guardian portal schemas - restrict to safe fields only
+export const updateAlunoContactSchema = z.object({
+  email: z.string().email("Email inválido").optional(),
+  telefone: z.string().max(20).optional(),
+  endereco: z.string().optional(),
+  bairro: z.string().max(100).optional(),
+  cep: z.string().max(10).optional(),
+  cidade: z.string().max(100).optional(),
+  estado: z.string().max(2).optional(),
+  telefoneResponsavel: z.string().max(20).optional(),
+  fotoUrl: z.string().optional(),
+});
+
+export const guardianInscricaoEventoSchema = z.object({
+  alunoId: z.number().int().positive(),
+  observacoes: z.string().optional(),
+});
+
+export const guardianCompraUniformeSchema = z.object({
+  alunoId: z.number().int().positive(),
+  tamanho: z.string(),
+  cor: z.string(),
+  quantidade: z.number().int().positive().default(1),
+});
+
 // Unit manager schemas
 export const insertGestorUnidadeSchema = createInsertSchema(gestoresUnidade).omit({
   id: true,

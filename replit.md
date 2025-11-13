@@ -182,3 +182,58 @@ Each authentication type has dedicated login endpoints and middleware for access
 - POST `/api/responsavel/logout` → destroys session
 
 **Impact**: Guardian portal now loads correctly after login, displaying student information and payment status.
+
+### Guardian Portal Management Features (November 2025)
+**Enhancement**: Added complete management capabilities to the guardian portal, allowing parents to manage their children's information and participate in school activities.
+
+**Backend Implementation** (`server/storage.ts`):
+- `getAlunoForGuardian()` - Verifies student ownership before any operation
+- `updateAlunoContact()` - Updates contact information (email, phone, address) with ownership validation
+- `getTurmasByAluno()` - Retrieves enrolled classes for a student
+- `getEventosDisponiveisByFilial()` - Lists available events for the guardian's unit
+- `createGuardianInscricao()` - Enrolls students in events with duplicate prevention and capacity checking
+- `createGuardianCompra()` - Purchases uniforms with atomic stock control and size/color validation
+- `getPagamentosByAlunoForGuardian()` - Retrieves payment history with ownership validation
+- `getInscricoesEventosByAluno()` - Lists student event enrollments
+
+**API Routes** (`server/routes.ts` - `/api/portal` namespace):
+- PATCH `/api/portal/alunos/:id/contact` - Update student contact information
+- GET `/api/portal/alunos/:id/turmas` - List student's enrolled classes
+- GET `/api/portal/alunos/:id/pagamentos` - View payment history
+- GET `/api/portal/alunos/:id/inscricoes` - View event enrollments
+- GET `/api/portal/eventos` - List available events for guardian's unit
+- POST `/api/portal/eventos/:id/inscricoes` - Enroll student in event
+- POST `/api/portal/uniformes/:id/compras` - Purchase uniform
+
+**Validation Schemas** (`shared/schema.ts`):
+- `updateAlunoContactSchema` - Restricts editable fields to safe contact/address information
+- `guardianInscricaoEventoSchema` - Validates event enrollment requests
+- `guardianCompraUniformeSchema` - Validates uniform purchase with size, color, and quantity
+
+**Frontend Features** (`client/src/pages/ResponsavelPortal.tsx`):
+- Student information cards with inline edit buttons
+- Modal dialogs for editing contact information (email, phone, address, city, state, ZIP)
+- Payment history viewer showing past transactions and payment methods
+- Event enrollment system with student selection and observation notes
+- Uniform purchase interface with size/color selection and quantity control
+- Real-time stock validation and duplicate enrollment prevention
+- Comprehensive data-testid attributes for all interactive elements
+
+**Security Measures**:
+- All operations verify `responsavelId` from session before execution
+- Ownership validation ensures guardians can only access their own students' data
+- Critical fields (CPF, RG, full name, birth date, unit assignment) are blocked from guardian editing
+- Unit (filial) isolation maintained across all operations
+- Event enrollment limited to student's assigned unit
+- Atomic stock updates prevent overselling uniforms
+- Duplicate enrollment detection for events
+
+**User Experience**:
+- Intuitive tab-based navigation (Dashboard, My Children, Payments, Events, Uniforms)
+- Loading states and error handling with toast notifications
+- Optimistic UI updates with automatic cache invalidation
+- Responsive card layouts for mobile and desktop
+- Clear payment status badges (up-to-date vs. overdue)
+- Selection dropdowns for choosing which child to enroll/purchase for
+
+**Impact**: Guardians can now fully manage their children's school experience through the portal, including updating contact information, viewing payment history, enrolling in events, and purchasing uniforms - all with proper security and validation.

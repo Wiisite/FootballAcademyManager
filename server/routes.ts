@@ -1,7 +1,12 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { adminLoginSchema } from "@shared/schema";
+import { 
+  adminLoginSchema,
+  updateAlunoContactSchema,
+  guardianInscricaoEventoSchema,
+  guardianCompraUniformeSchema
+} from "@shared/schema";
 import { addToSync } from "./sync";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
@@ -626,6 +631,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching responsavel data:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
+    }
+  });
+
+  // Guardian portal routes
+  // Update aluno contact information
+  app.patch("/api/portal/alunos/:alunoId/contact", requireResponsavelAuth, async (req, res) => {
+    try {
+      const responsavelId = req.session.responsavelId!;
+      const alunoId = parseInt(req.params.alunoId);
+      
+      const validated = updateAlunoContactSchema.parse(req.body);
+      
+      const updated = await storage.updateAlunoContact(alunoId, responsavelId, validated);
+      res.json(updated);
+    } catch (error: any) {
+      if (error.message === "Aluno not found or unauthorized") {
+        return res.status(403).json({ message: "Não autorizado" });
+      }
+      console.error("Error updating aluno contact:", error);
+      res.status(500).json({ message: "Erro ao atualizar dados do aluno" });
+    }
+  });
+
+  // Get student's classes
+  app.get("/api/portal/alunos/:alunoId/turmas", requireResponsavelAuth, async (req, res) => {
+    try {
+      const responsavelId = req.session.responsavelId!;
+      const alunoId = parseInt(req.params.alunoId);
+      
+      const turmas = await storage.getTurmasByAluno(alunoId, responsavelId);
+      res.json(turmas);
+    } catch (error) {
+      console.error("Error fetching turmas:", error);
+      res.status(500).json({ message: "Erro ao buscar turmas" });
+    }
+  });
+
+  // Get student's payment history
+  app.get("/api/portal/alunos/:alunoId/pagamentos", requireResponsavelAuth, async (req, res) => {
+    try {
+      const responsavelId = req.session.responsavelId!;
+      const alunoId = parseInt(req.params.alunoId);
+      
+      const pagamentos = await storage.getPagamentosByAlunoForGuardian(alunoId, responsavelId);
+      res.json(pagamentos);
+    } catch (error) {
+      console.error("Error fetching pagamentos:", error);
+      res.status(500).json({ message: "Erro ao buscar pagamentos" });
+    }
+  });
+
+  // Get student's event enrollments
+  app.get("/api/portal/alunos/:alunoId/inscricoes", requireResponsavelAuth, async (req, res) => {
+    try {
+      const responsavelId = req.session.responsavelId!;
+      const alunoId = parseInt(req.params.alunoId);
+      
+      const aluno = await storage.getAlunoForGuardian(alunoId, responsavelId);
+      if (!aluno) {
+        return res.status(403).json({ message: "Não autorizado" });
+      }
+      
+      const inscricoes = await storage.getInscricoesEventosByAluno(alunoId);
+      res.json(inscricoes);
+    } catch (error) {
+      console.error("Error fetching inscricoes:", error);
+      res.status(500).json({ message: "Erro ao buscar inscrições" });
+    }
+  });
+
+  // Get available events for guardian's unit
+  app.get("/api/portal/eventos", requireResponsavelAuth, async (req, res) => {
+    try {
+      const responsavelId = req.session.responsavelId!;
+      const responsavel = await storage.getResponsavelWithAlunos(responsavelId);
+      
+      if (!responsavel || !responsavel.alunos || responsavel.alunos.length === 0) {
+        return res.json([]);
+      }
+
+      const filialId = responsavel.alunos[0].filialId;
+      if (!filialId) {
+        return res.json([]);
+      }
+      
+      const eventos = await storage.getEventosDisponiveisByFilial(filialId);
+      res.json(eventos);
+    } catch (error) {
+      console.error("Error fetching eventos:", error);
+      res.status(500).json({ message: "Erro ao buscar eventos" });
+    }
+  });
+
+  // Enroll student in event
+  app.post("/api/portal/eventos/:eventoId/inscricoes", requireResponsavelAuth, async (req, res) => {
+    try {
+      const responsavelId = req.session.responsavelId!;
+      const eventoId = parseInt(req.params.eventoId);
+      
+      const validated = guardianInscricaoEventoSchema.parse(req.body);
+      
+      const inscricao = await storage.createGuardianInscricao(
+        eventoId,
+        validated.alunoId,
+        responsavelId,
+        validated.observacoes
+      );
+      
+      res.json(inscricao);
+    } catch (error: any) {
+      if (error.message?.includes("unauthorized") || error.message?.includes("not found")) {
+        return res.status(403).json({ message: "Não autorizado" });
+      }
+      if (error.message?.includes("already enrolled")) {
+        return res.status(400).json({ message: "Aluno já inscrito neste evento" });
+      }
+      if (error.message?.includes("not available")) {
+        return res.status(400).json({ message: error.message });
+      }
+      console.error("Error enrolling in event:", error);
+      res.status(500).json({ message: "Erro ao inscrever no evento" });
+    }
+  });
+
+  // Purchase uniform
+  app.post("/api/portal/uniformes/:uniformeId/compras", requireResponsavelAuth, async (req, res) => {
+    try {
+      const responsavelId = req.session.responsavelId!;
+      const uniformeId = parseInt(req.params.uniformeId);
+      
+      const validated = guardianCompraUniformeSchema.parse(req.body);
+      
+      const compra = await storage.createGuardianCompra(
+        uniformeId,
+        validated.alunoId,
+        responsavelId,
+        validated.tamanho,
+        validated.cor,
+        validated.quantidade
+      );
+      
+      res.json(compra);
+    } catch (error: any) {
+      if (error.message?.includes("unauthorized") || error.message?.includes("not found")) {
+        return res.status(403).json({ message: "Não autorizado" });
+      }
+      if (error.message?.includes("stock") || error.message?.includes("available")) {
+        return res.status(400).json({ message: error.message });
+      }
+      console.error("Error purchasing uniform:", error);
+      res.status(500).json({ message: "Erro ao comprar uniforme" });
     }
   });
 

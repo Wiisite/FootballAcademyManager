@@ -235,6 +235,16 @@ export interface IStorage {
   createComboAulas(combo: any): Promise<any>;
   updateComboAulas(id: number, combo: any): Promise<any>;
   deleteComboAulas(id: number): Promise<void>;
+
+  // Guardian portal operations
+  getAlunoForGuardian(alunoId: number, responsavelId: number): Promise<AlunoWithTurmas | undefined>;
+  updateAlunoContact(alunoId: number, responsavelId: number, data: any): Promise<Aluno>;
+  getTurmasByAluno(alunoId: number, responsavelId: number): Promise<TurmaWithProfessor[]>;
+  getEventosDisponiveisByFilial(filialId: number): Promise<EventoWithFilial[]>;
+  createGuardianInscricao(eventoId: number, alunoId: number, responsavelId: number, observacoes?: string): Promise<InscricaoEvento>;
+  createGuardianCompra(uniformeId: number, alunoId: number, responsavelId: number, tamanho: string, cor: string, quantidade: number): Promise<CompraUniforme>;
+  getPagamentosByAlunoForGuardian(alunoId: number, responsavelId: number): Promise<Pagamento[]>;
+  getInscricoesEventosByAluno(alunoId: number): Promise<InscricaoEvento[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1449,6 +1459,237 @@ export class DatabaseStorage implements IStorage {
 
   async deleteComboAulas(id: number): Promise<void> {
     await db.delete(combosAulas).where(eq(combosAulas.id, id));
+  }
+
+  // Guardian portal operations
+  async getAlunoForGuardian(alunoId: number, responsavelId: number): Promise<AlunoWithTurmas | undefined> {
+    // Verify the aluno belongs to the responsavel
+    const [aluno] = await db
+      .select()
+      .from(alunos)
+      .where(and(eq(alunos.id, alunoId), eq(alunos.responsavelId, responsavelId)))
+      .limit(1);
+    
+    if (!aluno) {
+      return undefined;
+    }
+
+    return await this.getAluno(alunoId);
+  }
+
+  async updateAlunoContact(alunoId: number, responsavelId: number, data: any): Promise<Aluno> {
+    // First verify ownership
+    const aluno = await this.getAlunoForGuardian(alunoId, responsavelId);
+    if (!aluno) {
+      throw new Error("Aluno not found or unauthorized");
+    }
+
+    const [updated] = await db
+      .update(alunos)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(alunos.id, alunoId))
+      .returning();
+    
+    return updated;
+  }
+
+  async getTurmasByAluno(alunoId: number, responsavelId: number): Promise<TurmaWithProfessor[]> {
+    // Verify ownership first
+    const aluno = await this.getAlunoForGuardian(alunoId, responsavelId);
+    if (!aluno) {
+      return [];
+    }
+
+    const result = await db
+      .select()
+      .from(turmas)
+      .leftJoin(professores, eq(turmas.professorId, professores.id))
+      .leftJoin(filiais, eq(turmas.filialId, filiais.id))
+      .leftJoin(matriculas, eq(matriculas.turmaId, turmas.id))
+      .where(and(
+        eq(matriculas.alunoId, alunoId),
+        eq(turmas.ativo, true)
+      ));
+
+    return result.map(row => ({
+      ...row.turmas,
+      professor: row.professores,
+      filial: row.filiais
+    })) as TurmaWithProfessor[];
+  }
+
+  async getEventosDisponiveisByFilial(filialId: number): Promise<EventoWithFilial[]> {
+    const result = await db
+      .select()
+      .from(eventos)
+      .leftJoin(filiais, eq(eventos.filialId, filiais.id))
+      .where(and(
+        eq(eventos.filialId, filialId),
+        eq(eventos.ativo, true)
+      ))
+      .orderBy(eventos.dataEvento);
+
+    return result.map(row => ({
+      ...row.eventos,
+      filial: row.filiais
+    })) as EventoWithFilial[];
+  }
+
+  async createGuardianInscricao(
+    eventoId: number, 
+    alunoId: number, 
+    responsavelId: number,
+    observacoes?: string
+  ): Promise<InscricaoEvento> {
+    // Verify aluno ownership
+    const aluno = await this.getAlunoForGuardian(alunoId, responsavelId);
+    if (!aluno) {
+      throw new Error("Aluno not found or unauthorized");
+    }
+
+    // Get evento and verify it's in the same filial
+    const [evento] = await db
+      .select()
+      .from(eventos)
+      .where(eq(eventos.id, eventoId))
+      .limit(1);
+
+    if (!evento) {
+      throw new Error("Evento not found");
+    }
+
+    if (evento.filialId !== aluno.filialId) {
+      throw new Error("Evento not available for this student's unit");
+    }
+
+    if (!evento.ativo) {
+      throw new Error("Evento is not active");
+    }
+
+    // Check for duplicate inscription
+    const [existing] = await db
+      .select()
+      .from(inscricoesEventos)
+      .where(and(
+        eq(inscricoesEventos.eventoId, eventoId),
+        eq(inscricoesEventos.alunoId, alunoId)
+      ))
+      .limit(1);
+
+    if (existing) {
+      throw new Error("Student already enrolled in this event");
+    }
+
+    // Create inscription
+    const [inscricao] = await db
+      .insert(inscricoesEventos)
+      .values({
+        eventoId,
+        alunoId,
+        statusPagamento: "pendente",
+        observacoes: observacoes || null,
+      })
+      .returning();
+
+    return inscricao;
+  }
+
+  async createGuardianCompra(
+    uniformeId: number,
+    alunoId: number,
+    responsavelId: number,
+    tamanho: string,
+    cor: string,
+    quantidade: number
+  ): Promise<CompraUniforme> {
+    // Verify aluno ownership
+    const aluno = await this.getAlunoForGuardian(alunoId, responsavelId);
+    if (!aluno) {
+      throw new Error("Aluno not found or unauthorized");
+    }
+
+    // Get uniforme and verify stock
+    const [uniforme] = await db
+      .select()
+      .from(uniformes)
+      .where(eq(uniformes.id, uniformeId))
+      .limit(1);
+
+    if (!uniforme) {
+      throw new Error("Uniforme not found");
+    }
+
+    if (!uniforme.ativo) {
+      throw new Error("Uniforme is not available");
+    }
+
+    const currentStock = uniforme.estoque ?? 0;
+    if (currentStock < quantidade) {
+      throw new Error("Insufficient stock");
+    }
+
+    // Verify size and color are available
+    const tamanhos = JSON.parse(uniforme.tamanhos);
+    const cores = JSON.parse(uniforme.cores);
+
+    if (!tamanhos.includes(tamanho)) {
+      throw new Error("Size not available");
+    }
+
+    if (!cores.includes(cor)) {
+      throw new Error("Color not available");
+    }
+
+    // Calculate total price
+    const precoUnitario = parseFloat(uniforme.preco);
+    const precoTotal = (precoUnitario * quantidade).toFixed(2);
+
+    // Create purchase and update stock atomically
+    const [compra] = await db
+      .insert(comprasUniformes)
+      .values({
+        uniformeId,
+        alunoId,
+        tamanho,
+        cor,
+        quantidade,
+        preco: precoTotal,
+        statusPagamento: "pendente",
+      })
+      .returning();
+
+    // Update stock
+    await db
+      .update(uniformes)
+      .set({ estoque: currentStock - quantidade })
+      .where(eq(uniformes.id, uniformeId));
+
+    return compra;
+  }
+
+  async getPagamentosByAlunoForGuardian(alunoId: number, responsavelId: number): Promise<Pagamento[]> {
+    // Verify ownership
+    const aluno = await this.getAlunoForGuardian(alunoId, responsavelId);
+    if (!aluno) {
+      return [];
+    }
+
+    return await db
+      .select()
+      .from(pagamentos)
+      .where(eq(pagamentos.alunoId, alunoId))
+      .orderBy(desc(pagamentos.createdAt));
+  }
+
+  async getInscricoesEventosByAluno(alunoId: number): Promise<InscricaoEvento[]> {
+    return await db
+      .select()
+      .from(inscricoesEventos)
+      .where(eq(inscricoesEventos.alunoId, alunoId))
+      .orderBy(desc(inscricoesEventos.id));
   }
 }
 
