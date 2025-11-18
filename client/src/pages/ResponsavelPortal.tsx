@@ -709,7 +709,7 @@ function EditAlunoDialog({ aluno, onClose }: { aluno: AlunoWithFilial; onClose: 
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-md" data-testid="dialog-edit-student">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" data-testid="dialog-edit-student">
         <DialogHeader>
           <DialogTitle>Editar Dados de {aluno.nome}</DialogTitle>
           <DialogDescription>
@@ -846,7 +846,7 @@ function EnrollEventDialog({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent data-testid="dialog-enroll-event">
+      <DialogContent className="max-h-[90vh] overflow-y-auto" data-testid="dialog-enroll-event">
         <DialogHeader>
           <DialogTitle>Confirmar Inscrição</DialogTitle>
           <DialogDescription>
@@ -930,7 +930,7 @@ function PurchaseUniformDialog({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent data-testid="dialog-purchase-uniform">
+      <DialogContent className="max-h-[90vh] overflow-y-auto" data-testid="dialog-purchase-uniform">
         <DialogHeader>
           <DialogTitle>Comprar {uniforme.nome}</DialogTitle>
           <DialogDescription>
