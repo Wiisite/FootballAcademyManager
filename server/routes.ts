@@ -387,6 +387,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/filiais", requireAdminAuth, async (req, res) => {
+    try {
+      const filialData = {
+        ...req.body,
+        ativa: true,
+      };
+      const filial = await storage.createFilial(filialData);
+      res.json(filial);
+    } catch (error) {
+      console.error("Error creating filial:", error);
+      res.status(500).json({ message: "Failed to create filial" });
+    }
+  });
+
+  app.patch("/api/filiais/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const filial = await storage.updateFilial(id, req.body);
+      res.json(filial);
+    } catch (error) {
+      console.error("Error updating filial:", error);
+      res.status(500).json({ message: "Failed to update filial" });
+    }
+  });
+
   app.delete("/api/filiais/:id", requireAdminAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
