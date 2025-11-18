@@ -387,6 +387,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/filiais/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteFilial(id);
+      res.json({ message: "Filial deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting filial:", error);
+      res.status(500).json({ message: "Failed to delete filial" });
+    }
+  });
+
   app.get("/api/sync/status", requireAdminAuth, async (req, res) => {
     try {
       // Return sync status for portal

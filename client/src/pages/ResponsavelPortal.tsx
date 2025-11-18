@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ import {
 import { useResponsavel, logoutResponsavel } from "@/hooks/useResponsavel";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import { 
   Bell, 
   User, 
@@ -58,12 +59,14 @@ export default function ResponsavelPortal() {
   
   const { responsavel, isLoading, isAuthenticated } = useResponsavel();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   // Redirect to login if not authenticated
-  if (!isLoading && !isAuthenticated) {
-    window.location.href = "/responsavel/login";
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      setLocation("/responsavel/login");
+    }
+  }, [isLoading, isAuthenticated, setLocation]);
 
   if (isLoading) {
     return (

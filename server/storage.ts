@@ -706,7 +706,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFiliaisDetalhadas(): Promise<any[]> {
-    const filiaisData = await db.select().from(filiais);
+    const filiaisData = await db.select().from(filiais).where(eq(filiais.ativa, true));
     
     const filiaisComDetalhes = await Promise.all(
       filiaisData.map(async (filial) => {
