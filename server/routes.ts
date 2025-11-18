@@ -229,6 +229,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Cadastro completo (aluno + responsável)
+  app.post("/api/alunos-completo", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { aluno: alunoData, responsavel: responsavelData } = req.body;
+      
+      // If it's a unit manager, ensure filialId matches their unit
+      if (isGestor && !isAdmin) {
+        alunoData.filialId = req.session.filialId;
+      }
+      
+      // Primeiro, criar o responsável
+      const responsavel = await storage.createResponsavel(responsavelData);
+      
+      // Depois, criar o aluno vinculado ao responsável
+      const alunoCompleto = {
+        ...alunoData,
+        responsavelId: responsavel.id,
+      };
+      
+      const aluno = await storage.createAluno(alunoCompleto);
+      
+      res.status(201).json({
+        aluno,
+        responsavel,
+        message: "Aluno e responsável cadastrados com sucesso"
+      });
+    } catch (error) {
+      console.error("Error creating aluno completo:", error);
+      res.status(500).json({ message: "Failed to create aluno and responsavel" });
+    }
+  });
+
   app.put("/api/alunos/:id", async (req, res) => {
     try {
       // Check if it's admin or unit manager auth
