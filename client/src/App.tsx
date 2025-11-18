@@ -32,7 +32,7 @@ import DashboardUnidades from "@/pages/DashboardUnidades";
 import ResponsavelEntrada from "@/pages/ResponsavelEntrada";
 import ResponsavelLogin from "@/pages/ResponsavelLogin";
 import ResponsavelCadastro from "@/pages/ResponsavelCadastro";
-import ResponsavelPortal from "@/pages/ResponsavelPortalSimples";
+import ResponsavelPortal from "@/pages/ResponsavelPortal";
 import AvaliacaoFisica from "@/pages/AvaliacaoFisica";
 import PortalUnidades from "@/pages/PortalUnidades";
 import CombosAulas from "@/pages/CombosAulas";
