@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Building2, Receipt, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -427,6 +428,26 @@ export default function Alunos() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog para edição de aluno */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        setIsDialogOpen(open);
+        if (!open) {
+          setEditingAluno(null);
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingAluno ? "Editar Aluno" : "Novo Aluno"}
+            </DialogTitle>
+          </DialogHeader>
+          <AlunoForm
+            aluno={editingAluno}
+            onSuccess={handleDialogClose}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
