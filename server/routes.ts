@@ -53,13 +53,24 @@ const requireResponsavelAuth = (req: Request, res: Response, next: NextFunction)
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup session middleware for traditional authentication
-  const PostgresSessionStore = connectPg(session);
+  let sessionStore;
   
-  const sessionStore = new PostgresSessionStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
-    ttl: 7 * 24 * 60 * 60, // 7 days
-  });
+  if (process.env.DATABASE_URL) {
+    const PostgresSessionStore = connectPg(session);
+    sessionStore = new PostgresSessionStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
+      ttl: 7 * 24 * 60 * 60, // 7 days
+    });
+    console.log('Using PostgreSQL session store');
+  } else {
+    // Fallback to memory store for development
+    const MemoryStore = require('memorystore')(session);
+    sessionStore = new MemoryStore({
+      checkPeriod: 86400000 // prune expired entries every 24h
+    });
+    console.log('Using memory session store (DATABASE_URL not found)');
+  }
 
   app.use(session({
     secret: process.env.SESSION_SECRET || 'escola-futebol-secret-2024',
@@ -77,11 +88,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/admin/login', async (req, res) => {
     try {
       const { email, senha } = adminLoginSchema.parse(req.body);
+      console.log('Login attempt for:', email);
       
       const user = await storage.authenticateAdminUser(email, senha);
       if (!user) {
+        console.log('Authentication failed for:', email);
         return res.status(401).json({ message: "Email ou senha inválidos" });
       }
+
+      console.log('Authentication successful for:', email);
 
       // Store admin user in session
       req.session.adminId = user.id;
@@ -91,6 +106,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: user.email,
         papel: user.papel || 'admin'
       };
+
+      // Explicitly save session
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Session save error:', err);
+            reject(err);
+          } else {
+            console.log('Session saved successfully for user:', user.id);
+            resolve();
+          }
+        });
+      });
 
       res.json({
         success: true,
