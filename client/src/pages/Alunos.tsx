@@ -436,16 +436,18 @@ export default function Alunos() {
           setEditingAluno(null);
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
             <DialogTitle>
               {editingAluno ? "Editar Aluno" : "Novo Aluno"}
             </DialogTitle>
           </DialogHeader>
-          <AlunoForm
-            aluno={editingAluno}
-            onSuccess={handleDialogClose}
-          />
+          <div className="px-6 pb-6 overflow-y-auto flex-1">
+            <AlunoForm
+              aluno={editingAluno}
+              onSuccess={handleDialogClose}
+            />
+          </div>
         </DialogContent>
       </Dialog>
     </div>
