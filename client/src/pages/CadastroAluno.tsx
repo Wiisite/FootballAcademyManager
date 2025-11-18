@@ -42,7 +42,7 @@ export default function CadastroAluno() {
           <CardHeader className="bg-primary text-white">
             <CardTitle className="text-xl">Informações do Aluno e Responsável</CardTitle>
           </CardHeader>
-          <CardContent className="p-8">
+          <CardContent className="p-8 max-h-[calc(100vh-200px)] overflow-y-auto">
             <AlunoForm onSuccess={handleSuccess} />
           </CardContent>
         </Card>
