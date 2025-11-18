@@ -74,6 +74,7 @@ export default function GestaoUnidades() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/filiais"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/filiais/detalhadas"] });
       setIsDialogOpen(false);
       toast({
         title: "Unidade criada",
@@ -95,6 +96,7 @@ export default function GestaoUnidades() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/filiais"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/filiais/detalhadas"] });
       setIsDialogOpen(false);
       setSelectedFilial(null);
       toast({
@@ -117,6 +119,7 @@ export default function GestaoUnidades() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/filiais"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/filiais/detalhadas"] });
       toast({
         title: "Unidade excluída",
         description: "Unidade excluída com sucesso",
