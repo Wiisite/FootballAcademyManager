@@ -260,6 +260,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/alunos/:id", async (req, res) => {
+    try {
+      // Check if it's admin or unit manager auth
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const alunoData = req.body;
+
+      // If it's a unit manager, verify the aluno belongs to their filial
+      if (isGestor && !isAdmin) {
+        const existingAluno = await storage.getAluno(id);
+        if (!existingAluno || existingAluno.filialId !== req.session.filialId) {
+          return res.status(403).json({ message: "Access denied" });
+        }
+        // Ensure filialId cannot be changed
+        alunoData.filialId = req.session.filialId;
+      }
+
+      const aluno = await storage.updateAluno(id, alunoData);
+      res.json(aluno);
+    } catch (error) {
+      console.error("Error updating aluno:", error);
+      res.status(500).json({ message: "Failed to update aluno" });
+    }
+  });
+
   app.delete("/api/alunos/:id", async (req, res) => {
     try {
       // Check if it's admin or unit manager auth
@@ -313,6 +344,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/professores", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const professor = await storage.createProfessor(req.body);
+      res.json(professor);
+    } catch (error) {
+      console.error("Error creating professor:", error);
+      res.status(500).json({ message: "Failed to create professor" });
+    }
+  });
+
+  app.patch("/api/professores/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const professor = await storage.updateProfessor(id, req.body);
+      res.json(professor);
+    } catch (error) {
+      console.error("Error updating professor:", error);
+      res.status(500).json({ message: "Failed to update professor" });
+    }
+  });
+
+  app.delete("/api/professores/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteProfessor(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting professor:", error);
+      res.status(500).json({ message: "Failed to delete professor" });
+    }
+  });
+
   // Turmas routes - protected by admin or unit manager authentication
   app.get("/api/turmas", async (req, res) => {
     try {
@@ -335,6 +419,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching turmas:", error);
       res.status(500).json({ message: "Failed to fetch turmas" });
+    }
+  });
+
+  app.post("/api/turmas", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const turma = await storage.createTurma(req.body);
+      res.json(turma);
+    } catch (error) {
+      console.error("Error creating turma:", error);
+      res.status(500).json({ message: "Failed to create turma" });
+    }
+  });
+
+  app.patch("/api/turmas/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const turma = await storage.updateTurma(id, req.body);
+      res.json(turma);
+    } catch (error) {
+      console.error("Error updating turma:", error);
+      res.status(500).json({ message: "Failed to update turma" });
+    }
+  });
+
+  app.delete("/api/turmas/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteTurma(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting turma:", error);
+      res.status(500).json({ message: "Failed to delete turma" });
     }
   });
 
