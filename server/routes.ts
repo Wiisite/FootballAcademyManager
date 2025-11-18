@@ -826,13 +826,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/responsavel/login", async (req, res) => {
     try {
       const { email, senha } = req.body;
+      console.log('Guardian login attempt for:', email);
+      
       const responsavel = await storage.authenticateResponsavel(email, senha);
       
       if (!responsavel) {
+        console.log('Guardian authentication failed for:', email);
         return res.status(401).json({ message: "Credenciais inválidas" });
       }
 
+      console.log('Guardian authentication successful for:', email);
+
       req.session.responsavelId = responsavel.id;
+
+      // Explicitly save session
+      await new Promise<void>((resolve, reject) => {
+        req.session.save((err) => {
+          if (err) {
+            console.error('Guardian session save error:', err);
+            reject(err);
+          } else {
+            console.log('Guardian session saved successfully for responsavel:', responsavel.id);
+            resolve();
+          }
+        });
+      });
 
       res.json({
         success: true,
