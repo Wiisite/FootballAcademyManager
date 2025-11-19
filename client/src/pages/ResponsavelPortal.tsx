@@ -38,7 +38,9 @@ import {
   Users,
   Edit,
   Eye,
-  Loader2
+  Loader2,
+  FileText,
+  Download
 } from "lucide-react";
 import type { 
   ResponsavelWithAlunos, 
@@ -49,6 +51,231 @@ import type {
   Pagamento,
   TurmaWithProfessor
 } from "@shared/schema";
+
+interface DocumentoMetadata {
+  id: number;
+  titulo: string;
+  descricao: string | null;
+  categoria: string;
+  tipoArquivo: string;
+  tamanhoBytes: number;
+  nomeArquivoOriginal: string;
+  visibilidade: string;
+  createdAt: string;
+}
+
+interface Documento extends DocumentoMetadata {
+  arquivo: string;
+}
+
+function DocumentosTab() {
+  const { toast } = useToast();
+  const [selectedDoc, setSelectedDoc] = useState<Documento | null>(null);
+
+  const { data: documentos, isLoading } = useQuery<DocumentoMetadata[]>({
+    queryKey: ["/api/portal/documentos"],
+  });
+
+  const viewMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const response = await apiRequest("GET", `/api/portal/documentos/${id}`);
+      const data = await response.json();
+      return data as Documento;
+    },
+    onSuccess: (data) => {
+      setSelectedDoc(data);
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar documento",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const getCategoriaLabel = (categoria: string) => {
+    const labels: Record<string, string> = {
+      comunicado: "Comunicado",
+      contrato: "Contrato",
+      relatorio: "Relatório",
+      certificado: "Certificado",
+      outro: "Outro",
+    };
+    return labels[categoria] || categoria;
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(date);
+  };
+
+  const downloadDocument = async (docMetadata: DocumentoMetadata) => {
+    try {
+      const response = await apiRequest("GET", `/api/portal/documentos/${docMetadata.id}`);
+      const doc = await response.json() as Documento;
+      
+      const link = document.createElement("a");
+      link.href = doc.arquivo;
+      link.download = doc.nomeArquivoOriginal;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Download iniciado",
+        description: `Baixando ${doc.nomeArquivoOriginal}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao baixar documento",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <FileText className="w-5 h-5 mr-2" />
+            Documentos Compartilhados
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="text-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-green-600" />
+              <p className="text-gray-600">Carregando documentos...</p>
+            </div>
+          ) : !documentos || documentos.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <p className="text-gray-500">Nenhum documento disponível</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {documentos.map((doc) => (
+                <div
+                  key={doc.id}
+                  className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
+                  data-testid={`document-${doc.id}`}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                        <h3 className="font-semibold text-lg" data-testid={`text-document-title-${doc.id}`}>
+                          {doc.titulo}
+                        </h3>
+                        <Badge variant="outline" data-testid={`badge-category-${doc.id}`}>
+                          {getCategoriaLabel(doc.categoria)}
+                        </Badge>
+                      </div>
+                      {doc.descricao && (
+                        <p className="text-gray-600 mt-2" data-testid={`text-document-description-${doc.id}`}>
+                          {doc.descricao}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                        <span>{formatFileSize(doc.tamanhoBytes)}</span>
+                        <span>•</span>
+                        <span>{formatDate(doc.createdAt)}</span>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => viewMutation.mutate(doc.id)}
+                        disabled={viewMutation.isPending}
+                        data-testid={`button-view-${doc.id}`}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Visualizar
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => downloadDocument(doc)}
+                        data-testid={`button-download-${doc.id}`}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Baixar
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {selectedDoc && (
+        <Dialog open={true} onOpenChange={() => setSelectedDoc(null)}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{selectedDoc.titulo}</DialogTitle>
+              {selectedDoc.descricao && (
+                <DialogDescription>{selectedDoc.descricao}</DialogDescription>
+              )}
+            </DialogHeader>
+            <div className="mt-4">
+              {selectedDoc.tipoArquivo.startsWith("image/") ? (
+                <img
+                  src={selectedDoc.arquivo}
+                  alt={selectedDoc.titulo}
+                  className="w-full rounded-lg"
+                />
+              ) : selectedDoc.tipoArquivo === "application/pdf" ? (
+                <iframe
+                  src={selectedDoc.arquivo}
+                  className="w-full h-[600px] border rounded-lg"
+                  title={selectedDoc.titulo}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <FileText className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                  <p className="text-gray-600">
+                    Visualização não disponível para este tipo de arquivo.
+                  </p>
+                  <Button
+                    onClick={() => downloadDocument(selectedDoc)}
+                    className="mt-4"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Baixar Arquivo
+                  </Button>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedDoc(null)}>
+                Fechar
+              </Button>
+              <Button onClick={() => downloadDocument(selectedDoc)}>
+                <Download className="w-4 h-4 mr-2" />
+                Baixar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+    </>
+  );
+}
 
 export default function ResponsavelPortal() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -221,12 +448,13 @@ function ResponsavelPortalContent({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="alunos">Meus Filhos</TabsTrigger>
             <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
             <TabsTrigger value="eventos">Eventos</TabsTrigger>
             <TabsTrigger value="uniformes">Uniformes</TabsTrigger>
+            <TabsTrigger value="documentos">Documentos</TabsTrigger>
           </TabsList>
 
           {/* Dashboard Tab */}
@@ -404,6 +632,10 @@ function ResponsavelPortalContent({
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="documentos" className="space-y-6">
+            <DocumentosTab />
           </TabsContent>
         </Tabs>
       </div>
