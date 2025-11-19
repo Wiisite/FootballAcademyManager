@@ -22,6 +22,8 @@ import {
   metasAlunos,
   gestoresUnidade,
   combosAulas,
+  documentosCompartilhados,
+  visualizacoesDocumentos,
   type User,
   type UpsertUser,
   adminUsers,
@@ -79,6 +81,11 @@ import {
   type MetaAluno,
   type InsertMetaAluno,
   type MetaAlunoComplete,
+  type DocumentoCompartilhado,
+  type InsertDocumentoCompartilhado,
+  type DocumentoCompartilhadoComplete,
+  type VisualizacaoDocumento,
+  type InsertVisualizacaoDocumento,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, count } from "drizzle-orm";
@@ -245,6 +252,22 @@ export interface IStorage {
   createGuardianCompra(uniformeId: number, alunoId: number, responsavelId: number, tamanho: string, cor: string, quantidade: number): Promise<CompraUniforme>;
   getPagamentosByAlunoForGuardian(alunoId: number, responsavelId: number): Promise<Pagamento[]>;
   getInscricoesEventosByAluno(alunoId: number): Promise<InscricaoEvento[]>;
+
+  // Documentos compartilhados operations
+  getDocumentos(filters?: {
+    filialId?: number;
+    alunoId?: number;
+    categoria?: string;
+    ativo?: boolean;
+  }): Promise<DocumentoCompartilhado[]>;
+  getDocumento(id: number): Promise<DocumentoCompartilhado | undefined>;
+  getDocumentosForResponsavel(responsavelId: number): Promise<DocumentoCompartilhado[]>;
+  getDocumentosForFilial(filialId: number): Promise<DocumentoCompartilhado[]>;
+  createDocumento(documento: InsertDocumentoCompartilhado): Promise<DocumentoCompartilhado>;
+  updateDocumento(id: number, documento: Partial<InsertDocumentoCompartilhado>): Promise<DocumentoCompartilhado>;
+  deleteDocumento(id: number): Promise<void>;
+  registrarVisualizacao(visualizacao: InsertVisualizacaoDocumento): Promise<VisualizacaoDocumento>;
+  getVisualizacoesByDocumento(documentoId: number): Promise<VisualizacaoDocumento[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1690,6 +1713,142 @@ export class DatabaseStorage implements IStorage {
       .from(inscricoesEventos)
       .where(eq(inscricoesEventos.alunoId, alunoId))
       .orderBy(desc(inscricoesEventos.id));
+  }
+
+  // Documentos compartilhados operations
+  async getDocumentos(filters?: {
+    filialId?: number;
+    alunoId?: number;
+    categoria?: string;
+    ativo?: boolean;
+  }): Promise<DocumentoCompartilhado[]> {
+    const conditions: any[] = [];
+    if (filters?.filialId !== undefined) {
+      conditions.push(eq(documentosCompartilhados.filialId, filters.filialId));
+    }
+    if (filters?.alunoId !== undefined) {
+      conditions.push(eq(documentosCompartilhados.alunoId, filters.alunoId));
+    }
+    if (filters?.categoria) {
+      conditions.push(eq(documentosCompartilhados.categoria, filters.categoria));
+    }
+    if (filters?.ativo !== undefined) {
+      conditions.push(eq(documentosCompartilhados.ativo, filters.ativo));
+    }
+
+    if (conditions.length > 0) {
+      return await db
+        .select()
+        .from(documentosCompartilhados)
+        .where(and(...conditions))
+        .orderBy(desc(documentosCompartilhados.createdAt));
+    }
+
+    return await db
+      .select()
+      .from(documentosCompartilhados)
+      .orderBy(desc(documentosCompartilhados.createdAt));
+  }
+
+  async getDocumento(id: number): Promise<DocumentoCompartilhado | undefined> {
+    const [documento] = await db
+      .select()
+      .from(documentosCompartilhados)
+      .where(eq(documentosCompartilhados.id, id));
+    return documento;
+  }
+
+  async getDocumentosForResponsavel(responsavelId: number): Promise<DocumentoCompartilhado[]> {
+    // Get all student IDs for this guardian
+    const alunosList = await db
+      .select()
+      .from(alunos)
+      .where(eq(alunos.responsavelId, responsavelId));
+
+    if (alunosList.length === 0) {
+      return [];
+    }
+
+    const alunoIds = alunosList.map(a => a.id);
+    const filialIdsSet = new Set(alunosList.map(a => a.filialId).filter(Boolean));
+    const filialIds = Array.from(filialIdsSet) as number[];
+
+    // Get documents that are:
+    // 1. Public (todos)
+    // 2. For student's filial
+    // 3. For specific students
+    const documentos = await db
+      .select()
+      .from(documentosCompartilhados)
+      .where(
+        and(
+          eq(documentosCompartilhados.ativo, true),
+          sql`(
+            ${documentosCompartilhados.visibilidade} = 'todos'
+            OR (${documentosCompartilhados.visibilidade} = 'filial' AND ${documentosCompartilhados.filialId} IN (${filialIds.join(',')}))
+            OR (${documentosCompartilhados.visibilidade} = 'aluno_especifico' AND ${documentosCompartilhados.alunoId} IN (${alunoIds.join(',')}))
+          )`
+        )
+      )
+      .orderBy(desc(documentosCompartilhados.createdAt));
+
+    return documentos;
+  }
+
+  async getDocumentosForFilial(filialId: number): Promise<DocumentoCompartilhado[]> {
+    return await db
+      .select()
+      .from(documentosCompartilhados)
+      .where(
+        and(
+          eq(documentosCompartilhados.ativo, true),
+          sql`(
+            ${documentosCompartilhados.visibilidade} = 'todos'
+            OR (${documentosCompartilhados.visibilidade} = 'filial' AND ${documentosCompartilhados.filialId} = ${filialId})
+          )`
+        )
+      )
+      .orderBy(desc(documentosCompartilhados.createdAt));
+  }
+
+  async createDocumento(documento: InsertDocumentoCompartilhado): Promise<DocumentoCompartilhado> {
+    const [newDocumento] = await db
+      .insert(documentosCompartilhados)
+      .values(documento)
+      .returning();
+    return newDocumento;
+  }
+
+  async updateDocumento(id: number, documento: Partial<InsertDocumentoCompartilhado>): Promise<DocumentoCompartilhado> {
+    const [updated] = await db
+      .update(documentosCompartilhados)
+      .set({ ...documento, updatedAt: new Date() })
+      .where(eq(documentosCompartilhados.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteDocumento(id: number): Promise<void> {
+    await db
+      .update(documentosCompartilhados)
+      .set({ ativo: false, updatedAt: new Date() })
+      .where(eq(documentosCompartilhados.id, id));
+  }
+
+  async registrarVisualizacao(visualizacao: InsertVisualizacaoDocumento): Promise<VisualizacaoDocumento> {
+    const [newVisualizacao] = await db
+      .insert(visualizacoesDocumentos)
+      .values(visualizacao)
+      .returning();
+    return newVisualizacao;
+  }
+
+  async getVisualizacoesByDocumento(documentoId: number): Promise<VisualizacaoDocumento[]> {
+    return await db
+      .select()
+      .from(visualizacoesDocumentos)
+      .where(eq(visualizacoesDocumentos.documentoId, documentoId))
+      .orderBy(desc(visualizacoesDocumentos.dataVisualizacao));
   }
 }
 

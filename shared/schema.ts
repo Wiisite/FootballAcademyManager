@@ -320,6 +320,45 @@ export const metasAlunos = pgTable("metas_alunos", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Documentos compartilhados - Sistema seguro de compartilhamento
+export const documentosCompartilhados = pgTable("documentos_compartilhados", {
+  id: serial("id").primaryKey(),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  descricao: text("descricao"),
+  categoria: varchar("categoria", { length: 50 }).notNull(), // comunicado, contrato, relatorio, certificado, outro
+  arquivo: text("arquivo").notNull(), // Data URL (base64) do arquivo
+  tipoArquivo: varchar("tipo_arquivo", { length: 100 }).notNull(), // image/jpeg, application/pdf, etc.
+  tamanhoBytes: integer("tamanho_bytes").notNull(),
+  nomeArquivoOriginal: varchar("nome_arquivo_original", { length: 255 }).notNull(),
+  
+  // Controle de visibilidade e acesso
+  visibilidade: varchar("visibilidade", { length: 20 }).notNull(), // todos, filial, aluno_especifico
+  filialId: integer("filial_id").references(() => filiais.id), // Se for específico de uma filial
+  alunoId: integer("aluno_id").references(() => alunos.id), // Se for específico de um aluno
+  
+  // Metadados de upload
+  uploadPor: varchar("upload_por", { length: 50 }).notNull(), // admin, gestor, sistema
+  uploadPorId: integer("upload_por_id"), // ID do admin/gestor que fez upload
+  uploadPorNome: varchar("upload_por_nome", { length: 255 }), // Nome de quem fez upload
+  
+  // Controle de status
+  ativo: boolean("ativo").default(true),
+  dataExpiracao: date("data_expiracao"), // Para documentos temporários
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Visualizações de documentos - Tracking de quem visualizou
+export const visualizacoesDocumentos = pgTable("visualizacoes_documentos", {
+  id: serial("id").primaryKey(),
+  documentoId: integer("documento_id").references(() => documentosCompartilhados.id).notNull(),
+  visualizadoPor: varchar("visualizado_por", { length: 50 }).notNull(), // responsavel, gestor, admin
+  visualizadoPorId: integer("visualizado_por_id").notNull(),
+  visualizadoPorNome: varchar("visualizado_por_nome", { length: 255 }),
+  dataVisualizacao: timestamp("data_visualizacao").defaultNow(),
+});
+
 // Relations
 export const responsaveisRelations = relations(responsaveis, ({ many }) => ({
   alunos: many(alunos),
@@ -568,6 +607,26 @@ export const metasAlunosRelations = relations(metasAlunos, ({ one }) => ({
   }),
 }));
 
+// Documentos compartilhados relations
+export const documentosCompartilhadosRelations = relations(documentosCompartilhados, ({ one, many }) => ({
+  filial: one(filiais, {
+    fields: [documentosCompartilhados.filialId],
+    references: [filiais.id],
+  }),
+  aluno: one(alunos, {
+    fields: [documentosCompartilhados.alunoId],
+    references: [alunos.id],
+  }),
+  visualizacoes: many(visualizacoesDocumentos),
+}));
+
+export const visualizacoesDocumentosRelations = relations(visualizacoesDocumentos, ({ one }) => ({
+  documento: one(documentosCompartilhados, {
+    fields: [visualizacoesDocumentos.documentoId],
+    references: [documentosCompartilhados.id],
+  }),
+}));
+
 // Insert schemas
 export const insertAlunoSchema = createInsertSchema(alunos).omit({
   id: true,
@@ -706,6 +765,21 @@ export const insertMetaAlunoSchema = createInsertSchema(metasAlunos).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+});
+
+// Documentos compartilhados schemas
+export const insertDocumentoCompartilhadoSchema = createInsertSchema(documentosCompartilhados).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  arquivo: z.string().min(1, "Arquivo é obrigatório"),
+  tamanhoBytes: z.number().int().positive().max(10 * 1024 * 1024, "Arquivo muito grande (máximo 10MB)"),
+});
+
+export const insertVisualizacaoDocumentoSchema = createInsertSchema(visualizacoesDocumentos).omit({
+  id: true,
+  dataVisualizacao: true,
 });
 
 // Guardian portal schemas - restrict to safe fields only
@@ -932,3 +1006,15 @@ export type MetaAlunoComplete = MetaAluno & {
   teste: TesteWithCategoria;
   definidoPorProfessor: Professor | null;
 };
+
+// Documentos compartilhados types
+export type InsertDocumentoCompartilhado = z.infer<typeof insertDocumentoCompartilhadoSchema>;
+export type DocumentoCompartilhado = typeof documentosCompartilhados.$inferSelect;
+export type DocumentoCompartilhadoComplete = DocumentoCompartilhado & {
+  filial: Filial | null;
+  aluno: Aluno | null;
+  visualizacoes: VisualizacaoDocumento[];
+};
+
+export type InsertVisualizacaoDocumento = z.infer<typeof insertVisualizacaoDocumentoSchema>;
+export type VisualizacaoDocumento = typeof visualizacoesDocumentos.$inferSelect;

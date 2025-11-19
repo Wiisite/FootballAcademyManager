@@ -283,6 +283,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(filtered);
   });
 
+  // ============ DOCUMENTOS COMPARTILHADOS ROUTES ============
+
+  // Admin: Get all documents with filters
+  app.get("/api/documentos", async (req, res) => {
+    if (!req.session.adminId) {
+      return res.status(401).json({ error: "Não autenticado" });
+    }
+
+    try {
+      const filters = {
+        filialId: req.query.filialId ? parseInt(req.query.filialId as string) : undefined,
+        alunoId: req.query.alunoId ? parseInt(req.query.alunoId as string) : undefined,
+        categoria: req.query.categoria as string | undefined,
+        ativo: req.query.ativo === "false" ? false : true,
+      };
+      
+      const documentos = await storage.getDocumentos(filters);
+      res.json(documentos);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ error: "Erro ao buscar documentos" });
+    }
+  });
+
+  // Admin: Get single document
+  app.get("/api/documentos/:id", async (req, res) => {
+    if (!req.session.adminId && !req.session.responsavelId) {
+      return res.status(401).json({ error: "Não autenticado" });
+    }
+
+    try {
+      const id = parseInt(req.params.id);
+      const documento = await storage.getDocumento(id);
+      
+      if (!documento) {
+        return res.status(404).json({ error: "Documento não encontrado" });
+      }
+
+      res.json(documento);
+    } catch (error) {
+      console.error("Error fetching document:", error);
+      res.status(500).json({ error: "Erro ao buscar documento" });
+    }
+  });
+
+  // Admin: Create document
+  app.post("/api/documentos", async (req, res) => {
+    if (!req.session.adminId) {
+      return res.status(401).json({ error: "Não autenticado" });
+    }
+
+    try {
+      const documentoData = {
+        ...req.body,
+        uploadPor: "admin",
+        uploadPorId: req.session.adminId,
+      };
+
+      const documento = await storage.createDocumento(documentoData);
+      res.status(201).json(documento);
+    } catch (error) {
+      console.error("Error creating document:", error);
+      res.status(500).json({ error: "Erro ao criar documento" });
+    }
+  });
+
+  // Admin: Update document
+  app.put("/api/documentos/:id", async (req, res) => {
+    if (!req.session.adminId) {
+      return res.status(401).json({ error: "Não autenticado" });
+    }
+
+    try {
+      const id = parseInt(req.params.id);
+      const documento = await storage.updateDocumento(id, req.body);
+      res.json(documento);
+    } catch (error) {
+      console.error("Error updating document:", error);
+      res.status(500).json({ error: "Erro ao atualizar documento" });
+    }
+  });
+
+  // Admin: Delete (soft delete) document
+  app.delete("/api/documentos/:id", async (req, res) => {
+    if (!req.session.adminId) {
+      return res.status(401).json({ error: "Não autenticado" });
+    }
+
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteDocumento(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ error: "Erro ao deletar documento" });
+    }
+  });
+
+  // Responsavel: Get documents for guardian's students
+  app.get("/api/portal/documentos", async (req, res) => {
+    if (!req.session.responsavelId) {
+      return res.status(401).json({ error: "Não autenticado" });
+    }
+
+    try {
+      const documentos = await storage.getDocumentosForResponsavel(req.session.responsavelId);
+      res.json(documentos);
+    } catch (error) {
+      console.error("Error fetching documents for guardian:", error);
+      res.status(500).json({ error: "Erro ao buscar documentos" });
+    }
+  });
+
+  // Responsavel: Get single document and register visualization
+  app.get("/api/portal/documentos/:id", async (req, res) => {
+    if (!req.session.responsavelId) {
+      return res.status(401).json({ error: "Não autenticado" });
+    }
+
+    try {
+      const id = parseInt(req.params.id);
+      const documento = await storage.getDocumento(id);
+      
+      if (!documento) {
+        return res.status(404).json({ error: "Documento não encontrado" });
+      }
+
+      // Register visualization
+      const responsavel = await storage.getResponsavel(req.session.responsavelId);
+      if (responsavel) {
+        await storage.registrarVisualizacao({
+          documentoId: id,
+          visualizadoPor: "responsavel",
+          visualizadoPorId: req.session.responsavelId,
+          visualizadoPorNome: responsavel.nome,
+        });
+      }
+
+      res.json(documento);
+    } catch (error) {
+      console.error("Error fetching document:", error);
+      res.status(500).json({ error: "Erro ao buscar documento" });
+    }
+  });
+
+  // Admin: Get visualizations for a document
+  app.get("/api/documentos/:id/visualizacoes", async (req, res) => {
+    if (!req.session.adminId) {
+      return res.status(401).json({ error: "Não autenticado" });
+    }
+
+    try {
+      const id = parseInt(req.params.id);
+      const visualizacoes = await storage.getVisualizacoesByDocumento(id);
+      res.json(visualizacoes);
+    } catch (error) {
+      console.error("Error fetching visualizations:", error);
+      res.status(500).json({ error: "Erro ao buscar visualizações" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

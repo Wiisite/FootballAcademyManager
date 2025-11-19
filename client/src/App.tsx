@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 // Pages
 import LoginAdmin from "@/pages/LoginAdmin";
 import Dashboard from "@/pages/Dashboard";
+import Documentos from "@/pages/Documentos";
 
 function App() {
   const [, setLocation] = useLocation();
@@ -48,6 +49,7 @@ function App() {
             <>
               <Route path="/" component={Dashboard} />
               <Route path="/dashboard" component={Dashboard} />
+              <Route path="/documentos" component={Documentos} />
               <Route path="/login">
                 <Dashboard />
               </Route>
