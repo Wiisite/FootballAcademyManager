@@ -17,18 +17,12 @@ const alunoFormSchema = insertAlunoSchema.extend({
   dataNascimento: z.string().optional(),
   email: z.string().optional(),
   telefone: z.string().optional(),
-  endereco: z.string().optional(),
-  bairro: z.string().optional(),
-  cep: z.string().optional(),
-  cidade: z.string().optional(),
-  estado: z.string().optional(),
 });
 
 const responsavelFormSchema = z.object({
   nomeResponsavel: z.string().min(1, "Nome do responsável é obrigatório"),
-  cpfResponsavel: z.string().optional(),
-  emailResponsavel: z.string().email("Email inválido").optional().or(z.literal("")),
   telefoneResponsavel: z.string().min(1, "Telefone do responsável é obrigatório"),
+  endereco: z.string().optional(),
   alunos: z.array(alunoFormSchema).min(1, "Pelo menos um aluno deve ser cadastrado"),
 });
 
@@ -47,9 +41,8 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
     resolver: zodResolver(responsavelFormSchema),
     defaultValues: {
       nomeResponsavel: "",
-      cpfResponsavel: "",
-      emailResponsavel: "",
       telefoneResponsavel: "",
+      endereco: "",
       alunos: [
         {
           nome: "",
@@ -57,10 +50,6 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
           telefone: "",
           dataNascimento: "",
           endereco: "",
-          bairro: "",
-          cep: "",
-          cidade: "",
-          estado: "",
           nomeResponsavel: "",
           telefoneResponsavel: "",
           ativo: true,
@@ -109,11 +98,7 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
       email: "",
       telefone: "",
       dataNascimento: "",
-      endereco: "",
-      bairro: "",
-      cep: "",
-      cidade: "",
-      estado: "",
+      endereco: responsavelData.endereco || "",
       nomeResponsavel: responsavelData.nomeResponsavel,
       telefoneResponsavel: responsavelData.telefoneResponsavel,
       ativo: true,
@@ -135,11 +120,7 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
         dataNascimento: aluno.dataNascimento || null,
         email: aluno.email || null,
         telefone: aluno.telefone || null,
-        endereco: aluno.endereco || null,
-        bairro: aluno.bairro || null,
-        cep: aluno.cep || null,
-        cidade: aluno.cidade || null,
-        estado: aluno.estado || null,
+        endereco: data.endereco || null,
         nomeResponsavel: data.nomeResponsavel,
         telefoneResponsavel: data.telefoneResponsavel,
       }));
@@ -159,7 +140,7 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
     currentAlunos.forEach((_, index) => {
       form.setValue(`alunos.${index}.nomeResponsavel`, responsavelData.nomeResponsavel);
       form.setValue(`alunos.${index}.telefoneResponsavel`, responsavelData.telefoneResponsavel);
-
+      form.setValue(`alunos.${index}.endereco`, responsavelData.endereco || "");
     });
   };
 
@@ -217,44 +198,29 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
                   </FormItem>
                 )}
               />
-
-              <FormField
-                control={form.control}
-                name="cpfResponsavel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>CPF do Responsável</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="000.000.000-00" 
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="emailResponsavel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email do Responsável</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="email"
-                        placeholder="email@exemplo.com" 
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
             </div>
 
-
+            <FormField
+              control={form.control}
+              name="endereco"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Endereço</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Digite o endereço completo"
+                      className="min-h-[80px]"
+                      {...field}
+                      onBlur={() => {
+                        field.onBlur();
+                        updateResponsavelDataInAlunos();
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
 
@@ -341,78 +307,6 @@ export default function CadastroResponsavelForm({ onSuccess }: CadastroResponsav
                         <FormLabel>Telefone do Aluno</FormLabel>
                         <FormControl>
                           <Input placeholder="(11) 99999-9999" {...field} value={field.value || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name={`alunos.${index}.endereco`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Endereço</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Digite o endereço completo" {...field} value={field.value || ""} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                  <FormField
-                    control={form.control}
-                    name={`alunos.${index}.bairro`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Bairro</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Digite o bairro" {...field} value={field.value || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`alunos.${index}.cep`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>CEP</FormLabel>
-                        <FormControl>
-                          <Input placeholder="00000-000" {...field} value={field.value || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`alunos.${index}.cidade`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Cidade</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Digite a cidade" {...field} value={field.value || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name={`alunos.${index}.estado`}
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Estado</FormLabel>
-                        <FormControl>
-                          <Input placeholder="SP" maxLength={2} {...field} value={field.value || ""} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

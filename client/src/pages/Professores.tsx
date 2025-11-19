@@ -7,10 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SquareUser, Search, Edit, Trash2, Phone, Mail } from "lucide-react";
+import { SquareUser, Search, Edit, Trash2, Phone, Mail, DollarSign } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Professor, ProfessorWithFilial } from "@shared/schema";
+import type { Professor } from "@shared/schema";
 import ProfessorForm from "@/components/forms/ProfessorForm";
 
 export default function Professores() {
@@ -20,7 +20,7 @@ export default function Professores() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: professores, isLoading } = useQuery<ProfessorWithFilial[]>({
+  const { data: professores, isLoading } = useQuery<Professor[]>({
     queryKey: ["/api/professores"],
   });
 
@@ -47,8 +47,7 @@ export default function Professores() {
   const filteredProfessores = professores?.filter((professor) =>
     professor.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
     professor.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    professor.especialidade?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    professor.filial?.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    professor.especialidade?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
 
   const handleEdit = (professor: Professor) => {
@@ -67,7 +66,13 @@ export default function Professores() {
     setEditingProfessor(null);
   };
 
-
+  const formatCurrency = (value: string | null) => {
+    if (!value) return "-";
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(Number(value));
+  };
 
   return (
     <div className="space-y-6">
@@ -174,7 +179,7 @@ export default function Professores() {
                     <TableHead>Nome</TableHead>
                     <TableHead>Contato</TableHead>
                     <TableHead>Especialidade</TableHead>
-                    <TableHead>Unidade</TableHead>
+                    <TableHead>Salário</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
@@ -212,11 +217,12 @@ export default function Professores() {
                         )}
                       </TableCell>
                       <TableCell>
-                        {professor.filial ? (
-                          <Badge variant="secondary">{professor.filial.nome}</Badge>
-                        ) : (
-                          <span className="text-neutral-400">-</span>
-                        )}
+                        <div className="flex items-center">
+                          <DollarSign className="w-3 h-3 mr-1 text-neutral-400" />
+                          <span className="font-medium">
+                            {formatCurrency(professor.salario)}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <Badge variant={professor.ativo ? "default" : "secondary"}>

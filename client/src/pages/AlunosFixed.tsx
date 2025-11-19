@@ -9,13 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Users, Building2, Receipt, Filter } from "lucide-react";
-import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
 import type { AlunoWithFilial, Filial } from "@shared/schema";
 import AlunoForm from "@/components/forms/AlunoForm";
+import CadastroResponsavelForm from "@/components/forms/CadastroResponsavelForm";
 import ExtratoAluno from "@/components/ExtratoAluno";
 
 export default function Alunos() {
@@ -24,11 +24,11 @@ export default function Alunos() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [pagamentoFilter, setPagamentoFilter] = useState<string>("todos");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isResponsavelDialogOpen, setIsResponsavelDialogOpen] = useState(false);
   const [editingAluno, setEditingAluno] = useState<AlunoWithFilial | null>(null);
   const [viewingExtrato, setViewingExtrato] = useState<AlunoWithFilial | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, navigate] = useLocation();
 
   const { data: alunos, isLoading } = useQuery<AlunoWithFilial[]>({
     queryKey: ["/api/alunos"],
@@ -78,7 +78,9 @@ export default function Alunos() {
     setEditingAluno(null);
   };
 
-
+  const handleResponsavelSuccess = () => {
+    setIsResponsavelDialogOpen(false);
+  };
 
   const calculateAge = (birthDate: string | null) => {
     if (!birthDate) return "-";
@@ -136,18 +138,33 @@ export default function Alunos() {
           <p className="text-neutral-600">Cadastre e gerencie os alunos da escola</p>
         </div>
         <div className="flex space-x-3">
-          <Button 
-            onClick={() => navigate("/cadastro-aluno")}
-            className="bg-primary hover:bg-primary/90"
-          >
-            <UserPlus className="w-4 h-4 mr-2" />
-            Cadastrar Aluno
-          </Button>
+          <Dialog open={isResponsavelDialogOpen} onOpenChange={setIsResponsavelDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
+                <Users className="w-4 h-4 mr-2" />
+                Cadastro por Responsável
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Cadastro de Alunos por Responsável</DialogTitle>
+              </DialogHeader>
+              <CadastroResponsavelForm onSuccess={handleResponsavelSuccess} />
+            </DialogContent>
+          </Dialog>
           
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Novo Aluno
+              </Button>
+            </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Editar Aluno</DialogTitle>
+                <DialogTitle>
+                  {editingAluno ? "Editar Aluno" : "Cadastrar Novo Aluno"}
+                </DialogTitle>
               </DialogHeader>
               <AlunoForm 
                 aluno={editingAluno} 

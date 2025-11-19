@@ -1,446 +1,592 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import session from "express-session";
-import connectPg from "connect-pg-simple";
-import { z } from "zod";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
-// Session types
+// Extend session type for responsavel
 declare module "express-session" {
   interface SessionData {
-    adminId?: number;
     responsavelId?: number;
-    gestorId?: number;
-    filialId?: number;
   }
 }
+import {
+  insertAlunoSchema,
+  insertProfessorSchema,
+  insertTurmaSchema,
+  insertMatriculaSchema,
+  insertPagamentoSchema,
+  insertFilialSchema,
+  insertResponsavelSchema,
+  insertEventoSchema,
+  insertUniformeSchema,
+  insertInscricaoEventoSchema,
+  insertCompraUniformeSchema,
+  insertNotificacaoSchema,
+} from "@shared/schema";
+import { z } from "zod";
 
-// Validation schemas
-const loginSchema = z.object({
-  email: z.string().email(),
-  senha: z.string().min(1),
-});
-
-const alunoSchema = z.object({
-  nome: z.string().min(1),
-  cpf: z.string().optional(),
-  rg: z.string().optional(),
-  email: z.string().email().optional(),
-  telefone: z.string().optional(),
-  dataNascimento: z.string().optional(),
-  endereco: z.string().optional(),
-  bairro: z.string().optional(),
-  cep: z.string().optional(),
-  cidade: z.string().optional(),
-  estado: z.string().optional(),
-  filialId: z.number().optional(),
-});
-
-const responsavelSchema = z.object({
-  nome: z.string().min(1),
-  email: z.string().email(),
-  telefone: z.string(),
-  cpf: z.string().optional(),
-  senha: z.string().min(6),
-});
+// Middleware para verificar se usuário admin ou responsável está autenticado
+const isAuthenticatedOrResponsavel = async (req: any, res: any, next: any) => {
+  // Verificar se é usuário administrativo autenticado
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return next();
+  }
+  
+  // Verificar se é responsável autenticado via sessão
+  if (req.session && req.session.responsavelId) {
+    return next();
+  }
+  
+  return res.status(401).json({ message: "Unauthorized" });
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Session setup
-  const PostgresSessionStore = connectPg(session);
-  const sessionStore = new PostgresSessionStore({
-    conString: process.env.DATABASE_URL!,
-    createTableIfMissing: true,
-    ttl: 7 * 24 * 60 * 60,
+  // Auth middleware
+  await setupAuth(app);
+
+  // Auth routes
+  app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
   });
 
-  app.use(session({
-    secret: process.env.SESSION_SECRET || 'escola-secret-2024',
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: false,
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    },
-  }));
-
-  // ============ AUTHENTICATION ROUTES ============
-  
-  // Admin login
-  app.post("/api/auth/admin/login", async (req, res) => {
+  // Dashboard routes
+  app.get("/api/dashboard/metrics", isAuthenticated, async (req, res) => {
     try {
-      const { email, senha } = loginSchema.parse(req.body);
-      const user = await storage.authenticateAdminUser(email, senha);
+      const metrics = await storage.getDashboardMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error("Error fetching dashboard metrics:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard metrics" });
+    }
+  });
+
+  // Alunos routes
+  app.get("/api/alunos", isAuthenticatedOrResponsavel, async (req, res) => {
+    try {
+      const alunos = await storage.getAlunos();
+      res.json(alunos);
+    } catch (error) {
+      console.error("Error fetching alunos:", error);
+      res.status(500).json({ message: "Failed to fetch alunos" });
+    }
+  });
+
+  app.get("/api/alunos/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const aluno = await storage.getAluno(id);
+      if (!aluno) {
+        return res.status(404).json({ message: "Aluno not found" });
+      }
+      res.json(aluno);
+    } catch (error) {
+      console.error("Error fetching aluno:", error);
+      res.status(500).json({ message: "Failed to fetch aluno" });
+    }
+  });
+
+  app.post("/api/alunos", isAuthenticatedOrResponsavel, async (req, res) => {
+    try {
+      const validatedData = insertAlunoSchema.parse(req.body);
+      const aluno = await storage.createAluno(validatedData);
+      res.status(201).json(aluno);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating aluno:", error);
+      res.status(500).json({ message: "Failed to create aluno" });
+    }
+  });
+
+  app.patch("/api/alunos/:id", isAuthenticatedOrResponsavel, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertAlunoSchema.partial().parse(req.body);
+      const aluno = await storage.updateAluno(id, validatedData);
+      res.json(aluno);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating aluno:", error);
+      res.status(500).json({ message: "Failed to update aluno" });
+    }
+  });
+
+  app.delete("/api/alunos/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteAluno(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting aluno:", error);
+      res.status(500).json({ message: "Failed to delete aluno" });
+    }
+  });
+
+  // Professores routes
+  app.get("/api/professores", isAuthenticated, async (req, res) => {
+    try {
+      const professores = await storage.getProfessores();
+      res.json(professores);
+    } catch (error) {
+      console.error("Error fetching professores:", error);
+      res.status(500).json({ message: "Failed to fetch professores" });
+    }
+  });
+
+  app.get("/api/professores/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const professor = await storage.getProfessor(id);
+      if (!professor) {
+        return res.status(404).json({ message: "Professor not found" });
+      }
+      res.json(professor);
+    } catch (error) {
+      console.error("Error fetching professor:", error);
+      res.status(500).json({ message: "Failed to fetch professor" });
+    }
+  });
+
+  app.post("/api/professores", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertProfessorSchema.parse(req.body);
+      const professor = await storage.createProfessor(validatedData);
+      res.status(201).json(professor);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating professor:", error);
+      res.status(500).json({ message: "Failed to create professor" });
+    }
+  });
+
+  app.put("/api/professores/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertProfessorSchema.partial().parse(req.body);
+      const professor = await storage.updateProfessor(id, validatedData);
+      res.json(professor);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating professor:", error);
+      res.status(500).json({ message: "Failed to update professor" });
+    }
+  });
+
+  app.delete("/api/professores/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteProfessor(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting professor:", error);
+      res.status(500).json({ message: "Failed to delete professor" });
+    }
+  });
+
+  // Turmas routes
+  app.get("/api/turmas", isAuthenticated, async (req, res) => {
+    try {
+      const turmas = await storage.getTurmas();
+      res.json(turmas);
+    } catch (error) {
+      console.error("Error fetching turmas:", error);
+      res.status(500).json({ message: "Failed to fetch turmas" });
+    }
+  });
+
+  app.get("/api/turmas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const turma = await storage.getTurma(id);
+      if (!turma) {
+        return res.status(404).json({ message: "Turma not found" });
+      }
+      res.json(turma);
+    } catch (error) {
+      console.error("Error fetching turma:", error);
+      res.status(500).json({ message: "Failed to fetch turma" });
+    }
+  });
+
+  app.post("/api/turmas", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertTurmaSchema.parse(req.body);
+      const turma = await storage.createTurma(validatedData);
+      res.status(201).json(turma);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating turma:", error);
+      res.status(500).json({ message: "Failed to create turma" });
+    }
+  });
+
+  app.put("/api/turmas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertTurmaSchema.partial().parse(req.body);
+      const turma = await storage.updateTurma(id, validatedData);
+      res.json(turma);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating turma:", error);
+      res.status(500).json({ message: "Failed to update turma" });
+    }
+  });
+
+  app.delete("/api/turmas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteTurma(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting turma:", error);
+      res.status(500).json({ message: "Failed to delete turma" });
+    }
+  });
+
+  // Matriculas routes
+  app.get("/api/matriculas", isAuthenticated, async (req, res) => {
+    try {
+      const matriculas = await storage.getMatriculas();
+      res.json(matriculas);
+    } catch (error) {
+      console.error("Error fetching matriculas:", error);
+      res.status(500).json({ message: "Failed to fetch matriculas" });
+    }
+  });
+
+  app.post("/api/matriculas", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertMatriculaSchema.parse(req.body);
+      const matricula = await storage.createMatricula(validatedData);
+      res.status(201).json(matricula);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating matricula:", error);
+      res.status(500).json({ message: "Failed to create matricula" });
+    }
+  });
+
+  app.delete("/api/matriculas/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteMatricula(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting matricula:", error);
+      res.status(500).json({ message: "Failed to delete matricula" });
+    }
+  });
+
+  // Pagamentos routes
+  app.get("/api/pagamentos", isAuthenticated, async (req, res) => {
+    try {
+      const pagamentos = await storage.getPagamentos();
+      res.json(pagamentos);
+    } catch (error) {
+      console.error("Error fetching pagamentos:", error);
+      res.status(500).json({ message: "Failed to fetch pagamentos" });
+    }
+  });
+
+  app.get("/api/pagamentos/aluno/:alunoId", isAuthenticated, async (req, res) => {
+    try {
+      const alunoId = parseInt(req.params.alunoId);
+      const pagamentos = await storage.getPagamentosByAluno(alunoId);
+      res.json(pagamentos);
+    } catch (error) {
+      console.error("Error fetching pagamentos by aluno:", error);
+      res.status(500).json({ message: "Failed to fetch pagamentos by aluno" });
+    }
+  });
+
+  app.post("/api/pagamentos", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertPagamentoSchema.parse(req.body);
+      const pagamento = await storage.createPagamento(validatedData);
+      res.status(201).json(pagamento);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating pagamento:", error);
+      res.status(500).json({ message: "Failed to create pagamento" });
+    }
+  });
+
+  app.delete("/api/pagamentos/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deletePagamento(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting pagamento:", error);
+      res.status(500).json({ message: "Failed to delete pagamento" });
+    }
+  });
+
+  // Filiais routes
+  app.get("/api/filiais", isAuthenticatedOrResponsavel, async (req, res) => {
+    try {
+      const filiais = await storage.getFiliais();
+      res.json(filiais);
+    } catch (error) {
+      console.error("Error fetching filiais:", error);
+      res.status(500).json({ message: "Failed to fetch filiais" });
+    }
+  });
+
+  app.get("/api/filiais/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const filial = await storage.getFilial(id);
+      if (!filial) {
+        return res.status(404).json({ message: "Filial not found" });
+      }
+      res.json(filial);
+    } catch (error) {
+      console.error("Error fetching filial:", error);
+      res.status(500).json({ message: "Failed to fetch filial" });
+    }
+  });
+
+  app.post("/api/filiais", isAuthenticated, async (req, res) => {
+    try {
+      const validatedData = insertFilialSchema.parse(req.body);
+      const filial = await storage.createFilial(validatedData);
+      res.status(201).json(filial);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error creating filial:", error);
+      res.status(500).json({ message: "Failed to create filial" });
+    }
+  });
+
+  app.put("/api/filiais/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertFilialSchema.partial().parse(req.body);
+      const filial = await storage.updateFilial(id, validatedData);
+      res.json(filial);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid data", errors: error.errors });
+      }
+      console.error("Error updating filial:", error);
+      res.status(500).json({ message: "Failed to update filial" });
+    }
+  });
+
+  app.delete("/api/filiais/:id", isAuthenticated, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteFilial(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting filial:", error);
+      res.status(500).json({ message: "Failed to delete filial" });
+    }
+  });
+
+  // Portal de Responsáveis - Endpoints independentes
+  app.post("/api/responsaveis/cadastro", async (req, res) => {
+    try {
+      const validatedData = insertResponsavelSchema.parse(req.body);
       
-      if (!user) {
-        return res.status(401).json({ error: "Credenciais inválidas" });
+      // Verificar se email já existe
+      const existingResponsavel = await storage.getResponsavelByEmail(validatedData.email);
+      if (existingResponsavel) {
+        return res.status(400).json({ message: "Email já está em uso" });
       }
 
-      req.session.adminId = user.id;
-      
-      await new Promise<void>((resolve, reject) => {
-        req.session.save((err) => err ? reject(err) : resolve());
-      });
-
-      res.json({ success: true, user: { id: user.id, nome: user.nome, email: user.email } });
+      const responsavel = await storage.createResponsavel(validatedData);
+      res.status(201).json({ id: responsavel.id, nome: responsavel.nome, email: responsavel.email });
     } catch (error) {
-      console.error("Login error:", error);
-      res.status(500).json({ error: "Erro no servidor" });
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Dados inválidos", errors: error.errors });
+      }
+      console.error("Error creating responsavel:", error);
+      res.status(500).json({ message: "Erro ao criar conta" });
     }
   });
 
-  // Admin logout
-  app.post("/api/auth/admin/logout", (req, res) => {
-    req.session.destroy(() => {
-      res.json({ success: true });
-    });
-  });
-
-  // Check admin session
-  app.get("/api/auth/admin/me", (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    res.json({ id: req.session.adminId });
-  });
-
-  // Responsavel login
-  app.post("/api/auth/responsavel/login", async (req, res) => {
+  app.post("/api/responsaveis/login", async (req, res) => {
     try {
-      const { email, senha } = loginSchema.parse(req.body);
+      const { email, senha } = req.body;
+      
+      if (!email || !senha) {
+        return res.status(400).json({ message: "Email e senha são obrigatórios" });
+      }
+
       const responsavel = await storage.authenticateResponsavel(email, senha);
-      
       if (!responsavel) {
-        return res.status(401).json({ error: "Credenciais inválidas" });
+        return res.status(401).json({ message: "Email ou senha incorretos" });
       }
 
+      // Configurar sessão
       req.session.responsavelId = responsavel.id;
-      
-      await new Promise<void>((resolve, reject) => {
-        req.session.save((err) => err ? reject(err) : resolve());
+      res.json({ id: responsavel.id, nome: responsavel.nome, email: responsavel.email });
+    } catch (error) {
+      console.error("Error authenticating responsavel:", error);
+      res.status(500).json({ message: "Erro no login" });
+    }
+  });
+
+  app.get("/api/responsaveis/me", async (req, res) => {
+    try {
+      const responsavelId = req.session?.responsavelId;
+      if (!responsavelId) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+
+      const responsavelComAlunos = await storage.getResponsavelWithAlunos(responsavelId);
+      if (!responsavelComAlunos) {
+        return res.status(404).json({ message: "Responsável não encontrado" });
+      }
+
+      res.json(responsavelComAlunos);
+    } catch (error) {
+      console.error("Error fetching responsavel:", error);
+      res.status(500).json({ message: "Erro ao buscar dados" });
+    }
+  });
+
+  app.post("/api/responsaveis/logout", async (req, res) => {
+    try {
+      req.session.destroy((err) => {
+        if (err) {
+          return res.status(500).json({ message: "Erro ao fazer logout" });
+        }
+        res.json({ message: "Logout realizado com sucesso" });
+      });
+    } catch (error) {
+      console.error("Error logging out responsavel:", error);
+      res.status(500).json({ message: "Erro ao fazer logout" });
+    }
+  });
+
+  // Endpoints para eventos no portal
+  app.get("/api/portal/eventos", async (req, res) => {
+    try {
+      const eventos = await storage.getEventos();
+      res.json(eventos);
+    } catch (error) {
+      console.error("Error fetching eventos:", error);
+      res.status(500).json({ message: "Erro ao buscar eventos" });
+    }
+  });
+
+  app.post("/api/portal/eventos/:id/inscricao", async (req, res) => {
+    try {
+      const responsavelId = req.session?.responsavelId;
+      if (!responsavelId) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+
+      const eventoId = parseInt(req.params.id);
+      const { alunoId, observacoes } = req.body;
+
+      const inscricao = await storage.inscreveAlunoEvento({
+        eventoId,
+        alunoId,
+        observacoes,
       });
 
-      res.json({ success: true, responsavel: { id: responsavel.id, nome: responsavel.nome } });
+      res.status(201).json(inscricao);
     } catch (error) {
-      console.error("Responsavel login error:", error);
-      res.status(500).json({ error: "Erro no servidor" });
+      console.error("Error creating inscricao:", error);
+      res.status(500).json({ message: "Erro ao inscrever no evento" });
     }
   });
 
-  // Responsavel logout
-  app.post("/api/auth/responsavel/logout", (req, res) => {
-    req.session.destroy(() => {
-      res.json({ success: true });
-    });
-  });
-
-  // ============ FILIAIS ROUTES ============
-  
-  app.get("/api/filiais", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    const filiais = await storage.getFiliais();
-    res.json(filiais);
-  });
-
-  app.post("/api/filiais", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    const filial = await storage.createFilial(req.body);
-    res.status(201).json(filial);
-  });
-
-  // ============ ALUNOS ROUTES ============
-  
-  app.get("/api/alunos", async (req, res) => {
-    if (!req.session.adminId && !req.session.gestorId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    const alunos = await storage.getAlunos();
-    res.json(alunos);
-  });
-
-  app.get("/api/alunos/:id", async (req, res) => {
-    if (!req.session.adminId && !req.session.gestorId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    const aluno = await storage.getAluno(parseInt(req.params.id));
-    if (!aluno) {
-      return res.status(404).json({ error: "Aluno não encontrado" });
-    }
-    res.json(aluno);
-  });
-
-  // Create aluno with responsavel
-  app.post("/api/alunos/complete", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    
+  // Endpoints para uniformes no portal
+  app.get("/api/portal/uniformes", async (req, res) => {
     try {
-      const { aluno, responsavel } = req.body;
-      
-      // Create responsavel first
-      const newResponsavel = await storage.createResponsavel(responsavel);
-      
-      // Create aluno linked to responsavel
-      const newAluno = await storage.createAluno({
-        ...aluno,
-        responsavelId: newResponsavel.id,
+      const uniformes = await storage.getUniformes();
+      res.json(uniformes);
+    } catch (error) {
+      console.error("Error fetching uniformes:", error);
+      res.status(500).json({ message: "Erro ao buscar uniformes" });
+    }
+  });
+
+  app.post("/api/portal/uniformes/:id/comprar", async (req, res) => {
+    try {
+      const responsavelId = req.session?.responsavelId;
+      if (!responsavelId) {
+        return res.status(401).json({ message: "Não autenticado" });
+      }
+
+      const uniformeId = parseInt(req.params.id);
+      const { alunoId, tamanho, cor, quantidade, preco } = req.body;
+
+      const compra = await storage.comprarUniforme({
+        uniformeId,
+        alunoId,
+        tamanho,
+        cor,
+        quantidade,
+        preco,
       });
-      
-      res.status(201).json({ aluno: newAluno, responsavel: newResponsavel });
+
+      res.status(201).json(compra);
     } catch (error) {
-      console.error("Create aluno error:", error);
-      res.status(500).json({ error: "Erro ao criar aluno" });
+      console.error("Error creating compra uniforme:", error);
+      res.status(500).json({ message: "Erro ao comprar uniforme" });
     }
   });
 
-  app.put("/api/alunos/:id", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    const aluno = await storage.updateAluno(parseInt(req.params.id), req.body);
-    res.json(aluno);
-  });
-
-  app.delete("/api/alunos/:id", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    await storage.deleteAluno(parseInt(req.params.id));
-    res.json({ success: true });
-  });
-
-  // ============ TURMAS ROUTES ============
-  
-  app.get("/api/turmas", async (req, res) => {
-    if (!req.session.adminId && !req.session.gestorId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    const turmas = await storage.getTurmas();
-    res.json(turmas);
-  });
-
-  app.post("/api/turmas", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    const turma = await storage.createTurma(req.body);
-    res.status(201).json(turma);
-  });
-
-  app.put("/api/turmas/:id", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    const turma = await storage.updateTurma(parseInt(req.params.id), req.body);
-    res.json(turma);
-  });
-
-  // ============ MATRICULAS ROUTES ============
-  
-  app.get("/api/matriculas", async (req, res) => {
-    if (!req.session.adminId && !req.session.gestorId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    const matriculas = await storage.getMatriculas();
-    res.json(matriculas);
-  });
-
-  app.post("/api/matriculas", async (req, res) => {
-    if (!req.session.adminId && !req.session.gestorId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    const matricula = await storage.createMatricula(req.body);
-    res.status(201).json(matricula);
-  });
-
-  // ============ DASHBOARD METRICS ============
-  
-  app.get("/api/dashboard/metrics", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    
-    const metrics = await storage.getDashboardMetrics();
-    res.json(metrics);
-  });
-
-  // ============ RESPONSAVEL PORTAL ============
-  
-  app.get("/api/responsavel/alunos", async (req, res) => {
-    if (!req.session.responsavelId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-    
-    // TODO: Implement this in Phase 2
-    const alunos = await storage.getAlunos();
-    const filtered = alunos.filter(a => a.responsavelId === req.session.responsavelId);
-    res.json(filtered);
-  });
-
-  // ============ DOCUMENTOS COMPARTILHADOS ROUTES ============
-
-  // Admin: Get all documents with filters
-  app.get("/api/documentos", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-
+  // Endpoints para notificações no portal
+  app.get("/api/portal/notificacoes", async (req, res) => {
     try {
-      const filters = {
-        filialId: req.query.filialId ? parseInt(req.query.filialId as string) : undefined,
-        alunoId: req.query.alunoId ? parseInt(req.query.alunoId as string) : undefined,
-        categoria: req.query.categoria as string | undefined,
-        ativo: req.query.ativo === "false" ? false : true,
-      };
-      
-      const documentos = await storage.getDocumentos(filters);
-      res.json(documentos);
-    } catch (error) {
-      console.error("Error fetching documents:", error);
-      res.status(500).json({ error: "Erro ao buscar documentos" });
-    }
-  });
-
-  // Admin: Get single document
-  app.get("/api/documentos/:id", async (req, res) => {
-    if (!req.session.adminId && !req.session.responsavelId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-
-    try {
-      const id = parseInt(req.params.id);
-      const documento = await storage.getDocumento(id);
-      
-      if (!documento) {
-        return res.status(404).json({ error: "Documento não encontrado" });
+      const responsavelId = req.session?.responsavelId;
+      if (!responsavelId) {
+        return res.status(401).json({ message: "Não autenticado" });
       }
 
-      res.json(documento);
+      const notificacoes = await storage.getNotificacoesByResponsavel(responsavelId);
+      res.json(notificacoes);
     } catch (error) {
-      console.error("Error fetching document:", error);
-      res.status(500).json({ error: "Erro ao buscar documento" });
+      console.error("Error fetching notificacoes:", error);
+      res.status(500).json({ message: "Erro ao buscar notificações" });
     }
   });
 
-  // Admin: Create document
-  app.post("/api/documentos", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-
+  app.patch("/api/portal/notificacoes/:id/lida", async (req, res) => {
     try {
-      const documentoData = {
-        ...req.body,
-        uploadPor: "admin",
-        uploadPorId: req.session.adminId,
-      };
-
-      const documento = await storage.createDocumento(documentoData);
-      res.status(201).json(documento);
-    } catch (error) {
-      console.error("Error creating document:", error);
-      res.status(500).json({ error: "Erro ao criar documento" });
-    }
-  });
-
-  // Admin: Update document
-  app.put("/api/documentos/:id", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-
-    try {
-      const id = parseInt(req.params.id);
-      const documento = await storage.updateDocumento(id, req.body);
-      res.json(documento);
-    } catch (error) {
-      console.error("Error updating document:", error);
-      res.status(500).json({ error: "Erro ao atualizar documento" });
-    }
-  });
-
-  // Admin: Delete (soft delete) document
-  app.delete("/api/documentos/:id", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-
-    try {
-      const id = parseInt(req.params.id);
-      await storage.deleteDocumento(id);
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting document:", error);
-      res.status(500).json({ error: "Erro ao deletar documento" });
-    }
-  });
-
-  // Responsavel: Get documents for guardian's students
-  app.get("/api/portal/documentos", async (req, res) => {
-    if (!req.session.responsavelId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-
-    try {
-      const documentos = await storage.getDocumentosForResponsavel(req.session.responsavelId);
-      res.json(documentos);
-    } catch (error) {
-      console.error("Error fetching documents for guardian:", error);
-      res.status(500).json({ error: "Erro ao buscar documentos" });
-    }
-  });
-
-  // Responsavel: Get single document and register visualization
-  app.get("/api/portal/documentos/:id", async (req, res) => {
-    if (!req.session.responsavelId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-
-    try {
-      const id = parseInt(req.params.id);
-      const documento = await storage.getDocumento(id);
-      
-      if (!documento) {
-        return res.status(404).json({ error: "Documento não encontrado" });
+      const responsavelId = req.session?.responsavelId;
+      if (!responsavelId) {
+        return res.status(401).json({ message: "Não autenticado" });
       }
 
-      // Register visualization
-      const responsavel = await storage.getResponsavel(req.session.responsavelId);
-      if (responsavel) {
-        await storage.registrarVisualizacao({
-          documentoId: id,
-          visualizadoPor: "responsavel",
-          visualizadoPorId: req.session.responsavelId,
-          visualizadoPorNome: responsavel.nome,
-        });
-      }
-
-      res.json(documento);
+      const notificacaoId = parseInt(req.params.id);
+      await storage.marcarNotificacaoLida(notificacaoId);
+      res.json({ message: "Notificação marcada como lida" });
     } catch (error) {
-      console.error("Error fetching document:", error);
-      res.status(500).json({ error: "Erro ao buscar documento" });
-    }
-  });
-
-  // Admin: Get visualizations for a document
-  app.get("/api/documentos/:id/visualizacoes", async (req, res) => {
-    if (!req.session.adminId) {
-      return res.status(401).json({ error: "Não autenticado" });
-    }
-
-    try {
-      const id = parseInt(req.params.id);
-      const visualizacoes = await storage.getVisualizacoesByDocumento(id);
-      res.json(visualizacoes);
-    } catch (error) {
-      console.error("Error fetching visualizations:", error);
-      res.status(500).json({ error: "Erro ao buscar visualizações" });
+      console.error("Error marking notificacao as read:", error);
+      res.status(500).json({ message: "Erro ao marcar notificação como lida" });
     }
   });
 

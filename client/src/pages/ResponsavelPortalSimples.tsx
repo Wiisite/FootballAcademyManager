@@ -32,7 +32,6 @@ import {
   Camera,
   ImageIcon
 } from "lucide-react";
-import { InterLogo } from "@/components/InterLogo";
 
 export default function ResponsavelPortal() {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -51,45 +50,7 @@ export default function ResponsavelPortal() {
     queryKey: ["/api/alunos"],
   });
 
-  const { data: pacotesTreino = [] } = useQuery({
-    queryKey: ["/api/pacotes-treino"],
-  });
-
-  const { data: assinaturasPacotes = [] } = useQuery({
-    queryKey: ["/api/assinaturas-pacotes"],
-  });
-
   // Mutations
-  const contratarPacoteMutation = useMutation({
-    mutationFn: async (data: { alunoId: number; pacoteId: number; formaPagamento: string; observacoes?: string }) => {
-      const response = await apiRequest("POST", "/api/assinaturas-pacotes", {
-        alunoId: data.alunoId,
-        pacoteId: data.pacoteId,
-        status: "ativo",
-        dataInicio: new Date().toISOString().split('T')[0],
-        dataFim: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 dias
-        valorPago: "0.00",
-        formaPagamento: data.formaPagamento,
-        observacoes: data.observacoes
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Sucesso!",
-        description: "Pacote contratado com sucesso!",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/assinaturas-pacotes"] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Erro",
-        description: "Erro ao contratar pacote. Tente novamente.",
-        variant: "destructive",
-      });
-    },
-  });
-
   const createAlunoMutation = useMutation({
     mutationFn: async (data: InsertAluno) => {
       return await apiRequest("POST", "/api/alunos", data);
@@ -152,9 +113,9 @@ export default function ResponsavelPortal() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-green-600" />
           <p className="text-gray-600">Carregando portal...</p>
         </div>
       </div>
@@ -170,24 +131,23 @@ export default function ResponsavelPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       {/* Header */}
-      <div className="bg-blue-50 shadow-sm border-b border-blue-200">
+      <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-4 gap-3">
+          <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center p-1">
-                <InterLogo size={24} />
+              <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
+                <Users className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900">Portal dos Responsáveis</h1>
-                <p className="text-xs sm:text-sm text-gray-600">Bem-vindo, {responsavel.nome}</p>
+                <h1 className="text-xl font-bold text-gray-900">Portal dos Responsáveis</h1>
+                <p className="text-sm text-gray-600">Bem-vindo, {responsavel.nome}</p>
               </div>
             </div>
-            <Button onClick={handleLogout} variant="outline" size="sm" className="text-xs sm:text-sm">
-              <LogOut className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Sair</span>
-              <span className="sm:hidden">🚪</span>
+            <Button onClick={handleLogout} variant="outline" size="sm">
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
             </Button>
           </div>
         </div>
@@ -196,28 +156,27 @@ export default function ResponsavelPortal() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-6 gap-1">
-            <TabsTrigger value="dashboard" className="text-xs sm:text-sm">📊 Dashboard</TabsTrigger>
-            <TabsTrigger value="alunos" className="text-xs sm:text-sm">👨‍👩‍👧‍👦 Filhos</TabsTrigger>
-            <TabsTrigger value="pagamentos" className="text-xs sm:text-sm">💳 Pagamentos</TabsTrigger>
-            <TabsTrigger value="pacotes" className="text-xs sm:text-sm">🏃‍♂️ Pacotes</TabsTrigger>
-            <TabsTrigger value="eventos" className="text-xs sm:text-sm">📅 Eventos</TabsTrigger>
-            <TabsTrigger value="uniformes" className="text-xs sm:text-sm">👕 Uniformes</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+            <TabsTrigger value="alunos">Meus Filhos</TabsTrigger>
+            <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
+            <TabsTrigger value="eventos">Eventos</TabsTrigger>
+            <TabsTrigger value="uniformes">Uniformes</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <Card className="bg-blue-50 border-blue-200">
+              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Filhos Matriculados</CardTitle>
-                  <Users className="h-4 w-4 text-blue-600" />
+                  <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">{responsavel.alunos?.length || 0}</div>
+                  <div className="text-2xl font-bold">{responsavel.alunos?.length || 0}</div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-blue-50 border-blue-200">
+              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Pagamentos em Dia</CardTitle>
                   <CheckCircle className="h-4 w-4 text-green-600" />
@@ -229,7 +188,7 @@ export default function ResponsavelPortal() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-blue-50 border-blue-200">
+              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Pagamentos Atrasados</CardTitle>
                   <AlertTriangle className="h-4 w-4 text-red-600" />
@@ -241,13 +200,13 @@ export default function ResponsavelPortal() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-blue-50 border-blue-200">
+              <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Notificações</CardTitle>
-                  <Bell className="h-4 w-4 text-blue-600" />
+                  <Bell className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-blue-600">3</div>
+                  <div className="text-2xl font-bold">3</div>
                 </CardContent>
               </Card>
             </div>
@@ -257,7 +216,7 @@ export default function ResponsavelPortal() {
               <h3 className="text-lg font-semibold">Seus Filhos</h3>
               <div className="grid gap-4 md:grid-cols-2">
                 {responsavel.alunos?.map((aluno: any) => (
-                  <Card key={aluno.id} className="bg-blue-50 border-blue-200">
+                  <Card key={aluno.id}>
                     <CardHeader>
                       <div className="flex justify-between items-start">
                         <div className="flex items-center space-x-3">
@@ -511,122 +470,6 @@ export default function ResponsavelPortal() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="pacotes">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Gift className="w-5 h-5" />
-                    Pacotes de Treino Disponíveis
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    {pacotesTreino.map((pacote: any) => (
-                      <Card key={pacote.id} className="border-2 hover:shadow-lg transition-shadow">
-                        <CardHeader>
-                          <CardTitle className="text-lg">{pacote.nome}</CardTitle>
-                          <p className="text-2xl font-bold text-green-600">
-                            R$ {parseFloat(pacote.valor).toFixed(2)}
-                          </p>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <p className="text-gray-600">{pacote.descricao}</p>
-                          <div className="text-sm text-gray-500">
-                            <p><strong>Duração:</strong> {pacote.duracao}</p>
-                            <p><strong>Frequência:</strong> {
-                              pacote.nome.includes('3x') ? '3 vezes por semana' :
-                              pacote.nome.includes('2x') ? '2 vezes por semana' :
-                              '1 vez por semana'
-                            }</p>
-                          </div>
-                          
-                          {/* Seletor de aluno */}
-                          <div className="space-y-3">
-                            <label className="text-sm font-medium">Selecione o filho:</label>
-                            <select 
-                              className="w-full p-2 border rounded-md"
-                              onChange={(e) => {
-                                const alunoId = parseInt(e.target.value);
-                                if (alunoId) {
-                                  contratarPacoteMutation.mutate({
-                                    alunoId,
-                                    pacoteId: pacote.id,
-                                    formaPagamento: "pendente",
-                                    observacoes: `Contratação do pacote ${pacote.nome}`
-                                  });
-                                }
-                                e.target.value = "";
-                              }}
-                              disabled={contratarPacoteMutation.isPending}
-                            >
-                              <option value="">Escolha um filho</option>
-                              {alunos?.filter(aluno => aluno.responsavelId === responsavel?.id).map(aluno => (
-                                <option key={aluno.id} value={aluno.id}>
-                                  {aluno.nome}
-                                </option>
-                              ))}
-                            </select>
-                            {contratarPacoteMutation.isPending && (
-                              <div className="flex items-center gap-2 text-sm text-gray-600">
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                                Contratando pacote...
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Pacotes Contratados */}
-              {assinaturasPacotes.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Pacotes Contratados</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {assinaturasPacotes.map((assinatura: any) => {
-                        const aluno = alunos?.find(a => a.id === assinatura.alunoId);
-                        const pacote = pacotesTreino.find((p: any) => p.id === assinatura.pacoteId);
-                        
-                        return (
-                          <div key={assinatura.id} className="border rounded-lg p-4">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <h4 className="font-medium">{aluno?.nome}</h4>
-                                <p className="text-sm text-gray-600">{pacote?.nome}</p>
-                                <p className="text-sm text-gray-500">
-                                  Período: {new Date(assinatura.dataInicio).toLocaleDateString()} - {new Date(assinatura.dataFim).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <div className="text-right">
-                                <p className="font-bold text-green-600">R$ {pacote?.valor}</p>
-                                <Badge 
-                                  variant={assinatura.status === "ativo" ? "default" : "secondary"}
-                                >
-                                  {assinatura.status}
-                                </Badge>
-                              </div>
-                            </div>
-                            {assinatura.observacoes && (
-                              <p className="text-sm text-gray-600 mt-2">
-                                {assinatura.observacoes}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
           </TabsContent>
 
           <TabsContent value="eventos">

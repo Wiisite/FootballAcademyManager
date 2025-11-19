@@ -9,8 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Eye, EyeOff, User, Lock, School, ArrowLeft } from "lucide-react";
-import { InterLogo } from "@/components/InterLogo";
+import { Eye, EyeOff, User, Lock, School } from "lucide-react";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -80,8 +79,8 @@ export default function ResponsavelLogin() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 p-2">
-            <InterLogo size={48} />
+          <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <School className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Portal do Responsável</h1>
           <p className="text-gray-600 mt-2">
@@ -233,15 +232,6 @@ export default function ResponsavelLogin() {
           <p className="text-sm text-gray-500">
             Precisa de ajuda? Entre em contato com a escola.
           </p>
-          
-          <Button
-            variant="ghost"
-            onClick={() => window.location.href = "/"}
-            className="mt-4 text-sm text-gray-600 hover:text-gray-800"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar para Página de Apresentação
-          </Button>
         </div>
       </div>
     </div>

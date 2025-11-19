@@ -1,24 +1,23 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Volleyball, Users, Calendar, TrendingUp, Shield, Zap, Building2 } from "lucide-react";
-import { InterLogo } from "@/components/InterLogo";
+import { Volleyball, Users, Calendar, TrendingUp, Shield, Zap } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Landing() {
   const handleLogin = () => {
-    window.location.href = "/admin-login";
+    window.location.href = "/api/login";
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50">
       {/* Header */}
-      <header className="bg-blue-50/80 backdrop-blur-sm border-b border-blue-200 sticky top-0 z-50">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-neutral-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center p-1">
-                <InterLogo size={32} />
+              <div className="w-10 h-10 bg-primary-green rounded-lg flex items-center justify-center">
+                <Volleyball className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-neutral-800">EscolaFut</h1>
@@ -27,7 +26,7 @@ export default function Landing() {
             </div>
             <div className="flex gap-3">
               <Link href="/responsavel">
-                <Button variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+                <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
                   Portal dos Responsáveis
                 </Button>
               </Link>
@@ -54,30 +53,19 @@ export default function Landing() {
               Gerencie alunos, professores, turmas e finanças da sua escola de futebol 
               de forma simples e eficiente com nossa plataforma completa.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button 
-                onClick={handleLogin}
-                size="lg"
-                className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg"
-              >
-                Acessar Sistema Completo
-              </Button>
-              <Button 
-                onClick={() => window.location.href = "/login-unidade"}
-                size="lg"
-                variant="outline"
-                className="border-primary text-primary hover:bg-primary/10 px-8 py-4 text-lg"
-              >
-                <Building2 className="w-5 h-5 mr-2" />
-                Acesso por Unidade
-              </Button>
-            </div>
+            <Button 
+              onClick={handleLogin}
+              size="lg"
+              className="bg-primary hover:bg-primary/90 text-white px-8 py-4 text-lg"
+            >
+              Acessar Sistema
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-blue-50">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-neutral-900 mb-4">
@@ -91,10 +79,10 @@ export default function Landing() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {/* Feature 1 */}
-            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
+            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Users className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6 text-primary" />
                 </div>
                 <CardTitle className="text-xl">Gestão de Alunos</CardTitle>
                 <CardDescription>
@@ -105,10 +93,10 @@ export default function Landing() {
             </Card>
 
             {/* Feature 2 */}
-            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
+            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center mb-4">
+                  <Shield className="w-6 h-6 text-secondary" />
                 </div>
                 <CardTitle className="text-xl">Controle de Professores</CardTitle>
                 <CardDescription>
@@ -119,10 +107,10 @@ export default function Landing() {
             </Card>
 
             {/* Feature 3 */}
-            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
+            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Calendar className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-accent/10 rounded-lg flex items-center justify-center mb-4">
+                  <Calendar className="w-6 h-6 text-accent" />
                 </div>
                 <CardTitle className="text-xl">Organização de Turmas</CardTitle>
                 <CardDescription>
@@ -133,10 +121,10 @@ export default function Landing() {
             </Card>
 
             {/* Feature 4 */}
-            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
+            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-4">
+                  <TrendingUp className="w-6 h-6 text-green-600" />
                 </div>
                 <CardTitle className="text-xl">Controle Financeiro</CardTitle>
                 <CardDescription>
@@ -147,9 +135,9 @@ export default function Landing() {
             </Card>
 
             {/* Feature 5 */}
-            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
+            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mb-4">
                   <Zap className="w-6 h-6 text-blue-600" />
                 </div>
                 <CardTitle className="text-xl">Relatórios Completos</CardTitle>
@@ -161,10 +149,10 @@ export default function Landing() {
             </Card>
 
             {/* Feature 6 */}
-            <Card className="bg-white border-blue-200 hover:shadow-lg transition-shadow">
+            <Card className="border-neutral-200 hover:shadow-lg transition-shadow">
               <CardHeader>
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                  <Volleyball className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mb-4">
+                  <Volleyball className="w-6 h-6 text-purple-600" />
                 </div>
                 <CardTitle className="text-xl">Interface Intuitiva</CardTitle>
                 <CardDescription>
@@ -178,19 +166,19 @@ export default function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-blue-600">
+      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-primary-green">
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-white mb-4">
             Pronto para revolucionar sua escola de futebol?
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
+          <p className="text-xl text-green-100 mb-8">
             Entre no sistema e comece a gerenciar sua escola de forma profissional e eficiente.
           </p>
           <Button 
             onClick={handleLogin}
             size="lg"
             variant="secondary"
-            className="bg-white text-blue-600 hover:bg-neutral-50 px-8 py-4 text-lg"
+            className="bg-white text-primary-green hover:bg-neutral-50 px-8 py-4 text-lg"
           >
             Acessar Sistema Agora
           </Button>
@@ -198,12 +186,12 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-blue-50 border-t border-blue-200 py-8 px-4 sm:px-6 lg:px-8">
+      <footer className="bg-white border-t border-neutral-200 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center p-1">
-                <InterLogo size={16} />
+              <div className="w-8 h-8 bg-primary-green rounded-lg flex items-center justify-center">
+                <Volleyball className="w-4 h-4 text-white" />
               </div>
               <div>
                 <p className="font-semibold text-neutral-800">EscolaFut</p>

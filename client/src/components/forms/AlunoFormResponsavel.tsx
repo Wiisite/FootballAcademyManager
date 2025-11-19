@@ -30,10 +30,6 @@ export default function AlunoFormResponsavel({
     email: aluno?.email || '',
     telefone: aluno?.telefone || '',
     endereco: aluno?.endereco || '',
-    bairro: aluno?.bairro || '',
-    cep: aluno?.cep || '',
-    cidade: aluno?.cidade || '',
-    estado: aluno?.estado || '',
     dataNascimento: aluno?.dataNascimento || '',
     fotoUrl: aluno?.fotoUrl || '',
     filialId: aluno?.filialId || '',
@@ -247,47 +243,6 @@ export default function AlunoFormResponsavel({
           onChange={(e) => setFormData(prev => ({ ...prev, endereco: e.target.value }))}
           placeholder="Endereço completo"
         />
-      </div>
-
-      {/* Campos de Endereço Detalhado */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div>
-          <Label htmlFor="bairro">Bairro</Label>
-          <Input
-            id="bairro"
-            value={formData.bairro}
-            onChange={(e) => setFormData(prev => ({ ...prev, bairro: e.target.value }))}
-            placeholder="Digite o bairro"
-          />
-        </div>
-        <div>
-          <Label htmlFor="cep">CEP</Label>
-          <Input
-            id="cep"
-            value={formData.cep}
-            onChange={(e) => setFormData(prev => ({ ...prev, cep: e.target.value }))}
-            placeholder="00000-000"
-          />
-        </div>
-        <div>
-          <Label htmlFor="cidade">Cidade</Label>
-          <Input
-            id="cidade"
-            value={formData.cidade}
-            onChange={(e) => setFormData(prev => ({ ...prev, cidade: e.target.value }))}
-            placeholder="Digite a cidade"
-          />
-        </div>
-        <div>
-          <Label htmlFor="estado">Estado</Label>
-          <Input
-            id="estado"
-            value={formData.estado}
-            onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value }))}
-            placeholder="SP"
-            maxLength={2}
-          />
-        </div>
       </div>
 
       {/* Campos Data de Nascimento e Unidade */}

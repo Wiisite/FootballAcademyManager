@@ -12,7 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertResponsavelSchema } from "@shared/schema";
 import { UserPlus, LogIn, Users } from "lucide-react";
-import { InterLogo } from "@/components/InterLogo";
 
 const cadastroSchema = insertResponsavelSchema.extend({
   confirmarSenha: z.string().min(6, "Confirmação de senha deve ter pelo menos 6 caracteres"),
@@ -68,8 +67,8 @@ export default function ResponsavelCadastro() {
       <div className="w-full max-w-md space-y-6">
         {/* Logo/Header */}
         <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4 p-2">
-            <InterLogo size={48} />
+          <div className="mx-auto w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mb-4">
+            <Users className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">Portal dos Responsáveis</h1>
           <p className="text-gray-600 mt-2">Cadastre-se para acompanhar seus filhos</p>

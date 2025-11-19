@@ -1,62 +1,62 @@
-import { Switch, Route, useLocation } from "wouter";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect, useState } from "react";
-
-// Pages
-import LoginAdmin from "@/pages/LoginAdmin";
+import { useAuth } from "@/hooks/useAuth";
+import NotFound from "@/pages/not-found";
+import Landing from "@/pages/Landing";
 import Dashboard from "@/pages/Dashboard";
-import Documentos from "@/pages/Documentos";
+import Alunos from "@/pages/AlunosFixed";
+import Professores from "@/pages/Professores";
+import Turmas from "@/pages/Turmas";
+import Financeiro from "@/pages/Financeiro";
+import Relatorios from "@/pages/Relatorios";
+import Filiais from "@/pages/Filiais";
+import DashboardUnidades from "@/pages/DashboardUnidades";
+import ResponsavelEntrada from "@/pages/ResponsavelEntrada";
+import ResponsavelLogin from "@/pages/ResponsavelLogin";
+import ResponsavelCadastro from "@/pages/ResponsavelCadastro";
+import ResponsavelPortal from "@/pages/ResponsavelPortalSimples";
+import Layout from "@/components/Layout";
+
+function Router() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  return (
+    <Switch>
+      {/* Portal do Responsável - Rotas independentes */}
+      <Route path="/responsavel" component={ResponsavelEntrada} />
+      <Route path="/responsavel/cadastro" component={ResponsavelCadastro} />
+      <Route path="/responsavel/login" component={ResponsavelLogin} />
+      <Route path="/portal" component={ResponsavelPortal} />
+      
+      {/* Sistema Administrativo */}
+      {isLoading || !isAuthenticated ? (
+        <Route path="/" component={Landing} />
+      ) : (
+        <Layout>
+          <Route path="/" component={Dashboard} />
+          <Route path="/alunos" component={Alunos} />
+          <Route path="/professores" component={Professores} />
+          <Route path="/turmas" component={Turmas} />
+          <Route path="/filiais" component={Filiais} />
+          <Route path="/dashboard-unidades" component={DashboardUnidades} />
+          <Route path="/financeiro" component={Financeiro} />
+          <Route path="/relatorios" component={Relatorios} />
+        </Layout>
+      )}
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
 
 function App() {
-  const [, setLocation] = useLocation();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
-
-  // Check auth status
-  useEffect(() => {
-    fetch("/api/auth/admin/me")
-      .then((res) => {
-        setIsAuthenticated(res.ok);
-        if (!res.ok && window.location.pathname !== "/login") {
-          setLocation("/login");
-        }
-      })
-      .catch(() => setIsAuthenticated(false));
-  }, [setLocation]);
-
-  if (isAuthenticated === null) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Carregando...</div>
-      </div>
-    );
-  }
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Switch>
-          {!isAuthenticated ? (
-            <>
-              <Route path="/login" component={LoginAdmin} />
-              <Route path="/">
-                <LoginAdmin />
-              </Route>
-            </>
-          ) : (
-            <>
-              <Route path="/" component={Dashboard} />
-              <Route path="/dashboard" component={Dashboard} />
-              <Route path="/documentos" component={Documentos} />
-              <Route path="/login">
-                <Dashboard />
-              </Route>
-            </>
-          )}
-        </Switch>
         <Toaster />
+        <Router />
       </TooltipProvider>
     </QueryClientProvider>
   );
