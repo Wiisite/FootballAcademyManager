@@ -2,7 +2,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Volleyball, Users, Calendar, TrendingUp, Shield, Zap } from "lucide-react";
-import { Link } from "wouter";
 
 export default function Landing() {
   const handleLogin = () => {
@@ -24,16 +23,9 @@ export default function Landing() {
                 <p className="text-sm text-neutral-500">Sistema de Gestão</p>
               </div>
             </div>
-            <div className="flex gap-3">
-              <Link href="/responsavel">
-                <Button variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
-                  Portal dos Responsáveis
-                </Button>
-              </Link>
-              <Button onClick={handleLogin} className="bg-primary hover:bg-primary/90">
-                Entrar no Sistema
-              </Button>
-            </div>
+            <Button onClick={handleLogin} className="bg-primary hover:bg-primary/90">
+              Entrar no Sistema
+            </Button>
           </div>
         </div>
       </header>
