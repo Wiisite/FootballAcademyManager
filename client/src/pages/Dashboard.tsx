@@ -102,7 +102,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Total de Alunos</p>
-              <p className="text-3xl font-bold text-foreground">{metrics?.totalAlunos || 0}</p>
+              <p className="text-3xl font-bold text-foreground" data-testid="metric-total-alunos">{metrics?.totalAlunos || 0}</p>
             </div>
             <Link href="/alunos">
               <button 
@@ -131,7 +131,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Professores</p>
-              <p className="text-3xl font-bold text-foreground">{metrics?.totalProfessores || 0}</p>
+              <p className="text-3xl font-bold text-foreground" data-testid="metric-total-professores">{metrics?.totalProfessores || 0}</p>
             </div>
             <Link href="/professores">
               <button 
@@ -160,7 +160,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Receita Mensal</p>
-              <p className="text-3xl font-bold text-foreground">{formatCurrency(metrics?.receitaMensal || 0)}</p>
+              <p className="text-3xl font-bold text-foreground" data-testid="metric-receita-mensal">{formatCurrency(metrics?.receitaMensal || 0)}</p>
             </div>
             <Link href="/financeiro">
               <button 
@@ -189,7 +189,7 @@ export default function Dashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Turmas</p>
-              <p className="text-3xl font-bold text-foreground">{metrics?.totalTurmas || 0}</p>
+              <p className="text-3xl font-bold text-foreground" data-testid="metric-total-turmas">{metrics?.totalTurmas || 0}</p>
             </div>
             <Link href="/turmas">
               <button 
@@ -221,7 +221,7 @@ export default function Dashboard() {
                   <span className="text-sm font-medium text-muted-foreground">
                     Taxa de pagamento
                   </span>
-                  <span className="text-2xl font-bold text-foreground">{percentEmDia}%</span>
+                  <span className="text-2xl font-bold text-foreground" data-testid="metric-percent-em-dia">{percentEmDia}%</span>
                 </div>
                 <div className="h-4 bg-muted rounded-full overflow-hidden">
                   <div 
@@ -238,7 +238,7 @@ export default function Dashboard() {
                     <span className="text-sm font-medium text-muted-foreground">Total</span>
                     <Users className="w-4 h-4 text-muted-foreground" />
                   </div>
-                  <p className="text-2xl font-bold text-foreground">{paymentStats?.total || 0}</p>
+                  <p className="text-2xl font-bold text-foreground" data-testid="metric-payment-total">{paymentStats?.total || 0}</p>
                   <p className="text-xs text-muted-foreground mt-1">Alunos ativos</p>
                 </div>
 
@@ -247,7 +247,7 @@ export default function Dashboard() {
                     <span className="text-sm font-medium text-green-700">Em Dia</span>
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                   </div>
-                  <p className="text-2xl font-bold text-green-700">{paymentStats?.emDia || 0}</p>
+                  <p className="text-2xl font-bold text-green-700" data-testid="metric-payment-em-dia">{paymentStats?.emDia || 0}</p>
                   <p className="text-xs text-green-600 mt-1">Pagamentos regulares</p>
                 </div>
 
@@ -256,7 +256,7 @@ export default function Dashboard() {
                     <span className="text-sm font-medium text-red-700">Atrasados</span>
                     <AlertCircle className="w-4 h-4 text-red-600" />
                   </div>
-                  <p className="text-2xl font-bold text-red-700">{paymentStats?.atrasados || 0}</p>
+                  <p className="text-2xl font-bold text-red-700" data-testid="metric-payment-atrasados">{paymentStats?.atrasados || 0}</p>
                   <p className="text-xs text-red-600 mt-1">Necessitam atenção</p>
                 </div>
               </div>

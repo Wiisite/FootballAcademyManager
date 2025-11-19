@@ -14,18 +14,13 @@ import {
   CircleUser
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-interface UserData {
-  profileImageUrl?: string;
-  firstName?: string;
-  email?: string;
-}
+import type { User } from "@shared/schema";
 
 export default function Sidebar() {
   const { user } = useAuth();
   const [location] = useLocation();
   
-  const userData = (user || {}) as UserData;
+  const userData = user as User | undefined;
 
   const navigationItems = [
     {
@@ -138,19 +133,23 @@ export default function Sidebar() {
             {userData?.profileImageUrl ? (
               <img 
                 src={userData.profileImageUrl} 
-                alt="Perfil do usuário" 
+                alt="Perfil do usuário"
+                data-testid="img-user-profile"
                 className="w-11 h-11 rounded-full object-cover ring-2 ring-green-500/30" 
               />
             ) : (
-              <div className="w-11 h-11 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+              <div 
+                className="w-11 h-11 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg"
+                data-testid="icon-user-avatar"
+              >
                 <CircleUser className="w-6 h-6 text-white" />
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">
+              <p className="text-sm font-semibold text-white truncate" data-testid="text-user-name">
                 {userData?.firstName || userData?.email || "Usuário"}
               </p>
-              <p className="text-xs text-white/50 mt-0.5">Administrador</p>
+              <p className="text-xs text-white/50 mt-0.5" data-testid="text-user-role">Administrador</p>
             </div>
           </div>
           <Button

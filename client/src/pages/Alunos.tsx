@@ -179,7 +179,7 @@ export default function Alunos() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Total de Alunos</p>
-                <p className="text-3xl font-bold text-foreground">{alunos?.length || 0}</p>
+                <p className="text-3xl font-bold text-foreground" data-testid="stat-total-alunos">{alunos?.length || 0}</p>
               </div>
               <div className="p-3 rounded-xl bg-blue-500/10">
                 <Users className="w-6 h-6 text-blue-600" />
@@ -193,7 +193,7 @@ export default function Alunos() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Alunos Ativos</p>
-                <p className="text-3xl font-bold text-foreground">{activeCount}</p>
+                <p className="text-3xl font-bold text-foreground" data-testid="stat-alunos-ativos">{activeCount}</p>
               </div>
               <div className="p-3 rounded-xl bg-green-500/10">
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
@@ -207,7 +207,7 @@ export default function Alunos() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Em Dia</p>
-                <p className="text-3xl font-bold text-green-600">{paidCount}</p>
+                <p className="text-3xl font-bold text-green-600" data-testid="stat-alunos-em-dia">{paidCount}</p>
               </div>
               <div className="p-3 rounded-xl bg-green-500/10">
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
@@ -221,7 +221,7 @@ export default function Alunos() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-muted-foreground mb-1">Atrasados</p>
-                <p className="text-3xl font-bold text-red-600">{lateCount}</p>
+                <p className="text-3xl font-bold text-red-600" data-testid="stat-alunos-atrasados">{lateCount}</p>
               </div>
               <div className="p-3 rounded-xl bg-red-500/10">
                 <AlertCircle className="w-6 h-6 text-red-600" />
