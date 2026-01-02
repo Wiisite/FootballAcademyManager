@@ -28,6 +28,14 @@ const formSchema = insertAlunoSchema.extend({
   responsavelTelefone: z.string().optional(),
   responsavelCpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF deve estar no formato 000.000.000-00").optional(),
   responsavelSenha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
+}).refine((data) => {
+  // Se não está editando (novo aluno), campos do responsável são obrigatórios
+  if (!data.responsavelId) {
+    return data.responsavelNome && data.responsavelEmail && data.responsavelTelefone && data.responsavelCpf && data.responsavelSenha;
+  }
+  return true;
+}, {
+  message: "Dados do responsável são obrigatórios para novos cadastros",
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -244,15 +252,6 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
       };
       updateMutation.mutate(submitData);
     } else {
-      // Validar campos do responsável para novos cadastros
-      if (!data.responsavelNome || !data.responsavelEmail || !data.responsavelTelefone || !data.responsavelCpf || !data.responsavelSenha) {
-        toast({
-          title: "Campos obrigatórios",
-          description: "Por favor, preencha todos os dados do responsável para cadastrar um novo aluno.",
-          variant: "destructive",
-        });
-        return;
-      }
       // Se for novo cadastro, usar a nova lógica unificada
       createMutation.mutate(data);
     }
