@@ -6,12 +6,6 @@ import {
   matriculas,
   pagamentos,
   filiais,
-  responsaveis,
-  eventos,
-  uniformes,
-  notificacoes,
-  inscricoesEventos,
-  comprasUniformes,
   type User,
   type UpsertUser,
   type Aluno,
@@ -29,20 +23,6 @@ import {
   type AlunoWithFilial,
   type Filial,
   type InsertFilial,
-  type Responsavel,
-  type InsertResponsavel,
-  type ResponsavelWithAlunos,
-  type Evento,
-  type InsertEvento,
-  type EventoWithFilial,
-  type Uniforme,
-  type InsertUniforme,
-  type Notificacao,
-  type InsertNotificacao,
-  type InscricaoEvento,
-  type InsertInscricaoEvento,
-  type CompraUniforme,
-  type InsertCompraUniforme,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql, count } from "drizzle-orm";
@@ -98,27 +78,6 @@ export interface IStorage {
     totalTurmas: number;
     receitaMensal: number;
   }>;
-
-  // Responsáveis operations
-  getResponsavel(id: number): Promise<Responsavel | undefined>;
-  getResponsavelByEmail(email: string): Promise<Responsavel | undefined>;
-  createResponsavel(responsavel: InsertResponsavel): Promise<Responsavel>;
-  authenticateResponsavel(email: string, senha: string): Promise<Responsavel | null>;
-  getResponsavelWithAlunos(id: number): Promise<ResponsavelWithAlunos | undefined>;
-
-  // Eventos operations
-  getEventos(): Promise<EventoWithFilial[]>;
-  createEvento(evento: InsertEvento): Promise<Evento>;
-  inscreveAlunoEvento(inscricao: InsertInscricaoEvento): Promise<InscricaoEvento>;
-
-  // Uniformes operations
-  getUniformes(): Promise<Uniforme[]>;
-  comprarUniforme(compra: InsertCompraUniforme): Promise<CompraUniforme>;
-
-  // Notificações operations
-  getNotificacoesByResponsavel(responsavelId: number): Promise<Notificacao[]>;
-  createNotificacao(notificacao: InsertNotificacao): Promise<Notificacao>;
-  marcarNotificacaoLida(id: number): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -149,18 +108,10 @@ export class DatabaseStorage implements IStorage {
       .select({
         id: alunos.id,
         nome: alunos.nome,
-        cpf: alunos.cpf,
         email: alunos.email,
         telefone: alunos.telefone,
         dataNascimento: alunos.dataNascimento,
-        dataMatricula: alunos.dataMatricula,
-        fotoUrl: alunos.fotoUrl,
         endereco: alunos.endereco,
-        bairro: alunos.bairro,
-        cep: alunos.cep,
-        cidade: alunos.cidade,
-        estado: alunos.estado,
-        responsavelId: alunos.responsavelId,
         nomeResponsavel: alunos.nomeResponsavel,
         telefoneResponsavel: alunos.telefoneResponsavel,
         filialId: alunos.filialId,
@@ -171,6 +122,7 @@ export class DatabaseStorage implements IStorage {
       })
       .from(alunos)
       .leftJoin(filiais, eq(alunos.filialId, filiais.id))
+      .where(eq(alunos.ativo, true))
       .orderBy(desc(alunos.createdAt));
 
     // Calcular status de pagamento para cada aluno
@@ -280,16 +232,7 @@ export class DatabaseStorage implements IStorage {
 
   // Professores operations
   async getProfessores(): Promise<Professor[]> {
-    return await db
-      .select()
-      .from(professores)
-      .leftJoin(filiais, eq(professores.filialId, filiais.id))
-      .where(eq(professores.ativo, true))
-      .orderBy(desc(professores.createdAt))
-      .then(results => results.map(result => ({
-        ...result.professores,
-        filial: result.filiais,
-      })));
+    return await db.select().from(professores).where(eq(professores.ativo, true)).orderBy(desc(professores.createdAt));
   }
 
   async getProfessor(id: number): Promise<Professor | undefined> {
@@ -427,7 +370,8 @@ export class DatabaseStorage implements IStorage {
 
     const [alunosCount] = await db
       .select({ count: count() })
-      .from(alunos);
+      .from(alunos)
+      .where(eq(alunos.ativo, true));
 
     const [professoresCount] = await db
       .select({ count: count() })
@@ -480,164 +424,6 @@ export class DatabaseStorage implements IStorage {
 
   async deleteFilial(id: number): Promise<void> {
     await db.update(filiais).set({ ativa: false }).where(eq(filiais.id, id));
-  }
-
-  // Responsáveis operations
-  async getResponsavel(id: number): Promise<Responsavel | undefined> {
-    const [responsavel] = await db.select().from(responsaveis).where(eq(responsaveis.id, id));
-    return responsavel;
-  }
-
-  async getResponsavelByEmail(email: string): Promise<Responsavel | undefined> {
-    const [responsavel] = await db.select().from(responsaveis).where(eq(responsaveis.email, email));
-    return responsavel;
-  }
-
-  async createResponsavel(responsavel: InsertResponsavel): Promise<Responsavel> {
-    const [novoResponsavel] = await db
-      .insert(responsaveis)
-      .values(responsavel)
-      .returning();
-    return novoResponsavel;
-  }
-
-  async authenticateResponsavel(email: string, senha: string): Promise<Responsavel | null> {
-    const [responsavel] = await db
-      .select()
-      .from(responsaveis)
-      .where(and(eq(responsaveis.email, email), eq(responsaveis.senha, senha)));
-    return responsavel || null;
-  }
-
-  async getResponsavelWithAlunos(id: number): Promise<ResponsavelWithAlunos | undefined> {
-    const responsavel = await this.getResponsavel(id);
-    if (!responsavel) return undefined;
-
-    const alunosDoResponsavel = await db
-      .select({
-        id: alunos.id,
-        nome: alunos.nome,
-        cpf: alunos.cpf,
-        email: alunos.email,
-        telefone: alunos.telefone,
-        dataNascimento: alunos.dataNascimento,
-        dataMatricula: alunos.dataMatricula,
-        fotoUrl: alunos.fotoUrl,
-        endereco: alunos.endereco,
-        bairro: alunos.bairro,
-        cep: alunos.cep,
-        cidade: alunos.cidade,
-        estado: alunos.estado,
-        responsavelId: alunos.responsavelId,
-        nomeResponsavel: alunos.nomeResponsavel,
-        telefoneResponsavel: alunos.telefoneResponsavel,
-        filialId: alunos.filialId,
-        ativo: alunos.ativo,
-        createdAt: alunos.createdAt,
-        updatedAt: alunos.updatedAt,
-        filial: filiais,
-      })
-      .from(alunos)
-      .leftJoin(filiais, eq(alunos.filialId, filiais.id))
-      .where(eq(alunos.responsavelId, id));
-
-    // Calcular status de pagamento para cada aluno
-    const alunosComStatus = await Promise.all(
-      alunosDoResponsavel.map(async (aluno) => {
-        const statusPagamento = await this.calcularStatusPagamento(aluno.id);
-        return {
-          ...aluno,
-          statusPagamento,
-        };
-      })
-    );
-
-    return {
-      ...responsavel,
-      alunos: alunosComStatus,
-    };
-  }
-
-  // Eventos operations
-  async getEventos(): Promise<EventoWithFilial[]> {
-    return await db
-      .select({
-        id: eventos.id,
-        nome: eventos.nome,
-        descricao: eventos.descricao,
-        dataEvento: eventos.dataEvento,
-        horaInicio: eventos.horaInicio,
-        horaFim: eventos.horaFim,
-        local: eventos.local,
-        preco: eventos.preco,
-        vagasMaximas: eventos.vagasMaximas,
-        filialId: eventos.filialId,
-        ativo: eventos.ativo,
-        createdAt: eventos.createdAt,
-        updatedAt: eventos.updatedAt,
-        filial: filiais,
-      })
-      .from(eventos)
-      .leftJoin(filiais, eq(eventos.filialId, filiais.id))
-      .where(eq(eventos.ativo, true))
-      .orderBy(desc(eventos.dataEvento));
-  }
-
-  async createEvento(evento: InsertEvento): Promise<Evento> {
-    const [novoEvento] = await db
-      .insert(eventos)
-      .values(evento)
-      .returning();
-    return novoEvento;
-  }
-
-  async inscreveAlunoEvento(inscricao: InsertInscricaoEvento): Promise<InscricaoEvento> {
-    const [novaInscricao] = await db
-      .insert(inscricoesEventos)
-      .values(inscricao)
-      .returning();
-    return novaInscricao;
-  }
-
-  // Uniformes operations
-  async getUniformes(): Promise<Uniforme[]> {
-    return await db
-      .select()
-      .from(uniformes)
-      .where(eq(uniformes.ativo, true))
-      .orderBy(desc(uniformes.createdAt));
-  }
-
-  async comprarUniforme(compra: InsertCompraUniforme): Promise<CompraUniforme> {
-    const [novaCompra] = await db
-      .insert(comprasUniformes)
-      .values(compra)
-      .returning();
-    return novaCompra;
-  }
-
-  // Notificações operations
-  async getNotificacoesByResponsavel(responsavelId: number): Promise<Notificacao[]> {
-    return await db
-      .select()
-      .from(notificacoes)
-      .where(eq(notificacoes.responsavelId, responsavelId))
-      .orderBy(desc(notificacoes.createdAt));
-  }
-
-  async createNotificacao(notificacao: InsertNotificacao): Promise<Notificacao> {
-    const [novaNotificacao] = await db
-      .insert(notificacoes)
-      .values(notificacao)
-      .returning();
-    return novaNotificacao;
-  }
-
-  async marcarNotificacaoLida(id: number): Promise<void> {
-    await db
-      .update(notificacoes)
-      .set({ lida: true })
-      .where(eq(notificacoes.id, id));
   }
 }
 

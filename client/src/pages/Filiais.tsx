@@ -32,7 +32,7 @@ export default function Filiais() {
       queryClient.invalidateQueries({ queryKey: ["/api/filiais"] });
       toast({
         title: "Sucesso",
-        description: "Unidade removida com sucesso.",
+        description: "Filial removida com sucesso.",
       });
     },
     onError: (error) => {
@@ -71,20 +71,20 @@ export default function Filiais() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-neutral-800">Gestão de Unidades</h2>
+          <h2 className="text-3xl font-bold text-neutral-800">Gestão de Filiais</h2>
           <p className="text-neutral-600">Gerencie as unidades da escola de futebol</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-primary hover:bg-primary/90">
               <Plus className="w-4 h-4 mr-2" />
-              Nova Unidade
+              Nova Filial
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>
-                {editingFilial ? "Editar Unidade" : "Cadastrar Nova Unidade"}
+                {editingFilial ? "Editar Filial" : "Cadastrar Nova Filial"}
               </DialogTitle>
             </DialogHeader>
             <FilialForm 
@@ -102,7 +102,7 @@ export default function Filiais() {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
               <Input
-                placeholder="Buscar unidades..."
+                placeholder="Buscar filiais..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
