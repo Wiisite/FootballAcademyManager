@@ -11,10 +11,23 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertAlunoSchema, type Aluno, type InsertAluno, type Filial } from "@shared/schema";
 import { z } from "zod";
+import { Camera, Download, Upload, ImageIcon, User } from "lucide-react";
+import { useRef, useState } from "react";
 
 const formSchema = insertAlunoSchema.extend({
   dataNascimento: z.string().optional(),
+  dataMatricula: z.string().optional(),
   filialId: z.number().optional(),
+  cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF deve estar no formato 000.000.000-00").optional(),
+  rg: z.string().optional(),
+  status: z.string().default("ativo"),
+  fotoUrl: z.string().optional(),
+  // Campos do responsável - apenas para novos cadastros
+  responsavelNome: z.string().optional(),
+  responsavelEmail: z.string().email("Email inválido").optional(),
+  responsavelTelefone: z.string().optional(),
+  responsavelCpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF deve estar no formato 000.000.000-00").optional(),
+  responsavelSenha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -27,7 +40,13 @@ interface AlunoFormProps {
 export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
 
+  // Query para buscar filiais
   const { data: filiais } = useQuery<Filial[]>({
     queryKey: ["/api/filiais"],
   });
@@ -36,20 +55,129 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       nome: aluno?.nome || "",
+      cpf: aluno?.cpf || "",
+      rg: aluno?.rg || "",
       email: aluno?.email || "",
       telefone: aluno?.telefone || "",
       dataNascimento: aluno?.dataNascimento || "",
+      dataMatricula: aluno?.dataMatricula || "",
+      fotoUrl: aluno?.fotoUrl || "",
       endereco: aluno?.endereco || "",
+      bairro: aluno?.bairro || "",
+      cep: aluno?.cep || "",
+      cidade: aluno?.cidade || "",
+      estado: aluno?.estado || "",
+      filialId: aluno?.filialId || undefined,
       nomeResponsavel: aluno?.nomeResponsavel || "",
       telefoneResponsavel: aluno?.telefoneResponsavel || "",
-      filialId: aluno?.filialId || undefined,
-      ativo: Boolean(aluno?.ativo ?? true),
+      ativo: aluno?.ativo ?? true,
+      status: "ativo",
+      responsavelNome: "",
+      responsavelEmail: "",
+      responsavelTelefone: "",
+      responsavelCpf: "",
+      responsavelSenha: "",
     },
   });
 
+  // Funções para captura de foto
+  const startCapture = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'user' } 
+      });
+      setStream(mediaStream);
+      setIsCapturing(true);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (error) {
+      console.error('Erro ao acessar câmera:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível acessar a câmera.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const context = canvas.getContext('2d');
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      if (context) {
+        context.drawImage(video, 0, 0);
+        const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+        form.setValue('fotoUrl', dataURL);
+        stopCapture();
+      }
+    }
+  };
+
+  const stopCapture = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setIsCapturing(false);
+  };
+
+  const selectFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          form.setValue('fotoUrl', e.target.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const createMutation = useMutation({
-    mutationFn: async (data: InsertAluno) => {
-      const response = await apiRequest("POST", "/api/alunos", data);
+    mutationFn: async (data: FormData) => {
+      const alunoData: InsertAluno = {
+        nome: data.nome,
+        cpf: data.cpf || null,
+        rg: data.rg || null,
+        email: data.email || null,
+        telefone: data.telefone || null,
+        dataNascimento: data.dataNascimento || null,
+        dataMatricula: data.dataMatricula || null,
+        fotoUrl: data.fotoUrl || null,
+        endereco: data.endereco || null,
+        bairro: data.bairro || null,
+        cep: data.cep || null,
+        cidade: data.cidade || null,
+        estado: data.estado || null,
+        filialId: data.filialId || null,
+        ativo: true,
+      };
+
+      const responsavelData = {
+        nome: data.responsavelNome!,
+        email: data.responsavelEmail!,
+        telefone: data.responsavelTelefone!,
+        cpf: data.responsavelCpf!,
+        endereco: data.endereco || "",
+        senha: data.responsavelSenha!,
+      };
+
+      const response = await apiRequest("POST", "/api/alunos-completo", {
+        aluno: alunoData,
+        responsavel: responsavelData,
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -57,14 +185,14 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/metrics"] });
       toast({
         title: "Sucesso",
-        description: "Aluno cadastrado com sucesso.",
+        description: "Aluno e responsável cadastrados com sucesso.",
       });
       onSuccess();
     },
     onError: (error) => {
       toast({
         title: "Erro",
-        description: "Erro ao cadastrar aluno. Verifique os dados e tente novamente.",
+        description: "Erro ao cadastrar aluno e responsável. Verifique os dados e tente novamente.",
         variant: "destructive",
       });
     },
@@ -93,20 +221,40 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
   });
 
   const onSubmit = (data: FormData) => {
-    const submitData: InsertAluno = {
-      ...data,
-      dataNascimento: data.dataNascimento || null,
-      email: data.email || null,
-      telefone: data.telefone || null,
-      endereco: data.endereco || null,
-      nomeResponsavel: data.nomeResponsavel || null,
-      telefoneResponsavel: data.telefoneResponsavel || null,
-    };
-
     if (aluno) {
+      // Se estiver editando, usar a lógica antiga
+      const submitData: InsertAluno = {
+        nome: data.nome,
+        cpf: data.cpf || null,
+        rg: data.rg || null,
+        email: data.email || null,
+        telefone: data.telefone || null,
+        dataNascimento: data.dataNascimento || null,
+        dataMatricula: data.dataMatricula || null,
+        fotoUrl: data.fotoUrl || null,
+        endereco: data.endereco || null,
+        bairro: data.bairro || null,
+        cep: data.cep || null,
+        cidade: data.cidade || null,
+        estado: data.estado || null,
+        filialId: data.filialId || null,
+        nomeResponsavel: data.nomeResponsavel || null,
+        telefoneResponsavel: data.telefoneResponsavel || null,
+        ativo: data.ativo ?? true,
+      };
       updateMutation.mutate(submitData);
     } else {
-      createMutation.mutate(submitData);
+      // Validar campos do responsável para novos cadastros
+      if (!data.responsavelNome || !data.responsavelEmail || !data.responsavelTelefone || !data.responsavelCpf || !data.responsavelSenha) {
+        toast({
+          title: "Campos obrigatórios",
+          description: "Por favor, preencha todos os dados do responsável para cadastrar um novo aluno.",
+          variant: "destructive",
+        });
+        return;
+      }
+      // Se for novo cadastro, usar a nova lógica unificada
+      createMutation.mutate(data);
     }
   };
 
@@ -114,7 +262,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -124,6 +272,53 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                 <FormLabel>Nome Completo *</FormLabel>
                 <FormControl>
                   <Input placeholder="Digite o nome completo" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="cpf"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CPF do Aluno</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="999.999.999-99" 
+                    maxLength={14}
+                    {...field}
+                    value={field.value || ""}
+                    onChange={(e) => {
+                      const numbers = e.target.value.replace(/\D/g, '');
+                      let formatted = numbers;
+                      if (numbers.length > 3) {
+                        formatted = numbers.slice(0, 3) + '.' + numbers.slice(3);
+                      }
+                      if (numbers.length > 6) {
+                        formatted = numbers.slice(0, 3) + '.' + numbers.slice(3, 6) + '.' + numbers.slice(6);
+                      }
+                      if (numbers.length > 9) {
+                        formatted = numbers.slice(0, 3) + '.' + numbers.slice(3, 6) + '.' + numbers.slice(6, 9) + '-' + numbers.slice(9, 11);
+                      }
+                      field.onChange(formatted);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="rg"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>RG do Aluno</FormLabel>
+                <FormControl>
+                  <Input placeholder="12.345.678-9" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -146,17 +341,31 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
 
           <FormField
             control={form.control}
+            name="dataMatricula"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Data de Matrícula</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="filialId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Filial</FormLabel>
+                <FormLabel>Unidade</FormLabel>
                 <Select 
                   onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
                   defaultValue={field.value?.toString()}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma filial" />
+                      <SelectValue placeholder="Selecione uma unidade" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -177,9 +386,9 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>E-mail</FormLabel>
+                <FormLabel>E-mail do Aluno</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="email@exemplo.com" {...field} />
+                  <Input type="email" placeholder="email@exemplo.com" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -191,37 +400,9 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
             name="telefone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Telefone</FormLabel>
+                <FormLabel>Telefone do Aluno</FormLabel>
                 <FormControl>
-                  <Input placeholder="(11) 99999-9999" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="nomeResponsavel"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Nome do Responsável</FormLabel>
-                <FormControl>
-                  <Input placeholder="Digite o nome do responsável" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="telefoneResponsavel"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Telefone do Responsável</FormLabel>
-                <FormControl>
-                  <Input placeholder="(11) 99999-9999" {...field} />
+                  <Input placeholder="(11) 99999-9999" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -229,51 +410,321 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
           />
         </div>
 
+        {/* Foto do Aluno */}
         <FormField
           control={form.control}
-          name="endereco"
+          name="fotoUrl"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Endereço</FormLabel>
+              <FormLabel>Foto do Aluno</FormLabel>
               <FormControl>
-                <Textarea 
-                  placeholder="Digite o endereço completo"
-                  className="min-h-[80px]"
-                  {...field} 
-                />
+                <div className="space-y-4">
+                  {isCapturing ? (
+                    <div className="space-y-3">
+                      <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        className="w-full max-w-md mx-auto rounded-lg border"
+                      />
+                      <div className="flex justify-center space-x-2">
+                        <Button
+                          type="button"
+                          onClick={capturePhoto}
+                          className="flex items-center space-x-2"
+                        >
+                          <Camera className="w-4 h-4" />
+                          <span>Capturar Foto</span>
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={stopCapture}
+                        >
+                          Cancelar
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={selectFile}
+                          className="flex items-center justify-center space-x-2 flex-1 h-12"
+                        >
+                          <ImageIcon className="w-5 h-5" />
+                          <span>Anexar Imagem</span>
+                        </Button>
+                        
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={startCapture}
+                          className="flex items-center justify-center space-x-2 flex-1 h-12"
+                        >
+                          <Camera className="w-5 h-5" />
+                          <span>Tirar Foto</span>
+                        </Button>
+                      </div>
+                      
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                      />
+                    </div>
+                  )}
+
+                  {field.value && (
+                    <div className="flex items-center space-x-3 p-3 border rounded-lg">
+                      <img 
+                        src={field.value} 
+                        alt="Preview da foto"
+                        className="w-20 h-20 rounded-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Foto do aluno</p>
+                        <p className="text-xs text-gray-500">
+                          {field.value.includes('canvas') || field.value.includes('video')
+                            ? 'Foto capturada pela câmera'
+                            : 'Imagem anexada do dispositivo'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <canvas ref={canvasRef} className="hidden" />
+                </div>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="ativo"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-              <div className="space-y-0.5">
-                <FormLabel className="text-base">Status Ativo</FormLabel>
-                <div className="text-sm text-muted-foreground">
-                  Determina se o aluno está ativo no sistema
-                </div>
-              </div>
-              <FormControl>
-                <Switch
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
+        {/* Seção de Endereço */}
+        <div className="border-t pt-6 mt-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Endereço</h3>
+          
+          <FormField
+            control={form.control}
+            name="endereco"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Endereço Completo</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="Digite o endereço completo"
+                    {...field}
+                    value={field.value || ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button type="button" variant="outline" onClick={onSuccess}>
-            Cancelar
-          </Button>
-          <Button type="submit" disabled={isLoading} className="bg-primary hover:bg-primary/90">
-            {isLoading ? "Salvando..." : aluno ? "Atualizar" : "Cadastrar"}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <FormField
+              control={form.control}
+              name="bairro"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bairro</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Digite o bairro" {...field} value={field.value || ""} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="cep"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>CEP</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="00000-000" 
+                      maxLength={9}
+                      {...field}
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        const numbers = e.target.value.replace(/\D/g, '');
+                        let formatted = numbers;
+                        if (numbers.length > 5) {
+                          formatted = numbers.slice(0, 5) + '-' + numbers.slice(5, 8);
+                        }
+                        field.onChange(formatted);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="cidade"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Cidade</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Digite a cidade" {...field} value={field.value || ""} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="estado"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Estado</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="SP" 
+                      maxLength={2}
+                      {...field} 
+                      value={field.value || ""}
+                      onChange={(e) => {
+                        field.onChange(e.target.value.toUpperCase());
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Seção do Responsável - apenas para novos cadastros */}
+        {!aluno && (
+          <div className="border-t pt-6 mt-6">
+            <div className="flex items-center space-x-2 mb-4">
+              <User className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold text-gray-800">Dados do Responsável</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="responsavelNome"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome do Responsável *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nome completo do responsável" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="responsavelEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email do Responsável *</FormLabel>
+                    <FormControl>
+                      <Input type="email" placeholder="email@exemplo.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="responsavelTelefone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Telefone do Responsável *</FormLabel>
+                    <FormControl>
+                      <Input placeholder="(11) 99999-9999" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="responsavelCpf"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>CPF do Responsável *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="999.999.999-99" 
+                        maxLength={14}
+                        {...field}
+                        onChange={(e) => {
+                          const numbers = e.target.value.replace(/\D/g, '');
+                          let formatted = numbers;
+                          if (numbers.length > 3) {
+                            formatted = numbers.slice(0, 3) + '.' + numbers.slice(3);
+                          }
+                          if (numbers.length > 6) {
+                            formatted = numbers.slice(0, 3) + '.' + numbers.slice(3, 6) + '.' + numbers.slice(6);
+                          }
+                          if (numbers.length > 9) {
+                            formatted = numbers.slice(0, 3) + '.' + numbers.slice(3, 6) + '.' + numbers.slice(6, 9) + '-' + numbers.slice(9, 11);
+                          }
+                          field.onChange(formatted);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="responsavelSenha"
+                render={({ field }) => (
+                  <FormItem className="md:col-span-2">
+                    <FormLabel>Senha para Portal *</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        placeholder="Mínimo 6 caracteres" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                    <div className="text-xs text-gray-500">
+                      Esta senha será usada para acessar o portal do responsável
+                    </div>
+                  </FormItem>
+                )}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-end space-x-4 pt-6 border-t">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="bg-primary hover:bg-primary/90"
+          >
+            {isLoading ? "Salvando..." : aluno ? "Atualizar Aluno" : "Cadastrar Aluno"}
           </Button>
         </div>
       </form>

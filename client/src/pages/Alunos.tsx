@@ -1,31 +1,44 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Users, Building2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { UserPlus, Search, Edit, Trash2, Phone, Mail, Calendar, Building2, Receipt, Filter } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
-import type { AlunoWithFilial } from "@shared/schema";
+import type { AlunoWithFilial, Filial } from "@shared/schema";
 import AlunoForm from "@/components/forms/AlunoForm";
-import CadastroResponsavelForm from "@/components/forms/CadastroResponsavelForm";
+
+import ExtratoAluno from "@/components/ExtratoAluno";
 
 export default function Alunos() {
   const [searchTerm, setSearchTerm] = useState("");
+  const [unidadeFilter, setUnidadeFilter] = useState<string>("todas");
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [pagamentoFilter, setPagamentoFilter] = useState<string>("todos");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isResponsavelDialogOpen, setIsResponsavelDialogOpen] = useState(false);
+
   const [editingAluno, setEditingAluno] = useState<AlunoWithFilial | null>(null);
+  const [viewingExtrato, setViewingExtrato] = useState<AlunoWithFilial | null>(null);
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: alunos, isLoading } = useQuery<AlunoWithFilial[]>({
     queryKey: ["/api/alunos"],
+  });
+
+  const { data: filiais } = useQuery<Filial[]>({
+    queryKey: ["/api/filiais"],
   });
 
   const deleteAlunoMutation = useMutation({
@@ -48,14 +61,13 @@ export default function Alunos() {
     },
   });
 
-  const filteredAlunos = alunos?.filter((aluno) =>
-    aluno.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    aluno.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
-
   const handleEdit = (aluno: AlunoWithFilial) => {
     setEditingAluno(aluno);
     setIsDialogOpen(true);
+  };
+
+  const handleViewExtrato = (aluno: AlunoWithFilial) => {
+    setViewingExtrato(aluno);
   };
 
   const handleDelete = (id: number) => {
@@ -67,10 +79,6 @@ export default function Alunos() {
   const handleDialogClose = () => {
     setIsDialogOpen(false);
     setEditingAluno(null);
-  };
-
-  const handleResponsavelSuccess = () => {
-    setIsResponsavelDialogOpen(false);
   };
 
   const calculateAge = (birthDate: string | null) => {
@@ -86,6 +94,40 @@ export default function Alunos() {
     return age;
   };
 
+  // Função para filtrar alunos
+  const filteredAlunos = alunos?.filter((aluno) => {
+    // Filtro por nome
+    const matchesSearch = aluno.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         aluno.email?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Filtro por unidade
+    const matchesUnidade = unidadeFilter === "todas" || 
+                          (unidadeFilter === "sem-unidade" && !aluno.filialId) ||
+                          aluno.filialId?.toString() === unidadeFilter;
+
+    // Filtro por status ativo/passivo
+    const matchesStatus = statusFilter === "todos" ||
+                         (statusFilter === "ativo" && aluno.ativo) ||
+                         (statusFilter === "inativo" && !aluno.ativo);
+
+    // Filtro por status de pagamento
+    const matchesPagamento = pagamentoFilter === "todos" ||
+                            (pagamentoFilter === "em-dia" && aluno.statusPagamento?.emDia) ||
+                            (pagamentoFilter === "atrasado" && !aluno.statusPagamento?.emDia);
+
+    return matchesSearch && matchesUnidade && matchesStatus && matchesPagamento;
+  }) || [];
+
+  // Se estiver visualizando extrato, mostrar o componente de extrato
+  if (viewingExtrato) {
+    return (
+      <ExtratoAluno 
+        aluno={viewingExtrato} 
+        onBack={() => setViewingExtrato(null)} 
+      />
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -94,42 +136,13 @@ export default function Alunos() {
           <h2 className="text-3xl font-bold text-neutral-800">Gestão de Alunos</h2>
           <p className="text-neutral-600">Cadastre e gerencie os alunos da escola</p>
         </div>
-        <div className="flex space-x-3">
-          <Dialog open={isResponsavelDialogOpen} onOpenChange={setIsResponsavelDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
-                <Users className="w-4 h-4 mr-2" />
-                Cadastro por Responsável
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Cadastro de Alunos por Responsável</DialogTitle>
-              </DialogHeader>
-              <CadastroResponsavelForm onSuccess={handleResponsavelSuccess} />
-            </DialogContent>
-          </Dialog>
-          
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90">
-                <UserPlus className="w-4 h-4 mr-2" />
-                Novo Aluno
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingAluno ? "Editar Aluno" : "Cadastrar Novo Aluno"}
-                </DialogTitle>
-              </DialogHeader>
-              <AlunoForm 
-                aluno={editingAluno} 
-                onSuccess={handleDialogClose}
-              />
-            </DialogContent>
-          </Dialog>
-        </div>
+        <Button 
+          className="bg-primary hover:bg-primary/90"
+          onClick={() => setLocation("/cadastro-aluno")}
+        >
+          <UserPlus className="w-4 h-4 mr-2" />
+          Cadastrar
+        </Button>
       </div>
 
       {/* Search and Summary */}
@@ -169,6 +182,70 @@ export default function Alunos() {
                 <p className="text-neutral-500">Atrasados</p>
               </div>
             </div>
+          </div>
+
+          {/* Filtros Avançados */}
+          <div className="flex items-center gap-4 pt-4 border-t">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-neutral-500" />
+              <span className="text-sm font-medium text-neutral-700">Filtros:</span>
+            </div>
+            
+            {/* Filtro por Unidade */}
+            <Select value={unidadeFilter} onValueChange={setUnidadeFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Todas as unidades" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as unidades</SelectItem>
+                <SelectItem value="sem-unidade">Sem unidade</SelectItem>
+                {filiais?.map((filial) => (
+                  <SelectItem key={filial.id} value={filial.id.toString()}>
+                    {filial.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Filtro por Status */}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="Todos os status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="ativo">Ativos</SelectItem>
+                <SelectItem value="inativo">Inativos</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Filtro por Pagamento */}
+            <Select value={pagamentoFilter} onValueChange={setPagamentoFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Todos pagamentos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="em-dia">Em dia</SelectItem>
+                <SelectItem value="atrasado">Atrasados</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Botão para limpar filtros */}
+            {(unidadeFilter !== "todas" || statusFilter !== "todos" || pagamentoFilter !== "todos") && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => {
+                  setUnidadeFilter("todas");
+                  setStatusFilter("todos");
+                  setPagamentoFilter("todos");
+                }}
+                className="text-neutral-500 hover:text-neutral-700"
+              >
+                Limpar filtros
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -219,7 +296,7 @@ export default function Alunos() {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Contato</TableHead>
-                    <TableHead>Filial</TableHead>
+                    <TableHead>Unidade</TableHead>
                     <TableHead>Idade</TableHead>
                     <TableHead>Responsável</TableHead>
                     <TableHead>Status Pagamento</TableHead>
@@ -264,7 +341,7 @@ export default function Alunos() {
                             <span>{aluno.filial.nome}</span>
                           </div>
                         ) : (
-                          <span className="text-neutral-400">Sem filial</span>
+                          <span className="text-neutral-400">Sem unidade</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -321,6 +398,14 @@ export default function Alunos() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => handleViewExtrato(aluno)}
+                            title="Ver extrato de pagamentos"
+                          >
+                            <Receipt className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleEdit(aluno)}
                           >
                             <Edit className="w-4 h-4" />
@@ -343,6 +428,26 @@ export default function Alunos() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog para edição de aluno */}
+      <Dialog open={isDialogOpen} onOpenChange={(open) => {
+        setIsDialogOpen(open);
+        if (!open) {
+          setEditingAluno(null);
+        }
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {editingAluno ? "Editar Aluno" : "Novo Aluno"}
+            </DialogTitle>
+          </DialogHeader>
+          <AlunoForm
+            aluno={editingAluno}
+            onSuccess={handleDialogClose}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
