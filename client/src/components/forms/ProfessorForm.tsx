@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -8,11 +8,12 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { insertProfessorSchema, type Professor, type InsertProfessor } from "@shared/schema";
+import { insertProfessorSchema, type Professor, type InsertProfessor, type Filial } from "@shared/schema";
 import { z } from "zod";
 
 const formSchema = insertProfessorSchema.extend({
-  salario: z.string().optional(),
+  calendarioSemanal: z.string().optional(),
+  horariosTrabalho: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -23,18 +24,18 @@ interface ProfessorFormProps {
 }
 
 const especialidades = [
-  "Futebol de Campo",
-  "Futsal",
-  "Futebol Infantil",
-  "Preparação Física",
-  "Técnica Individual",
-  "Tática",
-  "Goleiro",
+  "Professor",
+  "Estagiário", 
+  "Treinador de goleiro",
 ];
 
 export default function ProfessorForm({ professor, onSuccess }: ProfessorFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const { data: filiais = [] } = useQuery<Filial[]>({
+    queryKey: ["/api/filiais"],
+  });
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -42,8 +43,13 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
       nome: professor?.nome || "",
       email: professor?.email || "",
       telefone: professor?.telefone || "",
+      cpf: professor?.cpf || "",
+      rg: professor?.rg || "",
+      dataAdmissao: professor?.dataAdmissao || "",
       especialidade: professor?.especialidade || "",
-      salario: professor?.salario || "",
+      calendarioSemanal: professor?.calendarioSemanal || "",
+      horariosTrabalho: professor?.horariosTrabalho || "",
+      filialId: professor?.filialId || undefined,
       ativo: professor?.ativo ?? true,
     },
   });
@@ -98,8 +104,13 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
       ...data,
       email: data.email || null,
       telefone: data.telefone || null,
+      cpf: data.cpf || null,
+      rg: data.rg || null,
+      dataAdmissao: data.dataAdmissao || null,
       especialidade: data.especialidade || null,
-      salario: data.salario || null,
+      calendarioSemanal: data.calendarioSemanal || null,
+      horariosTrabalho: data.horariosTrabalho || null,
+      filialId: data.filialId || null,
     };
 
     if (professor) {
@@ -136,7 +147,7 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
               <FormItem>
                 <FormLabel>E-mail</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="email@exemplo.com" {...field} />
+                  <Input type="email" placeholder="email@exemplo.com" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -150,7 +161,7 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
               <FormItem>
                 <FormLabel>Telefone</FormLabel>
                 <FormControl>
-                  <Input placeholder="(11) 99999-9999" {...field} />
+                  <Input placeholder="(11) 99999-9999" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -182,19 +193,105 @@ export default function ProfessorForm({ professor, onSuccess }: ProfessorFormPro
             )}
           />
 
+          <FormField
+            control={form.control}
+            name="cpf"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CPF</FormLabel>
+                <FormControl>
+                  <Input placeholder="000.000.000-00" {...field} value={field.value || ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="rg"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>RG</FormLabel>
+                <FormControl>
+                  <Input placeholder="00.000.000-0" {...field} value={field.value || ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="dataAdmissao"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Data de Admissão</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} value={field.value || ""} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="filialId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Unidade</FormLabel>
+                <Select onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} value={field.value?.toString() || ""}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a unidade" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {filiais.map((filial) => (
+                      <SelectItem key={filial.id} value={filial.id.toString()}>
+                        {filial.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
           <div className="md:col-span-2">
             <FormField
               control={form.control}
-              name="salario"
+              name="calendarioSemanal"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Salário</FormLabel>
+                  <FormLabel>Calendário Semanal</FormLabel>
                   <FormControl>
                     <Input 
-                      type="number" 
-                      step="0.01"
-                      placeholder="0.00" 
+                      placeholder="Ex: Segunda, Terça, Quinta (7h-11h e 14h-18h)" 
                       {...field} 
+                      value={field.value || ""} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <FormField
+              control={form.control}
+              name="horariosTrabalho"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Horários de Trabalho</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="Ex: Manhã: 7h-12h, Tarde: 13h-18h" 
+                      {...field} 
+                      value={field.value || ""} 
                     />
                   </FormControl>
                   <FormMessage />

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Search, Plus, Trash2, Calendar, CreditCard, TrendingUp, Wallet } from "lucide-react";
+import { DollarSign, Search, Plus, Trash2, Calendar, CreditCard, TrendingUp, TrendingDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -43,7 +43,7 @@ export default function Financeiro() {
         description: "Pagamento removido com sucesso.",
       });
     },
-    onError: () => {
+    onError: (error) => {
       toast({
         title: "Erro",
         description: "Erro ao remover pagamento. Tente novamente.",
@@ -84,12 +84,12 @@ export default function Financeiro() {
 
   const getPaymentMethodColor = (method: string) => {
     const colors = {
-      "PIX": "bg-green-500/10 text-green-700 border-green-500/20",
-      "Dinheiro": "bg-blue-500/10 text-blue-700 border-blue-500/20",
-      "Cartão": "bg-purple-500/10 text-purple-700 border-purple-500/20",
-      "Transferência": "bg-amber-500/10 text-amber-700 border-amber-500/20",
+      "PIX": "bg-green-100 text-green-800",
+      "Dinheiro": "bg-blue-100 text-blue-800",
+      "Cartão": "bg-purple-100 text-purple-800",
+      "Transferência": "bg-orange-100 text-orange-800",
     };
-    return colors[method as keyof typeof colors] || "bg-muted";
+    return colors[method as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
   const calculateTotals = () => {
@@ -104,6 +104,7 @@ export default function Financeiro() {
 
   const { total, monthlyTotal } = calculateTotals();
 
+  // Generate month options for filter
   const getMonthOptions = () => {
     const months = [];
     const current = new Date();
@@ -121,15 +122,12 @@ export default function Financeiro() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-bold text-foreground mb-2">Controle Financeiro</h1>
-          <p className="text-muted-foreground text-lg">Gerencie pagamentos e mensalidades</p>
+          <h2 className="text-3xl font-bold text-neutral-800">Controle Financeiro</h2>
+          <p className="text-neutral-600">Gerencie pagamentos e mensalidades</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button 
-              data-testid="button-registrar-pagamento"
-              className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/30"
-            >
+            <Button className="bg-primary hover:bg-primary/90">
               <Plus className="w-4 h-4 mr-2" />
               Registrar Pagamento
             </Button>
@@ -145,70 +143,77 @@ export default function Financeiro() {
 
       {/* Financial Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-border bg-card hover-lift">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 rounded-xl bg-green-500/10">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-neutral-600">Total Arrecadado</p>
+                <p className="text-2xl font-bold text-neutral-800">{formatCurrency(total)}</p>
+              </div>
+              <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-green-600" />
               </div>
-              <span className="text-sm font-medium text-green-600">{filteredPagamentos.length} pagamentos</span>
             </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Total Arrecadado</p>
-              <p className="text-3xl font-bold text-foreground">{formatCurrency(total)}</p>
+            <div className="flex items-center mt-4 text-sm">
+              <span className="text-green-600 font-medium">
+                {filteredPagamentos.length} pagamentos
+              </span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card hover-lift">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 rounded-xl bg-blue-500/10">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-neutral-600">Receita Mensal</p>
+                <p className="text-2xl font-bold text-neutral-800">{formatCurrency(monthlyTotal)}</p>
+              </div>
+              <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center">
                 <Calendar className="w-6 h-6 text-blue-600" />
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Mês atual</span>
             </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Receita Mensal</p>
-              <p className="text-3xl font-bold text-foreground">{formatCurrency(monthlyTotal)}</p>
+            <div className="flex items-center mt-4 text-sm">
+              <span className="text-neutral-400">Mês atual</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card hover-lift">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="p-3 rounded-xl bg-purple-500/10">
-                <Wallet className="w-6 h-6 text-purple-600" />
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-neutral-600">Ticket Médio</p>
+                <p className="text-2xl font-bold text-neutral-800">
+                  {formatCurrency(filteredPagamentos.length > 0 ? total / filteredPagamentos.length : 0)}
+                </p>
               </div>
-              <span className="text-sm font-medium text-muted-foreground">Por pagamento</span>
+              <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-purple-600" />
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground mb-1">Ticket Médio</p>
-              <p className="text-3xl font-bold text-foreground">
-                {formatCurrency(filteredPagamentos.length > 0 ? total / filteredPagamentos.length : 0)}
-              </p>
+            <div className="flex items-center mt-4 text-sm">
+              <span className="text-neutral-400">Por pagamento</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <Card className="border-border bg-card">
+      <Card>
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+          <div className="flex items-center space-x-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 w-4 h-4" />
               <Input
                 placeholder="Buscar por aluno ou forma de pagamento..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                data-testid="input-search-pagamentos"
-                className="pl-11 h-11 bg-background border-border"
+                className="pl-10"
               />
             </div>
             <Select value={filterMonth} onValueChange={setFilterMonth}>
-              <SelectTrigger className="w-full md:w-56 h-11 bg-background border-border" data-testid="select-month-filter">
+              <SelectTrigger className="w-48">
                 <SelectValue placeholder="Filtrar por mês" />
               </SelectTrigger>
               <SelectContent>
@@ -225,40 +230,39 @@ export default function Financeiro() {
       </Card>
 
       {/* Payments Table */}
-      <Card className="border-border bg-card">
-        <CardContent className="p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Histórico de Pagamentos</CardTitle>
+        </CardHeader>
+        <CardContent>
           {loadingPagamentos ? (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center space-x-4 p-4 border border-border rounded-lg">
-                  <Skeleton className="h-12 w-12 rounded-lg" />
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12 rounded" />
                   <div className="space-y-2 flex-1">
                     <Skeleton className="h-4 w-48" />
                     <Skeleton className="h-3 w-32" />
                   </div>
                   <Skeleton className="h-8 w-20" />
+                  <Skeleton className="h-8 w-8" />
                 </div>
               ))}
             </div>
           ) : filteredPagamentos.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                <DollarSign className="w-8 h-8 text-muted-foreground" />
-              </div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">
+            <div className="text-center py-12">
+              <DollarSign className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-neutral-800 mb-2">
                 {searchTerm || filterMonth ? "Nenhum pagamento encontrado" : "Nenhum pagamento registrado"}
               </h3>
-              <p className="text-muted-foreground mb-6 max-w-md mx-auto">
+              <p className="text-neutral-500 mb-4">
                 {searchTerm || filterMonth
                   ? "Tente ajustar os filtros de busca." 
-                  : "Comece registrando o primeiro pagamento."}
+                  : "Comece registrando o primeiro pagamento."
+                }
               </p>
               {!searchTerm && !filterMonth && (
-                <Button 
-                  onClick={() => setIsDialogOpen(true)}
-                  className="bg-green-600 hover:bg-green-700"
-                  data-testid="button-primeiro-pagamento"
-                >
+                <Button onClick={() => setIsDialogOpen(true)}>
                   <Plus className="w-4 h-4 mr-2" />
                   Registrar Primeiro Pagamento
                 </Button>
@@ -268,21 +272,21 @@ export default function Financeiro() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="font-semibold">Aluno</TableHead>
-                    <TableHead className="font-semibold">Valor</TableHead>
-                    <TableHead className="font-semibold">Mês Referência</TableHead>
-                    <TableHead className="font-semibold">Data Pagamento</TableHead>
-                    <TableHead className="font-semibold">Forma de Pagamento</TableHead>
-                    <TableHead className="font-semibold">Observações</TableHead>
-                    <TableHead className="text-right font-semibold">Ações</TableHead>
+                  <TableRow>
+                    <TableHead>Aluno</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Mês Referência</TableHead>
+                    <TableHead>Data Pagamento</TableHead>
+                    <TableHead>Forma de Pagamento</TableHead>
+                    <TableHead>Observações</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPagamentos.map((pagamento) => (
-                    <TableRow key={pagamento.id} className="border-border hover:bg-muted/50" data-testid={`row-pagamento-${pagamento.id}`}>
+                    <TableRow key={pagamento.id}>
                       <TableCell>
-                        <p className="font-semibold text-foreground">{getAlunoNome(pagamento.alunoId!)}</p>
+                        <p className="font-medium">{getAlunoNome(pagamento.alunoId!)}</p>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center font-semibold text-green-600">
@@ -291,26 +295,22 @@ export default function Financeiro() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center text-muted-foreground">
-                          <Calendar className="w-4 h-4 mr-2" />
-                          <span className="capitalize">
-                            {format(new Date(pagamento.mesReferencia + "-01"), "MMMM yyyy", { locale: ptBR })}
-                          </span>
+                        <div className="flex items-center">
+                          <Calendar className="w-4 h-4 mr-2 text-neutral-400" />
+                          {format(new Date(pagamento.mesReferencia + "-01"), "MMMM yyyy", { locale: ptBR })}
                         </div>
                       </TableCell>
                       <TableCell>
-                        <span className="font-medium">
-                          {format(new Date(pagamento.dataPagamento), "dd/MM/yyyy", { locale: ptBR })}
-                        </span>
+                        {format(new Date(pagamento.dataPagamento), "dd/MM/yyyy", { locale: ptBR })}
                       </TableCell>
                       <TableCell>
                         <Badge className={getPaymentMethodColor(pagamento.formaPagamento)}>
-                          <CreditCard className="w-3 h-3 mr-1.5" />
+                          <CreditCard className="w-3 h-3 mr-1" />
                           {pagamento.formaPagamento}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <p className="text-sm text-muted-foreground max-w-40 truncate">
+                        <p className="text-sm text-neutral-600 max-w-32 truncate">
                           {pagamento.observacoes || "-"}
                         </p>
                       </TableCell>
@@ -320,8 +320,6 @@ export default function Financeiro() {
                           size="sm"
                           onClick={() => handleDelete(pagamento.id)}
                           disabled={deletePagamentoMutation.isPending}
-                          data-testid={`button-delete-${pagamento.id}`}
-                          className="hover:bg-red-50 hover:text-red-600 hover:border-red-300"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

@@ -11,10 +11,14 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertAlunoSchema, type Aluno, type InsertAluno, type Filial } from "@shared/schema";
 import { z } from "zod";
+import { Camera, Download, Upload, ImageIcon } from "lucide-react";
+import { useRef, useState } from "react";
 
 const formSchema = insertAlunoSchema.extend({
   dataNascimento: z.string().optional(),
+  dataMatricula: z.string().optional(),
   filialId: z.number().optional(),
+  cpf: z.string().regex(/^\d{11}$/, "CPF deve ter 11 dígitos").optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -27,6 +31,116 @@ interface AlunoFormProps {
 export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+
+  // Função para iniciar a captura de foto
+  const startCapture = async () => {
+    try {
+      const mediaStream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'user',
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } 
+      });
+      setStream(mediaStream);
+      setIsCapturing(true);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Não foi possível acessar a câmera. Verifique as permissões.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Função para capturar a foto
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      const video = videoRef.current;
+      const context = canvas.getContext('2d');
+      
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      
+      if (context) {
+        context.drawImage(video, 0, 0);
+        const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+        
+        // Atualiza o campo fotoUrl com a imagem capturada
+        form.setValue('fotoUrl', dataURL);
+        
+        toast({
+          title: "Sucesso",
+          description: "Foto capturada com sucesso!",
+        });
+      }
+      
+      stopCapture();
+    }
+  };
+
+  // Função para parar a captura
+  const stopCapture = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+    setIsCapturing(false);
+  };
+
+  // Função para processar arquivo de imagem anexado
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Verificar se é uma imagem
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Erro",
+          description: "Por favor, selecione apenas arquivos de imagem.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Verificar tamanho do arquivo (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Erro",
+          description: "A imagem deve ter no máximo 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Converter para base64
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        form.setValue('fotoUrl', result);
+        
+        toast({
+          title: "Sucesso",
+          description: "Imagem anexada com sucesso!",
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Função para abrir seletor de arquivos
+  const selectFile = () => {
+    fileInputRef.current?.click();
+  };
 
   const { data: filiais } = useQuery<Filial[]>({
     queryKey: ["/api/filiais"],
@@ -36,9 +150,12 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
     resolver: zodResolver(formSchema),
     defaultValues: {
       nome: aluno?.nome || "",
+      cpf: aluno?.cpf || "",
       email: aluno?.email || "",
       telefone: aluno?.telefone || "",
       dataNascimento: aluno?.dataNascimento || "",
+      dataMatricula: aluno?.dataMatricula || new Date().toISOString().split('T')[0],
+      fotoUrl: aluno?.fotoUrl || "",
       endereco: aluno?.endereco || "",
       nomeResponsavel: aluno?.nomeResponsavel || "",
       telefoneResponsavel: aluno?.telefoneResponsavel || "",
@@ -132,6 +249,43 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
 
           <FormField
             control={form.control}
+            name="cpf"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>CPF do Aluno</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="999.999.999-99" 
+                    maxLength={14}
+                    {...field}
+                    value={field.value || ""}
+                    onChange={(e) => {
+                      // Remove todos os caracteres não numéricos
+                      const numbers = e.target.value.replace(/\D/g, '');
+                      
+                      // Aplica a máscara do CPF
+                      let formatted = numbers;
+                      if (numbers.length > 3) {
+                        formatted = numbers.slice(0, 3) + '.' + numbers.slice(3);
+                      }
+                      if (numbers.length > 6) {
+                        formatted = numbers.slice(0, 3) + '.' + numbers.slice(3, 6) + '.' + numbers.slice(6);
+                      }
+                      if (numbers.length > 9) {
+                        formatted = numbers.slice(0, 3) + '.' + numbers.slice(3, 6) + '.' + numbers.slice(6, 9) + '-' + numbers.slice(9, 11);
+                      }
+                      
+                      field.onChange(formatted);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="dataNascimento"
             render={({ field }) => (
               <FormItem>
@@ -146,17 +300,170 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
 
           <FormField
             control={form.control}
+            name="dataMatricula"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Data de Matrícula</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="fotoUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Foto do Aluno</FormLabel>
+                <FormControl>
+                  <div className="space-y-4">
+                    {/* Captura de foto com câmera */}
+                    {isCapturing ? (
+                      <div className="space-y-3">
+                        <video
+                          ref={videoRef}
+                          autoPlay
+                          playsInline
+                          className="w-full max-w-md mx-auto rounded-lg border"
+                        />
+                        <div className="flex justify-center space-x-2">
+                          <Button
+                            type="button"
+                            onClick={capturePhoto}
+                            className="flex items-center space-x-2"
+                          >
+                            <Camera className="w-4 h-4" />
+                            <span>Capturar Foto</span>
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={stopCapture}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {/* Botões de opções */}
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={selectFile}
+                            className="flex items-center justify-center space-x-2 flex-1 h-12"
+                          >
+                            <ImageIcon className="w-5 h-5" />
+                            <span>Anexar Imagem</span>
+                          </Button>
+                          
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={startCapture}
+                            className="flex items-center justify-center space-x-2 flex-1 h-12"
+                          >
+                            <Camera className="w-5 h-5" />
+                            <span>Tirar Foto</span>
+                          </Button>
+                        </div>
+                        
+                        {/* Input de arquivo oculto */}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
+
+                    {/* Preview da foto */}
+                    {field.value && (
+                      <div className="flex items-center space-x-3 p-3 border rounded-lg">
+                        <img 
+                          src={field.value} 
+                          alt="Preview da foto"
+                          className="w-20 h-20 rounded-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Foto do aluno</p>
+                          <p className="text-xs text-gray-500">
+                            {field.value.includes('canvas') || field.value.includes('video')
+                              ? 'Foto capturada pela câmera'
+                              : 'Imagem anexada do dispositivo'
+                            }
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (field.value) {
+                              const link = document.createElement('a');
+                              if (field.value.startsWith('data:')) {
+                                // Para fotos capturadas, criar blob para download
+                                fetch(field.value)
+                                  .then(res => res.blob())
+                                  .then(blob => {
+                                    const url = URL.createObjectURL(blob);
+                                    link.href = url;
+                                    link.download = 'foto-aluno.jpg';
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    document.body.removeChild(link);
+                                    URL.revokeObjectURL(url);
+                                  });
+                              } else {
+                                // Para URLs, download direto
+                                link.href = field.value;
+                                link.download = 'foto-aluno.jpg';
+                                link.target = '_blank';
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                              }
+                            }
+                          }}
+                          className="flex items-center space-x-1"
+                        >
+                          <Download className="w-4 h-4" />
+                          <span>Download</span>
+                        </Button>
+                      </div>
+                    )}
+
+                    {/* Canvas oculto para captura */}
+                    <canvas ref={canvasRef} className="hidden" />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
             name="filialId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Filial</FormLabel>
+                <FormLabel>Unidade</FormLabel>
                 <Select 
                   onValueChange={(value) => field.onChange(value ? parseInt(value) : undefined)} 
                   defaultValue={field.value?.toString()}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma filial" />
+                      <SelectValue placeholder="Selecione uma unidade" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -177,9 +484,9 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
             name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>E-mail</FormLabel>
+                <FormLabel>E-mail do Aluno</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="email@exemplo.com" {...field} />
+                  <Input type="email" placeholder="email@exemplo.com" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -191,9 +498,9 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
             name="telefone"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Telefone</FormLabel>
+                <FormLabel>Telefone do Aluno</FormLabel>
                 <FormControl>
-                  <Input placeholder="(11) 99999-9999" {...field} />
+                  <Input placeholder="(11) 99999-9999" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -207,7 +514,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
               <FormItem>
                 <FormLabel>Nome do Responsável</FormLabel>
                 <FormControl>
-                  <Input placeholder="Digite o nome do responsável" {...field} />
+                  <Input placeholder="Digite o nome do responsável" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -221,7 +528,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
               <FormItem>
                 <FormLabel>Telefone do Responsável</FormLabel>
                 <FormControl>
-                  <Input placeholder="(11) 99999-9999" {...field} />
+                  <Input placeholder="(11) 99999-9999" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -239,7 +546,8 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
                 <Textarea 
                   placeholder="Digite o endereço completo"
                   className="min-h-[80px]"
-                  {...field} 
+                  {...field}
+                  value={field.value || ""}
                 />
               </FormControl>
               <FormMessage />
@@ -260,7 +568,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
               </div>
               <FormControl>
                 <Switch
-                  checked={field.value}
+                  checked={Boolean(field.value ?? true)}
                   onCheckedChange={field.onChange}
                 />
               </FormControl>
