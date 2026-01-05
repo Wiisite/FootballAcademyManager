@@ -14,31 +14,41 @@ import { z } from "zod";
 import { Camera, Download, Upload, ImageIcon, User } from "lucide-react";
 import { useRef, useState } from "react";
 
-const formSchema = insertAlunoSchema.extend({
+// Schema base para edição (sem validação de responsável)
+const editFormSchema = insertAlunoSchema.extend({
   dataNascimento: z.string().optional(),
   dataMatricula: z.string().optional(),
   filialId: z.number().optional(),
-  cpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF deve estar no formato 000.000.000-00").optional(),
+  cpf: z.string().optional(),
   rg: z.string().optional(),
   status: z.string().default("ativo"),
   fotoUrl: z.string().optional(),
-  // Campos do responsável - apenas para novos cadastros
   responsavelNome: z.string().optional(),
-  responsavelEmail: z.string().email("Email inválido").optional(),
+  responsavelEmail: z.string().optional(),
   responsavelTelefone: z.string().optional(),
-  responsavelCpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF deve estar no formato 000.000.000-00").optional(),
-  responsavelSenha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional(),
-}).refine((data) => {
-  // Se não está editando (novo aluno), campos do responsável são obrigatórios
-  if (!data.responsavelId) {
-    return data.responsavelNome && data.responsavelEmail && data.responsavelTelefone && data.responsavelCpf && data.responsavelSenha;
-  }
-  return true;
-}, {
-  message: "Dados do responsável são obrigatórios para novos cadastros",
+  responsavelCpf: z.string().optional(),
+  responsavelSenha: z.string().optional(),
 });
 
-type FormData = z.infer<typeof formSchema>;
+// Schema para novo cadastro (com validação de responsável)
+const createFormSchema = insertAlunoSchema.extend({
+  dataNascimento: z.string().optional(),
+  dataMatricula: z.string().optional(),
+  filialId: z.number().optional(),
+  cpf: z.string().optional(),
+  rg: z.string().optional(),
+  status: z.string().default("ativo"),
+  fotoUrl: z.string().optional(),
+  responsavelNome: z.string().min(1, "Nome do responsável é obrigatório"),
+  responsavelEmail: z.string().email("Email inválido"),
+  responsavelTelefone: z.string().min(1, "Telefone do responsável é obrigatório"),
+  responsavelCpf: z.string().regex(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, "CPF deve estar no formato 000.000.000-00"),
+  responsavelSenha: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+});
+
+type EditFormData = z.infer<typeof editFormSchema>;
+type CreateFormData = z.infer<typeof createFormSchema>;
+type FormData = EditFormData | CreateFormData;
 
 interface AlunoFormProps {
   aluno?: Aluno | null;
@@ -46,6 +56,7 @@ interface AlunoFormProps {
 }
 
 export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
+  const isEditing = !!aluno;
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -59,8 +70,8 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
     queryKey: ["/api/filiais"],
   });
 
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
+  const form = useForm<EditFormData>({
+    resolver: zodResolver(isEditing ? editFormSchema : createFormSchema),
     defaultValues: {
       nome: aluno?.nome || "",
       cpf: aluno?.cpf || "",
@@ -228,10 +239,10 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
     },
   });
 
-  const onSubmit = (data: FormData) => {
-    if (aluno) {
-      // Se estiver editando, usar a lógica antiga
-      const submitData: InsertAluno = {
+  const onSubmit = (data: EditFormData) => {
+    if (isEditing) {
+      // Se estiver editando, usar a lógica de update
+      const submitData: Partial<InsertAluno> = {
         nome: data.nome,
         cpf: data.cpf || null,
         rg: data.rg || null,
@@ -253,7 +264,7 @@ export default function AlunoForm({ aluno, onSuccess }: AlunoFormProps) {
       updateMutation.mutate(submitData);
     } else {
       // Se for novo cadastro, usar a nova lógica unificada
-      createMutation.mutate(data);
+      createMutation.mutate(data as any);
     }
   };
 

@@ -22,8 +22,11 @@ import {
   TrendingDown,
   FileText,
   Search,
-  Filter
+  Filter,
+  Bell,
+  AlertTriangle
 } from "lucide-react";
+import { DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { 
@@ -37,7 +40,10 @@ import type {
   InsertEvento,
   InsertUniforme,
   InsertCompraUniforme,
-  InsertInscricaoEvento
+  InsertInscricaoEvento,
+  PlanoFinanceiroWithFilial,
+  InsertPlanoFinanceiro,
+  Filial
 } from "@shared/schema";
 
 export default function FinanceiroCompleto() {
@@ -47,6 +53,51 @@ export default function FinanceiroCompleto() {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Estado do formulário de pagamento
+  const [pagamentoForm, setPagamentoForm] = useState({
+    alunoId: 0,
+    valor: "",
+    mesReferencia: "",
+    dataPagamento: new Date().toISOString().split('T')[0],
+    formaPagamento: "",
+    observacoes: "",
+  });
+  const [editingPagamentoId, setEditingPagamentoId] = useState<number | null>(null);
+  const [deletingPagamentoId, setDeletingPagamentoId] = useState<number | null>(null);
+  
+  // Estado para extrato e pagamento em lote
+  const [selectedAlunoExtrato, setSelectedAlunoExtrato] = useState<number | null>(null);
+  const [mesesSelecionados, setMesesSelecionados] = useState<string[]>([]);
+  const [showLoteDialog, setShowLoteDialog] = useState(false);
+  const [lotePagamentoForm, setLotePagamentoForm] = useState({
+    valorMensal: "",
+    formaPagamento: "",
+    dataPagamento: new Date().toISOString().split('T')[0],
+  });
+
+  // Estado para planos financeiros
+  const [showPlanoDialog, setShowPlanoDialog] = useState(false);
+  const [editingPlanoId, setEditingPlanoId] = useState<number | null>(null);
+  const [planoForm, setPlanoForm] = useState({
+    nome: "",
+    descricao: "",
+    valorMensal: "",
+    quantidadeMeses: "1",
+    descontoPercentual: "0",
+    diaVencimento: "10",
+    taxaMatricula: "0",
+    filialId: null as number | null,
+  });
+
+  // Estado para notificações
+  const [showNotificacaoDialog, setShowNotificacaoDialog] = useState(false);
+  const [notificacaoForm, setNotificacaoForm] = useState({
+    titulo: "",
+    mensagem: "",
+    tipo: "geral",
+    destinatario: "todos",
+  });
 
   // Form handlers
   const handleCreateUniforme = () => {
@@ -137,12 +188,297 @@ export default function FinanceiroCompleto() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/pagamentos"] });
       setDialogOpen(false);
+      setPagamentoForm({
+        alunoId: 0,
+        valor: "",
+        mesReferencia: "",
+        dataPagamento: new Date().toISOString().split('T')[0],
+        formaPagamento: "",
+        observacoes: "",
+      });
       toast({
         title: "Sucesso",
         description: "Pagamento registrado com sucesso!",
       });
     },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao registrar pagamento",
+        description: error.message || "Tente novamente",
+        variant: "destructive",
+      });
+    },
   });
+
+  const updatePagamentoMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<InsertPagamento> }) => {
+      return await apiRequest("PUT", `/api/pagamentos/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pagamentos"] });
+      setDialogOpen(false);
+      setEditingPagamentoId(null);
+      setPagamentoForm({
+        alunoId: 0,
+        valor: "",
+        mesReferencia: "",
+        dataPagamento: new Date().toISOString().split('T')[0],
+        formaPagamento: "",
+        observacoes: "",
+      });
+      toast({
+        title: "Sucesso",
+        description: "Pagamento atualizado com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar pagamento",
+        description: error.message || "Tente novamente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deletePagamentoMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/pagamentos/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pagamentos"] });
+      setDeletingPagamentoId(null);
+      toast({
+        title: "Sucesso",
+        description: "Pagamento excluído com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir pagamento",
+        description: error.message || "Tente novamente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditPagamento = (pagamento: Pagamento) => {
+    setEditingPagamentoId(pagamento.id);
+    setPagamentoForm({
+      alunoId: pagamento.alunoId || 0,
+      valor: pagamento.valor || "",
+      mesReferencia: pagamento.mesReferencia || "",
+      dataPagamento: pagamento.dataPagamento || new Date().toISOString().split('T')[0],
+      formaPagamento: pagamento.formaPagamento || "",
+      observacoes: pagamento.observacoes || "",
+    });
+    setDialogType("pagamento");
+    setDialogOpen(true);
+  };
+
+  // Mutation para pagamento em lote
+  const createPagamentoLoteMutation = useMutation({
+    mutationFn: async (pagamentos: InsertPagamento[]) => {
+      const results = [];
+      for (const pagamento of pagamentos) {
+        const result = await apiRequest("POST", "/api/pagamentos", pagamento);
+        results.push(result);
+      }
+      return results;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pagamentos"] });
+      setShowLoteDialog(false);
+      setMesesSelecionados([]);
+      setLotePagamentoForm({
+        valorMensal: "",
+        formaPagamento: "",
+        dataPagamento: new Date().toISOString().split('T')[0],
+      });
+      toast({
+        title: "Sucesso",
+        description: `${mesesSelecionados.length} pagamentos registrados com sucesso!`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao registrar pagamentos",
+        description: error.message || "Tente novamente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Gerar lista de meses para seleção (últimos 12 meses + próximos 6)
+  const gerarMesesDisponiveis = () => {
+    const meses = [];
+    const hoje = new Date();
+    for (let i = -6; i <= 6; i++) {
+      const data = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+      const mesRef = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+      const mesNome = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      meses.push({ value: mesRef, label: mesNome });
+    }
+    return meses;
+  };
+
+  const mesesDisponiveis = gerarMesesDisponiveis();
+
+  // Filtrar pagamentos do aluno selecionado
+  const pagamentosDoAluno = selectedAlunoExtrato 
+    ? pagamentos.filter(p => p.alunoId === selectedAlunoExtrato)
+    : [];
+
+  // Verificar quais meses já foram pagos
+  const mesesPagos = pagamentosDoAluno.map(p => p.mesReferencia);
+
+  // Query para planos financeiros
+  const { data: planosFinanceiros = [] } = useQuery<PlanoFinanceiroWithFilial[]>({
+    queryKey: ["/api/planos-financeiros"],
+    queryFn: async () => {
+      const res = await fetch("/api/planos-financeiros", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch planos");
+      return res.json();
+    },
+  });
+
+  // Query para filiais
+  const { data: filiaisData = [] } = useQuery<Filial[]>({
+    queryKey: ["/api/filiais"],
+    queryFn: async () => {
+      const res = await fetch("/api/filiais", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch filiais");
+      return res.json();
+    },
+  });
+
+  // Query para notificações enviadas
+  const { data: notificacoesEnviadas = [] } = useQuery<any[]>({
+    queryKey: ["/api/notificacoes"],
+    queryFn: async () => {
+      const res = await fetch("/api/notificacoes", { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch notificacoes");
+      return res.json();
+    },
+  });
+
+  // Mutations para planos financeiros
+  const createPlanoMutation = useMutation({
+    mutationFn: async (data: InsertPlanoFinanceiro) => {
+      return await apiRequest("POST", "/api/planos-financeiros", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/planos-financeiros"] });
+      setShowPlanoDialog(false);
+      resetPlanoForm();
+      toast({
+        title: "Sucesso",
+        description: "Plano financeiro criado com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar plano",
+        description: error.message || "Tente novamente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updatePlanoMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: Partial<InsertPlanoFinanceiro> }) => {
+      return await apiRequest("PUT", `/api/planos-financeiros/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/planos-financeiros"] });
+      setShowPlanoDialog(false);
+      setEditingPlanoId(null);
+      resetPlanoForm();
+      toast({
+        title: "Sucesso",
+        description: "Plano financeiro atualizado com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao atualizar plano",
+        description: error.message || "Tente novamente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deletePlanoMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return await apiRequest("DELETE", `/api/planos-financeiros/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/planos-financeiros"] });
+      toast({
+        title: "Sucesso",
+        description: "Plano financeiro excluído com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao excluir plano",
+        description: error.message || "Tente novamente",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetPlanoForm = () => {
+    setPlanoForm({
+      nome: "",
+      descricao: "",
+      valorMensal: "",
+      quantidadeMeses: "1",
+      descontoPercentual: "0",
+      diaVencimento: "10",
+      taxaMatricula: "0",
+      filialId: null,
+    });
+  };
+
+  const handleEditPlano = (plano: PlanoFinanceiroWithFilial) => {
+    setEditingPlanoId(plano.id);
+    setPlanoForm({
+      nome: plano.nome,
+      descricao: plano.descricao || "",
+      valorMensal: plano.valorMensal || "",
+      quantidadeMeses: String(plano.quantidadeMeses || 1),
+      descontoPercentual: plano.descontoPercentual || "0",
+      diaVencimento: String(plano.diaVencimento || 10),
+      taxaMatricula: plano.taxaMatricula || "0",
+      filialId: plano.filialId,
+    });
+    setShowPlanoDialog(true);
+  };
+
+  const handleSavePlano = () => {
+    const valorMensal = parseFloat(planoForm.valorMensal);
+    const quantidadeMeses = parseInt(planoForm.quantidadeMeses);
+    const descontoPercentual = parseFloat(planoForm.descontoPercentual || "0");
+    const valorTotal = valorMensal * quantidadeMeses * (1 - descontoPercentual / 100);
+
+    const planoData: InsertPlanoFinanceiro = {
+      nome: planoForm.nome,
+      descricao: planoForm.descricao || null,
+      valorMensal: planoForm.valorMensal,
+      quantidadeMeses: quantidadeMeses,
+      descontoPercentual: planoForm.descontoPercentual,
+      valorTotal: valorTotal.toFixed(2),
+      diaVencimento: parseInt(planoForm.diaVencimento),
+      taxaMatricula: planoForm.taxaMatricula,
+      filialId: planoForm.filialId,
+    };
+
+    if (editingPlanoId) {
+      updatePlanoMutation.mutate({ id: editingPlanoId, data: planoData });
+    } else {
+      createPlanoMutation.mutate(planoData);
+    }
+  };
 
   const createEventoMutation = useMutation({
     mutationFn: async (data: InsertEvento) => {
@@ -290,13 +626,16 @@ export default function FinanceiroCompleto() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
+          <TabsTrigger value="extrato">Extrato Aluno</TabsTrigger>
+          <TabsTrigger value="planos">Planos</TabsTrigger>
           <TabsTrigger value="uniformes">Uniformes</TabsTrigger>
           <TabsTrigger value="compras-uniformes">Compras</TabsTrigger>
           <TabsTrigger value="eventos">Eventos</TabsTrigger>
           <TabsTrigger value="inscricoes">Inscrições</TabsTrigger>
-          <TabsTrigger value="pacotes">Pacotes de Treino</TabsTrigger>
+          <TabsTrigger value="pacotes">Pacotes</TabsTrigger>
+          <TabsTrigger value="notificacoes">Notificações</TabsTrigger>
         </TabsList>
 
         {/* Tab de Pagamentos */}
@@ -321,16 +660,16 @@ export default function FinanceiroCompleto() {
             {pagamentos.map((pagamento) => {
               const aluno = alunos.find(a => a.id === pagamento.alunoId);
               return (
-                <Card key={pagamento.id}>
+                <Card key={pagamento.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <h3 className="font-semibold">{aluno?.nome || "Aluno não encontrado"}</h3>
                         <p className="text-sm text-muted-foreground">
                           {pagamento.mesReferencia} • {pagamento.formaPagamento}
                         </p>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right mr-4">
                         <p className="text-xl font-bold text-green-600">
                           R$ {parseFloat(pagamento.valor || "0").toFixed(2)}
                         </p>
@@ -338,12 +677,548 @@ export default function FinanceiroCompleto() {
                           {new Date(pagamento.dataPagamento).toLocaleDateString('pt-BR')}
                         </p>
                       </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          onClick={() => handleEditPagamento(pagamento)}
+                          title="Editar pagamento"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              title="Excluir pagamento"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir Pagamento</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja excluir este pagamento de <strong>R$ {parseFloat(pagamento.valor || "0").toFixed(2)}</strong> do aluno <strong>{aluno?.nome}</strong>?
+                                <br /><br />
+                                Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deletePagamentoMutation.mutate(pagamento.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               );
             })}
           </div>
+        </TabsContent>
+
+        {/* Tab de Extrato do Aluno */}
+        <TabsContent value="extrato" className="space-y-6">
+          {/* Seleção de Aluno */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Extrato de Pagamentos do Aluno
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Selecione o Aluno</Label>
+                <Select 
+                  value={selectedAlunoExtrato?.toString() || ""}
+                  onValueChange={(value) => {
+                    setSelectedAlunoExtrato(parseInt(value));
+                    setMesesSelecionados([]);
+                  }}
+                >
+                  <SelectTrigger className="h-12 max-w-md">
+                    <SelectValue placeholder="Escolha um aluno para ver o extrato" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {alunos.map((aluno) => (
+                      <SelectItem key={aluno.id} value={aluno.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{aluno.nome}</span>
+                          {aluno.filial && <Badge variant="outline" className="text-xs">{aluno.filial.nome}</Badge>}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Extrato do Aluno Selecionado */}
+          {selectedAlunoExtrato && (
+            <>
+              {/* Dados do Aluno */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <FileText className="w-5 h-5" />
+                    Dados do Aluno
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Nome Completo</p>
+                      <p className="font-semibold text-lg">{alunos.find(a => a.id === selectedAlunoExtrato)?.nome}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Unidade</p>
+                      <p className="font-semibold">{alunos.find(a => a.id === selectedAlunoExtrato)?.filial?.nome || "Não definida"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Status de Pagamento</p>
+                      {(() => {
+                        const mesAtual = new Date().toISOString().slice(0, 7);
+                        const pagouMesAtual = mesesPagos.includes(mesAtual);
+                        return pagouMesAtual ? (
+                          <Badge className="bg-green-600">Em dia</Badge>
+                        ) : (
+                          <Badge className="bg-orange-500">Atrasado</Badge>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Resumo em Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold text-green-600">
+                      R$ {pagamentosDoAluno.reduce((sum, p) => sum + parseFloat(p.valor || "0"), 0).toFixed(2)}
+                    </p>
+                    <p className="text-sm text-green-700">Total Pago</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold text-blue-600">{pagamentosDoAluno.length}</p>
+                    <p className="text-sm text-blue-700">Pagamentos</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-purple-50 border-purple-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold text-purple-600 capitalize">
+                      {pagamentosDoAluno.length > 0 
+                        ? new Date(pagamentosDoAluno[0].mesReferencia + "-01").toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+                        : "-"
+                      }
+                    </p>
+                    <p className="text-sm text-purple-700">Último Mês</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-orange-50 border-orange-200">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold text-orange-600">
+                      R$ {pagamentosDoAluno.length > 0 ? parseFloat(pagamentosDoAluno[0].valor || "0").toFixed(2) : "0.00"}
+                    </p>
+                    <p className="text-sm text-orange-700">Mensalidade</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Mensalidades Recorrentes - Dar Baixa */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Calendar className="w-5 h-5" />
+                      Mensalidades - Dar Baixa
+                    </CardTitle>
+                    {mesesSelecionados.length > 0 && (
+                      <Button 
+                        onClick={() => setShowLoteDialog(true)}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        <DollarSign className="w-4 h-4 mr-2" />
+                        Dar Baixa em {mesesSelecionados.length} Mês(es)
+                      </Button>
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {/* Tabela de Mensalidades */}
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b bg-gray-50">
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground w-12">
+                            <input 
+                              type="checkbox"
+                              className="w-4 h-4 rounded"
+                              checked={mesesSelecionados.length === mesesDisponiveis.filter(m => !mesesPagos.includes(m.value)).length && mesesSelecionados.length > 0}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  const mesesNaoPagos = mesesDisponiveis.filter(m => !mesesPagos.includes(m.value));
+                                  setMesesSelecionados(mesesNaoPagos.map(m => m.value));
+                                } else {
+                                  setMesesSelecionados([]);
+                                }
+                              }}
+                            />
+                          </th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Mês Referência</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Valor</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Data Pagamento</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Forma</th>
+                          <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Ação</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {mesesDisponiveis.map((mes) => {
+                          const jaPago = mesesPagos.includes(mes.value);
+                          const pagamento = pagamentosDoAluno.find(p => p.mesReferencia === mes.value);
+                          const selecionado = mesesSelecionados.includes(mes.value);
+                          const mesAtual = new Date().toISOString().slice(0, 7);
+                          const isAtrasado = !jaPago && mes.value < mesAtual;
+                          
+                          return (
+                            <tr key={mes.value} className={`border-b hover:bg-gray-50 ${selecionado ? 'bg-blue-50' : ''}`}>
+                              <td className="py-3 px-4">
+                                {!jaPago && (
+                                  <input 
+                                    type="checkbox"
+                                    className="w-4 h-4 rounded"
+                                    checked={selecionado}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setMesesSelecionados(prev => [...prev, mes.value]);
+                                      } else {
+                                        setMesesSelecionados(prev => prev.filter(m => m !== mes.value));
+                                      }
+                                    }}
+                                  />
+                                )}
+                              </td>
+                              <td className="py-3 px-4">
+                                <p className="font-medium capitalize">{mes.label}</p>
+                                <p className="text-xs text-muted-foreground">{mes.value}</p>
+                              </td>
+                              <td className="py-3 px-4">
+                                {jaPago ? (
+                                  <Badge className="bg-green-600">Pago</Badge>
+                                ) : isAtrasado ? (
+                                  <Badge className="bg-red-500">Atrasado</Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-orange-600 border-orange-300">Pendente</Badge>
+                                )}
+                              </td>
+                              <td className="py-3 px-4">
+                                {jaPago ? (
+                                  <span className="text-green-600 font-semibold">
+                                    R$ {parseFloat(pagamento?.valor || "0").toFixed(2)}
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4">
+                                {jaPago && pagamento ? (
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                                    {new Date(pagamento.dataPagamento).toLocaleDateString('pt-BR')}
+                                  </div>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4">
+                                {jaPago && pagamento ? (
+                                  <Badge variant="outline">{pagamento.formaPagamento}</Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">-</span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4">
+                                {!jaPago ? (
+                                  <Button
+                                    size="sm"
+                                    className="bg-green-600 hover:bg-green-700"
+                                    onClick={() => {
+                                      setMesesSelecionados([mes.value]);
+                                      setShowLoteDialog(true);
+                                    }}
+                                  >
+                                    <DollarSign className="w-3 h-3 mr-1" />
+                                    Dar Baixa
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleEditPagamento(pagamento!)}
+                                  >
+                                    <Edit className="w-3 h-3 mr-1" />
+                                    Editar
+                                  </Button>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Resumo da Seleção */}
+                  {mesesSelecionados.length > 0 && (
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-blue-800 font-semibold text-lg">
+                            {mesesSelecionados.length} mensalidade(s) selecionada(s)
+                          </p>
+                          <p className="text-blue-600 text-sm">
+                            Clique em "Dar Baixa" para registrar o pagamento
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline"
+                            onClick={() => setMesesSelecionados([])}
+                          >
+                            Limpar
+                          </Button>
+                          <Button 
+                            onClick={() => setShowLoteDialog(true)}
+                            className="bg-green-600 hover:bg-green-700"
+                          >
+                            <DollarSign className="w-4 h-4 mr-2" />
+                            Dar Baixa
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Histórico de Pagamentos */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <FileText className="w-5 h-5" />
+                    Histórico de Pagamentos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {pagamentosDoAluno.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">
+                      Nenhum pagamento registrado para este aluno
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Mês Referência</th>
+                            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Data Pagamento</th>
+                            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Valor</th>
+                            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Forma</th>
+                            <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Observações</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pagamentosDoAluno.map((pagamento) => (
+                            <tr key={pagamento.id} className="border-b hover:bg-gray-50">
+                              <td className="py-3 px-4">
+                                <p className="font-medium capitalize">
+                                  {new Date(pagamento.mesReferencia + "-01").toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                                </p>
+                                <p className="text-xs text-muted-foreground">{pagamento.mesReferencia}</p>
+                              </td>
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  <Calendar className="w-4 h-4 text-muted-foreground" />
+                                  {new Date(pagamento.dataPagamento).toLocaleDateString('pt-BR')}
+                                </div>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className="text-green-600 font-semibold">
+                                  R$ {parseFloat(pagamento.valor || "0").toFixed(2)}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <Badge variant="outline">{pagamento.formaPagamento}</Badge>
+                              </td>
+                              <td className="py-3 px-4 text-sm text-muted-foreground">
+                                {pagamento.observacoes || "-"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {!selectedAlunoExtrato && (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Selecione um Aluno</h3>
+                <p className="text-muted-foreground">
+                  Escolha um aluno acima para visualizar o extrato e dar baixa nas mensalidades
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Tab de Planos Financeiros */}
+        <TabsContent value="planos" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Planos Financeiros</h2>
+              <p className="text-sm text-muted-foreground">Gerencie os planos de mensalidades disponíveis</p>
+            </div>
+            <Button 
+              onClick={() => {
+                resetPlanoForm();
+                setEditingPlanoId(null);
+                setShowPlanoDialog(true);
+              }} 
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Novo Plano
+            </Button>
+          </div>
+
+          {/* Lista de Planos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {planosFinanceiros.map((plano) => {
+              const valorMensal = parseFloat(plano.valorMensal || "0");
+              const valorTotal = parseFloat(plano.valorTotal || "0");
+              const desconto = parseFloat(plano.descontoPercentual || "0");
+              
+              return (
+                <Card key={plano.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg">{plano.nome}</CardTitle>
+                      {desconto > 0 && (
+                        <Badge className="bg-green-600">{desconto}% OFF</Badge>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground">{plano.descricao || "Sem descrição"}</p>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Valor Mensal:</span>
+                        <span className="font-semibold text-blue-600">R$ {valorMensal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Duração:</span>
+                        <span className="font-medium">{plano.quantidadeMeses} {plano.quantidadeMeses === 1 ? 'mês' : 'meses'}</span>
+                      </div>
+                      {plano.quantidadeMeses > 1 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Valor Total:</span>
+                          <span className="font-bold text-green-600">R$ {valorTotal.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Vencimento:</span>
+                        <span className="font-medium">Dia {plano.diaVencimento}</span>
+                      </div>
+                      {parseFloat(plano.taxaMatricula || "0") > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Taxa Matrícula:</span>
+                          <span className="font-medium">R$ {parseFloat(plano.taxaMatricula || "0").toFixed(2)}</span>
+                        </div>
+                      )}
+                      {plano.filial && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Unidade:</span>
+                          <Badge variant="outline">{plano.filial.nome}</Badge>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 pt-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => handleEditPlano(plano)}
+                      >
+                        <Edit className="w-4 h-4 mr-1" />
+                        Editar
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir Plano</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja excluir o plano "{plano.nome}"? Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => deletePlanoMutation.mutate(plano.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {planosFinanceiros.length === 0 && (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <DollarSign className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-xl font-semibold mb-2">Nenhum Plano Cadastrado</h3>
+                <p className="text-muted-foreground mb-4">
+                  Crie planos financeiros para definir valores de mensalidades e descontos
+                </p>
+                <Button onClick={() => setShowPlanoDialog(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Criar Primeiro Plano
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         {/* Tab de Uniformes */}
@@ -626,14 +1501,218 @@ export default function FinanceiroCompleto() {
             </div>
           </div>
         </TabsContent>
+
+        {/* Tab de Notificações */}
+        <TabsContent value="notificacoes" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Notificações para Responsáveis</h2>
+              <p className="text-sm text-muted-foreground">Envie avisos e lembretes para os responsáveis dos alunos</p>
+            </div>
+          </div>
+
+          {/* Ações Rápidas */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={async () => {
+              try {
+                const res = await apiRequest("POST", "/api/notificacoes/enviar-todos", {
+                  titulo: "Aviso Geral",
+                  mensagem: "Mensagem enviada pela escola de futebol.",
+                  tipo: "geral"
+                });
+                toast({
+                  title: "Sucesso",
+                  description: res.message || "Notificação enviada para todos os responsáveis!",
+                });
+                queryClient.invalidateQueries({ queryKey: ["/api/notificacoes"] });
+              } catch (error) {
+                toast({
+                  title: "Erro",
+                  description: "Erro ao enviar notificações",
+                  variant: "destructive",
+                });
+              }
+            }}>
+              <CardContent className="p-6 text-center">
+                <Bell className="w-12 h-12 mx-auto text-blue-500 mb-3" />
+                <h3 className="font-semibold">Enviar para Todos</h3>
+                <p className="text-sm text-muted-foreground">Notificar todos os responsáveis</p>
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={async () => {
+              try {
+                const res = await apiRequest("POST", "/api/notificacoes/enviar-inadimplentes", {
+                  titulo: "Mensalidade Pendente",
+                  mensagem: "Você possui mensalidades pendentes. Por favor, regularize sua situação através do Portal do Responsável.",
+                  tipo: "pagamento"
+                });
+                toast({
+                  title: "Sucesso",
+                  description: res.message || "Notificação enviada para inadimplentes!",
+                });
+                queryClient.invalidateQueries({ queryKey: ["/api/notificacoes"] });
+              } catch (error) {
+                toast({
+                  title: "Erro",
+                  description: "Erro ao enviar notificações",
+                  variant: "destructive",
+                });
+              }
+            }}>
+              <CardContent className="p-6 text-center">
+                <AlertTriangle className="w-12 h-12 mx-auto text-orange-500 mb-3" />
+                <h3 className="font-semibold">Cobrar Inadimplentes</h3>
+                <p className="text-sm text-muted-foreground">Notificar responsáveis com pagamentos pendentes</p>
+              </CardContent>
+            </Card>
+
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setShowNotificacaoDialog(true)}>
+              <CardContent className="p-6 text-center">
+                <Plus className="w-12 h-12 mx-auto text-green-500 mb-3" />
+                <h3 className="font-semibold">Nova Notificação</h3>
+                <p className="text-sm text-muted-foreground">Criar notificação personalizada</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Histórico de Notificações */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="w-5 h-5" />
+                Histórico de Notificações Enviadas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {notificacoesEnviadas.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Nenhuma notificação enviada ainda</p>
+                ) : (
+                  notificacoesEnviadas.slice(0, 20).map((notif: any) => (
+                    <div key={notif.id} className="flex items-center justify-between p-3 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${notif.lida ? 'bg-gray-300' : 'bg-blue-500'}`} />
+                        <div>
+                          <p className="font-medium">{notif.titulo}</p>
+                          <p className="text-sm text-muted-foreground">{notif.mensagem}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Badge variant={notif.tipo === 'pagamento' ? 'destructive' : 'secondary'}>
+                          {notif.tipo}
+                        </Badge>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(notif.createdAt).toLocaleDateString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      {/* Dialog de Nova Notificação */}
+      <Dialog open={showNotificacaoDialog} onOpenChange={setShowNotificacaoDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova Notificação</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Título</Label>
+              <Input
+                value={notificacaoForm.titulo}
+                onChange={(e) => setNotificacaoForm(prev => ({ ...prev, titulo: e.target.value }))}
+                placeholder="Ex: Aviso Importante"
+              />
+            </div>
+            <div>
+              <Label>Mensagem</Label>
+              <Textarea
+                value={notificacaoForm.mensagem}
+                onChange={(e) => setNotificacaoForm(prev => ({ ...prev, mensagem: e.target.value }))}
+                placeholder="Digite a mensagem..."
+                rows={4}
+              />
+            </div>
+            <div>
+              <Label>Tipo</Label>
+              <Select 
+                value={notificacaoForm.tipo} 
+                onValueChange={(value) => setNotificacaoForm(prev => ({ ...prev, tipo: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="geral">Geral</SelectItem>
+                  <SelectItem value="pagamento">Pagamento</SelectItem>
+                  <SelectItem value="evento">Evento</SelectItem>
+                  <SelectItem value="uniforme">Uniforme</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Enviar para</Label>
+              <Select 
+                value={notificacaoForm.destinatario} 
+                onValueChange={(value) => setNotificacaoForm(prev => ({ ...prev, destinatario: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Responsáveis</SelectItem>
+                  <SelectItem value="inadimplentes">Apenas Inadimplentes</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNotificacaoDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={async () => {
+              try {
+                const endpoint = notificacaoForm.destinatario === 'inadimplentes' 
+                  ? "/api/notificacoes/enviar-inadimplentes" 
+                  : "/api/notificacoes/enviar-todos";
+                const res = await apiRequest("POST", endpoint, {
+                  titulo: notificacaoForm.titulo,
+                  mensagem: notificacaoForm.mensagem,
+                  tipo: notificacaoForm.tipo
+                });
+                toast({
+                  title: "Sucesso",
+                  description: res.message || "Notificação enviada!",
+                });
+                queryClient.invalidateQueries({ queryKey: ["/api/notificacoes"] });
+                setShowNotificacaoDialog(false);
+                setNotificacaoForm({ titulo: "", mensagem: "", tipo: "geral", destinatario: "todos" });
+              } catch (error) {
+                toast({
+                  title: "Erro",
+                  description: "Erro ao enviar notificação",
+                  variant: "destructive",
+                });
+              }
+            }}>
+              Enviar Notificação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialogs para criação/edição */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {dialogType === "pagamento" && "Novo Pagamento"}
+              {dialogType === "pagamento" && (editingPagamentoId ? "Editar Pagamento" : "Novo Pagamento")}
               {dialogType === "evento" && "Criar Evento"}
               {dialogType === "uniforme" && "Adicionar Uniforme"}
               {dialogType === "compra-uniforme" && "Comprar Uniforme"}
@@ -641,64 +1720,213 @@ export default function FinanceiroCompleto() {
             </DialogTitle>
           </DialogHeader>
           
-          {/* Form de Pagamento */}
+          {/* Form de Pagamento - Redesenhado */}
           {dialogType === "pagamento" && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="aluno">Aluno</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o aluno" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {alunos.map((aluno) => (
-                        <SelectItem key={aluno.id} value={aluno.id.toString()}>
-                          {aluno.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="valor">Valor (R$)</Label>
-                  <Input id="valor" type="number" step="0.01" placeholder="0,00" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="mesReferencia">Mês de Referência</Label>
-                  <Input id="mesReferencia" placeholder="Ex: Janeiro/2024" />
-                </div>
-                <div>
-                  <Label htmlFor="dataPagamento">Data do Pagamento</Label>
-                  <Input id="dataPagamento" type="date" />
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="formaPagamento">Forma de Pagamento</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a forma" />
+            <div className="space-y-6">
+              {/* Seção: Aluno */}
+              <div className="space-y-2">
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <Users className="w-4 h-4 text-primary" />
+                  Selecione o Aluno
+                </Label>
+                <Select 
+                  value={pagamentoForm.alunoId ? pagamentoForm.alunoId.toString() : ""}
+                  onValueChange={(value) => setPagamentoForm(prev => ({ ...prev, alunoId: parseInt(value) }))}
+                >
+                  <SelectTrigger className="h-12">
+                    <SelectValue placeholder="Escolha o aluno para registrar o pagamento" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                    <SelectItem value="cartao">Cartão</SelectItem>
-                    <SelectItem value="pix">PIX</SelectItem>
-                    <SelectItem value="transferencia">Transferência</SelectItem>
+                    {alunos.map((aluno) => (
+                      <SelectItem key={aluno.id} value={aluno.id.toString()}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{aluno.nome}</span>
+                          {aluno.filial && <Badge variant="outline" className="text-xs">{aluno.filial.nome}</Badge>}
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label htmlFor="observacoes">Observações</Label>
-                <Textarea id="observacoes" placeholder="Observações adicionais..." />
+
+              {/* Seção: Valor e Referência */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <DollarSign className="w-4 h-4 text-green-600" />
+                    Valor (R$)
+                  </Label>
+                  <Input 
+                    type="number" 
+                    step="0.01" 
+                    placeholder="150.00"
+                    className="h-12 text-lg font-semibold"
+                    value={pagamentoForm.valor}
+                    onChange={(e) => setPagamentoForm(prev => ({ ...prev, valor: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-blue-600" />
+                    Mês de Referência
+                  </Label>
+                  <Input 
+                    type="month"
+                    className="h-12"
+                    value={pagamentoForm.mesReferencia}
+                    onChange={(e) => setPagamentoForm(prev => ({ ...prev, mesReferencia: e.target.value }))}
+                  />
+                </div>
               </div>
-              <div className="flex gap-2 pt-4">
-                <Button onClick={() => setDialogOpen(false)} variant="outline" className="flex-1">
+
+              {/* Seção: Data e Forma de Pagamento */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">Data do Pagamento</Label>
+                  <Input 
+                    type="date"
+                    className="h-12"
+                    value={pagamentoForm.dataPagamento}
+                    onChange={(e) => setPagamentoForm(prev => ({ ...prev, dataPagamento: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-base font-semibold">Forma de Pagamento</Label>
+                  <Select 
+                    value={pagamentoForm.formaPagamento}
+                    onValueChange={(value) => setPagamentoForm(prev => ({ ...prev, formaPagamento: value }))}
+                  >
+                    <SelectTrigger className="h-12">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pix">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">💳</span> PIX
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="dinheiro">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">💵</span> Dinheiro
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="cartao_credito">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">💳</span> Cartão de Crédito
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="cartao_debito">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">💳</span> Cartão de Débito
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="transferencia">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">🏦</span> Transferência Bancária
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="boleto">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">📄</span> Boleto
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Seção: Observações */}
+              <div className="space-y-2">
+                <Label className="text-base font-semibold">Observações (opcional)</Label>
+                <Textarea 
+                  placeholder="Ex: Pagamento referente à mensalidade + material..."
+                  className="min-h-[80px]"
+                  value={pagamentoForm.observacoes}
+                  onChange={(e) => setPagamentoForm(prev => ({ ...prev, observacoes: e.target.value }))}
+                />
+              </div>
+
+              {/* Resumo do Pagamento */}
+              {pagamentoForm.alunoId > 0 && pagamentoForm.valor && (
+                <Card className="bg-green-50 border-green-200">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm text-green-700 font-medium">Resumo do Pagamento</p>
+                        <p className="text-lg font-bold text-green-800">
+                          {alunos.find(a => a.id === pagamentoForm.alunoId)?.nome}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-green-700">
+                          R$ {parseFloat(pagamentoForm.valor || "0").toFixed(2)}
+                        </p>
+                        <p className="text-sm text-green-600">
+                          {pagamentoForm.mesReferencia && new Date(pagamentoForm.mesReferencia + "-01").toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Botões de Ação */}
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  onClick={() => {
+                    setDialogOpen(false);
+                    setEditingPagamentoId(null);
+                    setPagamentoForm({
+                      alunoId: 0,
+                      valor: "",
+                      mesReferencia: "",
+                      dataPagamento: new Date().toISOString().split('T')[0],
+                      formaPagamento: "",
+                      observacoes: "",
+                    });
+                  }} 
+                  variant="outline" 
+                  className="flex-1 h-12"
+                >
                   Cancelar
                 </Button>
-                <Button className="flex-1">
-                  Registrar Pagamento
+                <Button 
+                  onClick={() => {
+                    if (!pagamentoForm.alunoId || !pagamentoForm.valor || !pagamentoForm.mesReferencia || !pagamentoForm.dataPagamento || !pagamentoForm.formaPagamento) {
+                      toast({
+                        title: "Campos obrigatórios",
+                        description: "Preencha todos os campos para registrar o pagamento",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    const pagamentoData = {
+                      alunoId: pagamentoForm.alunoId,
+                      valor: pagamentoForm.valor,
+                      mesReferencia: pagamentoForm.mesReferencia,
+                      dataPagamento: pagamentoForm.dataPagamento,
+                      formaPagamento: pagamentoForm.formaPagamento,
+                      observacoes: pagamentoForm.observacoes || null,
+                    };
+
+                    if (editingPagamentoId) {
+                      updatePagamentoMutation.mutate({ id: editingPagamentoId, data: pagamentoData });
+                    } else {
+                      createPagamentoMutation.mutate(pagamentoData as InsertPagamento);
+                    }
+                  }}
+                  disabled={createPagamentoMutation.isPending || updatePagamentoMutation.isPending}
+                  className="flex-1 h-12 bg-green-600 hover:bg-green-700"
+                >
+                  {(createPagamentoMutation.isPending || updatePagamentoMutation.isPending) ? (
+                    <>{editingPagamentoId ? "Salvando..." : "Registrando..."}</>
+                  ) : (
+                    <>
+                      <DollarSign className="w-4 h-4 mr-2" />
+                      {editingPagamentoId ? "Salvar Alterações" : "Confirmar Pagamento"}
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -981,6 +2209,348 @@ export default function FinanceiroCompleto() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Pagamento em Lote */}
+      <Dialog open={showLoteDialog} onOpenChange={setShowLoteDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-green-600" />
+              Pagamento em Lote
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Resumo */}
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-700 font-medium">Aluno</p>
+                    <p className="text-lg font-bold text-blue-800">
+                      {alunos.find(a => a.id === selectedAlunoExtrato)?.nome}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-blue-700 font-medium">Meses Selecionados</p>
+                    <p className="text-2xl font-bold text-blue-800">{mesesSelecionados.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Meses selecionados */}
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Meses a Pagar</Label>
+              <div className="flex flex-wrap gap-2">
+                {mesesSelecionados.map(mes => (
+                  <Badge key={mes} variant="secondary" className="text-sm py-1 px-3">
+                    {new Date(mes + "-01").toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' })}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            {/* Valor por mês */}
+            <div className="space-y-2">
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <DollarSign className="w-4 h-4 text-green-600" />
+                Valor por Mês (R$)
+              </Label>
+              <Input 
+                type="number" 
+                step="0.01" 
+                placeholder="150.00"
+                className="h-12 text-lg font-semibold"
+                value={lotePagamentoForm.valorMensal}
+                onChange={(e) => setLotePagamentoForm(prev => ({ ...prev, valorMensal: e.target.value }))}
+              />
+            </div>
+
+            {/* Forma de pagamento */}
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Forma de Pagamento</Label>
+              <Select 
+                value={lotePagamentoForm.formaPagamento}
+                onValueChange={(value) => setLotePagamentoForm(prev => ({ ...prev, formaPagamento: value }))}
+              >
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">💳 PIX</SelectItem>
+                  <SelectItem value="dinheiro">💵 Dinheiro</SelectItem>
+                  <SelectItem value="cartao_credito">💳 Cartão de Crédito</SelectItem>
+                  <SelectItem value="cartao_debito">💳 Cartão de Débito</SelectItem>
+                  <SelectItem value="transferencia">🏦 Transferência</SelectItem>
+                  <SelectItem value="boleto">📄 Boleto</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Data do pagamento */}
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Data do Pagamento</Label>
+              <Input 
+                type="date"
+                className="h-12"
+                value={lotePagamentoForm.dataPagamento}
+                onChange={(e) => setLotePagamentoForm(prev => ({ ...prev, dataPagamento: e.target.value }))}
+              />
+            </div>
+
+            {/* Total */}
+            {lotePagamentoForm.valorMensal && (
+              <Card className="bg-green-50 border-green-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-green-700 font-medium">Total a Pagar</p>
+                    <p className="text-3xl font-bold text-green-700">
+                      R$ {(parseFloat(lotePagamentoForm.valorMensal || "0") * mesesSelecionados.length).toFixed(2)}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Botões */}
+            <div className="flex gap-3 pt-2">
+              <Button 
+                onClick={() => {
+                  setShowLoteDialog(false);
+                  setLotePagamentoForm({
+                    valorMensal: "",
+                    formaPagamento: "",
+                    dataPagamento: new Date().toISOString().split('T')[0],
+                  });
+                }} 
+                variant="outline" 
+                className="flex-1 h-12"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={() => {
+                  if (!lotePagamentoForm.valorMensal || !lotePagamentoForm.formaPagamento || !selectedAlunoExtrato) {
+                    toast({
+                      title: "Campos obrigatórios",
+                      description: "Preencha o valor e a forma de pagamento",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  const pagamentosLote = mesesSelecionados.map(mes => ({
+                    alunoId: selectedAlunoExtrato,
+                    valor: lotePagamentoForm.valorMensal,
+                    mesReferencia: mes,
+                    dataPagamento: lotePagamentoForm.dataPagamento,
+                    formaPagamento: lotePagamentoForm.formaPagamento,
+                    observacoes: `Pagamento em lote - ${mesesSelecionados.length} meses`,
+                  })) as InsertPagamento[];
+
+                  createPagamentoLoteMutation.mutate(pagamentosLote);
+                }}
+                disabled={createPagamentoLoteMutation.isPending}
+                className="flex-1 h-12 bg-green-600 hover:bg-green-700"
+              >
+                {createPagamentoLoteMutation.isPending ? (
+                  <>Processando...</>
+                ) : (
+                  <>
+                    <DollarSign className="w-4 h-4 mr-2" />
+                    Confirmar Pagamento
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Plano Financeiro */}
+      <Dialog open={showPlanoDialog} onOpenChange={setShowPlanoDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-blue-600" />
+              {editingPlanoId ? "Editar Plano Financeiro" : "Novo Plano Financeiro"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Nome do Plano */}
+            <div className="space-y-2">
+              <Label htmlFor="nomePlano">Nome do Plano *</Label>
+              <Input 
+                id="nomePlano"
+                placeholder="Ex: Mensal, Trimestral, Semestral..."
+                value={planoForm.nome}
+                onChange={(e) => setPlanoForm(prev => ({ ...prev, nome: e.target.value }))}
+              />
+            </div>
+
+            {/* Descrição */}
+            <div className="space-y-2">
+              <Label htmlFor="descricaoPlano">Descrição</Label>
+              <Textarea 
+                id="descricaoPlano"
+                placeholder="Descrição do plano..."
+                value={planoForm.descricao}
+                onChange={(e) => setPlanoForm(prev => ({ ...prev, descricao: e.target.value }))}
+              />
+            </div>
+
+            {/* Valor Mensal e Quantidade de Meses */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="valorMensalPlano">Valor Mensal (R$) *</Label>
+                <Input 
+                  id="valorMensalPlano"
+                  type="number"
+                  step="0.01"
+                  placeholder="150.00"
+                  value={planoForm.valorMensal}
+                  onChange={(e) => setPlanoForm(prev => ({ ...prev, valorMensal: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quantidadeMeses">Duração (meses) *</Label>
+                <Select 
+                  value={planoForm.quantidadeMeses}
+                  onValueChange={(value) => setPlanoForm(prev => ({ ...prev, quantidadeMeses: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">1 mês (Mensal)</SelectItem>
+                    <SelectItem value="3">3 meses (Trimestral)</SelectItem>
+                    <SelectItem value="6">6 meses (Semestral)</SelectItem>
+                    <SelectItem value="12">12 meses (Anual)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Desconto e Dia Vencimento */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="descontoPlano">Desconto (%)</Label>
+                <Input 
+                  id="descontoPlano"
+                  type="number"
+                  step="0.01"
+                  placeholder="0"
+                  value={planoForm.descontoPercentual}
+                  onChange={(e) => setPlanoForm(prev => ({ ...prev, descontoPercentual: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="diaVencimento">Dia Vencimento</Label>
+                <Input 
+                  id="diaVencimento"
+                  type="number"
+                  min="1"
+                  max="28"
+                  placeholder="10"
+                  value={planoForm.diaVencimento}
+                  onChange={(e) => setPlanoForm(prev => ({ ...prev, diaVencimento: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            {/* Taxa Matrícula e Filial */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="taxaMatricula">Taxa Matrícula (R$)</Label>
+                <Input 
+                  id="taxaMatricula"
+                  type="number"
+                  step="0.01"
+                  placeholder="0"
+                  value={planoForm.taxaMatricula}
+                  onChange={(e) => setPlanoForm(prev => ({ ...prev, taxaMatricula: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="filialPlano">Unidade (opcional)</Label>
+                <Select 
+                  value={planoForm.filialId?.toString() || "todas"}
+                  onValueChange={(value) => setPlanoForm(prev => ({ 
+                    ...prev, 
+                    filialId: value === "todas" ? null : parseInt(value) 
+                  }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todas as unidades" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as unidades</SelectItem>
+                    {filiaisData.map((filial) => (
+                      <SelectItem key={filial.id} value={filial.id.toString()}>
+                        {filial.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Preview do Valor Total */}
+            {planoForm.valorMensal && parseInt(planoForm.quantidadeMeses) > 1 && (
+              <Card className="bg-green-50 border-green-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-green-700">Valor Total do Plano</p>
+                      <p className="text-xs text-green-600">
+                        {planoForm.quantidadeMeses} meses × R$ {parseFloat(planoForm.valorMensal || "0").toFixed(2)}
+                        {parseFloat(planoForm.descontoPercentual || "0") > 0 && ` - ${planoForm.descontoPercentual}% desconto`}
+                      </p>
+                    </div>
+                    <p className="text-2xl font-bold text-green-700">
+                      R$ {(
+                        parseFloat(planoForm.valorMensal || "0") * 
+                        parseInt(planoForm.quantidadeMeses) * 
+                        (1 - parseFloat(planoForm.descontoPercentual || "0") / 100)
+                      ).toFixed(2)}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Botões */}
+            <div className="flex gap-3 pt-2">
+              <Button 
+                onClick={() => {
+                  setShowPlanoDialog(false);
+                  setEditingPlanoId(null);
+                  resetPlanoForm();
+                }} 
+                variant="outline" 
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleSavePlano}
+                disabled={!planoForm.nome || !planoForm.valorMensal || createPlanoMutation.isPending || updatePlanoMutation.isPending}
+                className="flex-1 bg-blue-600 hover:bg-blue-700"
+              >
+                {(createPlanoMutation.isPending || updatePlanoMutation.isPending) ? (
+                  <>Salvando...</>
+                ) : editingPlanoId ? (
+                  <>Atualizar Plano</>
+                ) : (
+                  <>Criar Plano</>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

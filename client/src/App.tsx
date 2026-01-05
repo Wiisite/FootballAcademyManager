@@ -38,6 +38,8 @@ import PortalUnidades from "@/pages/PortalUnidades";
 import CombosAulas from "@/pages/CombosAulas";
 import CadastroAluno from "@/pages/CadastroAluno";
 import PortalUnidadeNovo from "@/pages/PortalUnidadeNovo";
+import Configuracoes from "@/pages/Configuracoes";
+import UnidadesConsolidado from "@/pages/UnidadesConsolidado";
 import SistemaUnidadeNovo from "@/pages/SistemaUnidadeNovo";
 import UnidadeProtectedRoute from "@/components/UnidadeProtectedRoute";
 import UnidadeRedirect from "@/components/UnidadeRedirect";
@@ -107,7 +109,8 @@ function Router() {
           <Route path="/professores" component={Professores} />
           <Route path="/turmas" component={Turmas} />
           <Route path="/gestao-turmas" component={GestaoTurmas} />
-          <Route path="/filiais" component={Filiais} />
+          <Route path="/unidades" component={UnidadesConsolidado} />
+          <Route path="/filiais" component={UnidadesConsolidado} />
           <Route path="/dashboard-unidades" component={DashboardUnidades} />
           <Route path="/financeiro" component={FinanceiroCompleto} />
           <Route path="/relatorios" component={Relatorios} />
@@ -117,6 +120,7 @@ function Router() {
           <Route path="/gestao-unidades" component={GestaoUnidades} />
           <Route path="/combos-aulas" component={CombosAulas} />
           <Route path="/cadastro-aluno" component={CadastroAluno} />
+          <Route path="/configuracoes" component={Configuracoes} />
           <Route path="/unidade/:filialId" component={DashboardUnidadeWrapper} />
         </Layout>
       )}

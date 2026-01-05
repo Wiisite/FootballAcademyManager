@@ -37,7 +37,10 @@ import {
   Users,
   Edit,
   Eye,
-  Loader2
+  Loader2,
+  DollarSign,
+  Clock,
+  Check
 } from "lucide-react";
 import type { 
   ResponsavelWithAlunos, 
@@ -218,12 +221,13 @@ function ResponsavelPortalContent({
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="alunos">Meus Filhos</TabsTrigger>
             <TabsTrigger value="pagamentos">Pagamentos</TabsTrigger>
             <TabsTrigger value="eventos">Eventos</TabsTrigger>
             <TabsTrigger value="uniformes">Uniformes</TabsTrigger>
+            <TabsTrigger value="notificacoes">Notificações</TabsTrigger>
           </TabsList>
 
           {/* Dashboard Tab */}
@@ -324,6 +328,24 @@ function ResponsavelPortalContent({
 
           {/* Payments Tab */}
           <TabsContent value="pagamentos" className="space-y-6">
+            {/* Mensalidades Pendentes */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <DollarSign className="w-5 h-5 mr-2 text-orange-500" />
+                  Pagar Mensalidades
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {responsavel?.alunos?.map((aluno) => (
+                    <PaymentSection key={aluno.id} aluno={aluno} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Histórico de Pagamentos */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
@@ -394,6 +416,43 @@ function ResponsavelPortalContent({
                         onPurchase={(uniformeData, alunoId) => {
                           setSelectedUniforme(uniformeData);
                           setSelectedAlunoForAction(alunoId);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Notifications Tab */}
+          <TabsContent value="notificacoes" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Bell className="w-5 h-5 mr-2" />
+                  Minhas Notificações
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {!notificacoes || notificacoes.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Bell className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                    <p className="text-gray-500">Nenhuma notificação no momento</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {notificacoes.map((notif) => (
+                      <NotificacaoCard 
+                        key={notif.id} 
+                        notificacao={notif}
+                        onMarcarLida={async (id) => {
+                          try {
+                            await apiRequest("PATCH", `/api/portal/notificacoes/${id}/lida`);
+                            queryClient.invalidateQueries({ queryKey: ["/api/portal/notificacoes"] });
+                          } catch (error) {
+                            console.error("Erro ao marcar como lida:", error);
+                          }
                         }}
                       />
                     ))}
@@ -492,6 +551,240 @@ function StudentCard({ aluno, onEdit }: { aluno: AlunoWithFilial; onEdit: () => 
           Ver Turmas
         </Button>
       </div>
+    </div>
+  );
+}
+
+// Payment Section Component - Para pagar mensalidades
+function PaymentSection({ aluno }: { aluno: AlunoWithFilial }) {
+  const { toast } = useToast();
+  const [selectedMeses, setSelectedMeses] = useState<string[]>([]);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [valorMensal, setValorMensal] = useState("150.00");
+  const [formaPagamento, setFormaPagamento] = useState("");
+
+  const { data: pagamentos } = useQuery<Pagamento[]>({
+    queryKey: ["/api/portal/alunos", aluno.id, "pagamentos"],
+  });
+
+  // Gerar lista de meses (últimos 3 + próximos 3)
+  const gerarMesesDisponiveis = () => {
+    const meses = [];
+    const hoje = new Date();
+    for (let i = -3; i <= 3; i++) {
+      const data = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+      const mesRef = `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}`;
+      const mesNome = data.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+      meses.push({ value: mesRef, label: mesNome });
+    }
+    return meses;
+  };
+
+  const mesesDisponiveis = gerarMesesDisponiveis();
+  const mesesPagos = pagamentos?.map(p => p.mesReferencia) || [];
+
+  const toggleMes = (mes: string) => {
+    if (mesesPagos.includes(mes)) return; // Não pode selecionar mês já pago
+    setSelectedMeses(prev => 
+      prev.includes(mes) ? prev.filter(m => m !== mes) : [...prev, mes]
+    );
+  };
+
+  const paymentMutation = useMutation({
+    mutationFn: async () => {
+      const pagamentosData = selectedMeses.map(mes => ({
+        alunoId: aluno.id,
+        valor: valorMensal,
+        mesReferencia: mes,
+        dataPagamento: new Date().toISOString().split('T')[0],
+        formaPagamento: formaPagamento,
+        observacoes: "Pagamento via Portal do Responsável",
+      }));
+
+      const results = [];
+      for (const pagamento of pagamentosData) {
+        const result = await apiRequest("POST", "/api/portal/pagamentos", pagamento);
+        results.push(result);
+      }
+      return results;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/portal/alunos", aluno.id, "pagamentos"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/responsaveis/me"] });
+      toast({
+        title: "Sucesso",
+        description: `${selectedMeses.length} mensalidade(s) paga(s) com sucesso!`,
+      });
+      setSelectedMeses([]);
+      setShowPaymentDialog(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao processar pagamento",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const formatCurrency = (value: string | number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(typeof value === 'string' ? parseFloat(value) : value);
+  };
+
+  const totalAPagar = selectedMeses.length * parseFloat(valorMensal);
+
+  return (
+    <div className="border rounded-lg p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-semibold text-lg">{aluno.nome}</h3>
+        {aluno.statusPagamento?.emDia ? (
+          <Badge className="bg-green-100 text-green-800">
+            <CheckCircle className="w-3 h-3 mr-1" />
+            Em Dia
+          </Badge>
+        ) : (
+          <Badge className="bg-red-100 text-red-800">
+            <AlertTriangle className="w-3 h-3 mr-1" />
+            Pendente
+          </Badge>
+        )}
+      </div>
+
+      {/* Grid de meses */}
+      <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 mb-4">
+        {mesesDisponiveis.map(mes => {
+          const isPago = mesesPagos.includes(mes.value);
+          const isSelected = selectedMeses.includes(mes.value);
+          
+          return (
+            <button
+              key={mes.value}
+              onClick={() => toggleMes(mes.value)}
+              disabled={isPago}
+              className={`p-2 rounded-lg text-xs font-medium transition-all ${
+                isPago 
+                  ? 'bg-green-100 text-green-700 cursor-not-allowed' 
+                  : isSelected 
+                    ? 'bg-blue-600 text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <div className="flex flex-col items-center">
+                {isPago ? (
+                  <Check className="w-4 h-4 mb-1" />
+                ) : isSelected ? (
+                  <DollarSign className="w-4 h-4 mb-1" />
+                ) : (
+                  <Clock className="w-4 h-4 mb-1" />
+                )}
+                <span className="capitalize">
+                  {new Date(mes.value + "-01").toLocaleDateString('pt-BR', { month: 'short' })}
+                </span>
+                <span className="text-[10px]">
+                  {new Date(mes.value + "-01").getFullYear()}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Resumo e botão de pagamento */}
+      {selectedMeses.length > 0 && (
+        <div className="bg-blue-50 rounded-lg p-4 flex items-center justify-between">
+          <div>
+            <p className="text-sm text-blue-700">
+              <strong>{selectedMeses.length}</strong> mês(es) selecionado(s)
+            </p>
+            <p className="text-lg font-bold text-blue-800">
+              Total: {formatCurrency(totalAPagar)}
+            </p>
+          </div>
+          <Button 
+            onClick={() => setShowPaymentDialog(true)}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            <DollarSign className="w-4 h-4 mr-2" />
+            Pagar Agora
+          </Button>
+        </div>
+      )}
+
+      {/* Dialog de Pagamento */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmar Pagamento</DialogTitle>
+            <DialogDescription>
+              Pagar mensalidades de {aluno.nome}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="bg-gray-50 rounded-lg p-4">
+              <p className="text-sm text-gray-600 mb-2">Meses selecionados:</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedMeses.map(mes => (
+                  <Badge key={mes} variant="secondary">
+                    {new Date(mes + "-01").toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label>Valor por mês (R$)</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={valorMensal}
+                onChange={(e) => setValorMensal(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <Label>Forma de Pagamento</Label>
+              <Select value={formaPagamento} onValueChange={setFormaPagamento}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PIX">PIX</SelectItem>
+                  <SelectItem value="Cartão de Crédito">Cartão de Crédito</SelectItem>
+                  <SelectItem value="Cartão de Débito">Cartão de Débito</SelectItem>
+                  <SelectItem value="Boleto">Boleto</SelectItem>
+                  <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="border-t pt-4">
+              <div className="flex justify-between items-center text-lg">
+                <span className="font-medium">Total a Pagar:</span>
+                <span className="font-bold text-green-600">
+                  {formatCurrency(selectedMeses.length * parseFloat(valorMensal || "0"))}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={() => paymentMutation.mutate()}
+              disabled={!formaPagamento || paymentMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {paymentMutation.isPending ? "Processando..." : "Confirmar Pagamento"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -1001,5 +1294,85 @@ function PurchaseUniformDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// Notification Card Component
+function NotificacaoCard({ 
+  notificacao, 
+  onMarcarLida 
+}: { 
+  notificacao: Notificacao; 
+  onMarcarLida: (id: number) => void;
+}) {
+  const getTipoIcon = (tipo: string) => {
+    switch (tipo) {
+      case 'pagamento':
+        return <CreditCard className="w-5 h-5 text-orange-500" />;
+      case 'evento':
+        return <Calendar className="w-5 h-5 text-blue-500" />;
+      case 'uniforme':
+        return <ShoppingBag className="w-5 h-5 text-purple-500" />;
+      default:
+        return <Bell className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
+  const getTipoBadge = (tipo: string) => {
+    switch (tipo) {
+      case 'pagamento':
+        return <Badge className="bg-orange-100 text-orange-800">Pagamento</Badge>;
+      case 'evento':
+        return <Badge className="bg-blue-100 text-blue-800">Evento</Badge>;
+      case 'uniforme':
+        return <Badge className="bg-purple-100 text-purple-800">Uniforme</Badge>;
+      default:
+        return <Badge className="bg-gray-100 text-gray-800">Geral</Badge>;
+    }
+  };
+
+  return (
+    <div 
+      className={`p-4 rounded-lg border ${notificacao.lida ? 'bg-gray-50 border-gray-200' : 'bg-blue-50 border-blue-200'}`}
+    >
+      <div className="flex items-start gap-4">
+        <div className="flex-shrink-0 mt-1">
+          {getTipoIcon(notificacao.tipo)}
+        </div>
+        <div className="flex-1">
+          <div className="flex items-center justify-between mb-1">
+            <h4 className={`font-semibold ${notificacao.lida ? 'text-gray-700' : 'text-gray-900'}`}>
+              {notificacao.titulo}
+            </h4>
+            {getTipoBadge(notificacao.tipo)}
+          </div>
+          <p className={`text-sm ${notificacao.lida ? 'text-gray-500' : 'text-gray-700'}`}>
+            {notificacao.mensagem}
+          </p>
+          <div className="flex items-center justify-between mt-3">
+            <span className="text-xs text-gray-400">
+              {new Date(notificacao.createdAt!).toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </span>
+            {!notificacao.lida && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => onMarcarLida(notificacao.id)}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                <Check className="w-4 h-4 mr-1" />
+                Marcar como lida
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

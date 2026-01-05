@@ -22,11 +22,15 @@ import {
   metasAlunos,
   gestoresUnidade,
   combosAulas,
+  configuracoesSistema,
+  planosFinanceiros,
   type User,
   type UpsertUser,
   adminUsers,
   type AdminUser,
   type InsertAdminUser,
+  type ConfiguracoesSistema,
+  type InsertConfiguracoesSistema,
   type GestorUnidade,
   type InsertGestorUnidade,
   type GestorUnidadeWithFilial,
@@ -45,6 +49,9 @@ import {
   type AlunoWithFilial,
   type Filial,
   type InsertFilial,
+  type PlanoFinanceiro,
+  type InsertPlanoFinanceiro,
+  type PlanoFinanceiroWithFilial,
   type Responsavel,
   type InsertResponsavel,
   type ResponsavelWithAlunos,
@@ -127,7 +134,15 @@ export interface IStorage {
   getPagamento(id: number): Promise<Pagamento | undefined>;
   getPagamentosByAluno(alunoId: number): Promise<Pagamento[]>;
   createPagamento(pagamento: InsertPagamento): Promise<Pagamento>;
+  updatePagamento(id: number, pagamento: Partial<InsertPagamento>): Promise<Pagamento>;
   deletePagamento(id: number): Promise<void>;
+
+  // Planos Financeiros operations
+  getPlanosFinanceiros(): Promise<PlanoFinanceiroWithFilial[]>;
+  getPlanoFinanceiro(id: number): Promise<PlanoFinanceiro | undefined>;
+  createPlanoFinanceiro(plano: InsertPlanoFinanceiro): Promise<PlanoFinanceiro>;
+  updatePlanoFinanceiro(id: number, plano: Partial<InsertPlanoFinanceiro>): Promise<PlanoFinanceiro>;
+  deletePlanoFinanceiro(id: number): Promise<void>;
 
   // Filiais operations
   getFiliais(): Promise<Filial[]>;
@@ -177,9 +192,11 @@ export interface IStorage {
   marcarNotificacaoLida(id: number): Promise<void>;
 
   // Presenças operations
+  getPresencas(): Promise<Presenca[]>;
   getPresencasByTurmaData(turmaId: number, data: string): Promise<Presenca[]>;
   getPresencasDetalhadas(): Promise<any[]>;
   registrarPresencas(presencas: InsertPresenca[]): Promise<Presenca[]>;
+  createPresenca(presenca: InsertPresenca): Promise<Presenca>;
 
   // Uniformes operations
   getUniformes(): Promise<Uniforme[]>;
@@ -635,8 +652,58 @@ export class DatabaseStorage implements IStorage {
     return newPagamento;
   }
 
+  async updatePagamento(id: number, pagamentoData: Partial<InsertPagamento>): Promise<Pagamento> {
+    const [pagamento] = await db
+      .update(pagamentos)
+      .set({ ...pagamentoData, updatedAt: new Date() })
+      .where(eq(pagamentos.id, id))
+      .returning();
+    return pagamento;
+  }
+
   async deletePagamento(id: number): Promise<void> {
     await db.delete(pagamentos).where(eq(pagamentos.id, id));
+  }
+
+  // Planos Financeiros operations
+  async getPlanosFinanceiros(): Promise<PlanoFinanceiroWithFilial[]> {
+    const planos = await db.select().from(planosFinanceiros).where(eq(planosFinanceiros.ativo, true)).orderBy(desc(planosFinanceiros.createdAt));
+    
+    const planosWithFilial = await Promise.all(
+      planos.map(async (plano) => {
+        let filial = null;
+        if (plano.filialId) {
+          const [f] = await db.select().from(filiais).where(eq(filiais.id, plano.filialId));
+          filial = f || null;
+        }
+        return { ...plano, filial };
+      })
+    );
+    
+    return planosWithFilial;
+  }
+
+  async getPlanoFinanceiro(id: number): Promise<PlanoFinanceiro | undefined> {
+    const [plano] = await db.select().from(planosFinanceiros).where(eq(planosFinanceiros.id, id));
+    return plano;
+  }
+
+  async createPlanoFinanceiro(plano: InsertPlanoFinanceiro): Promise<PlanoFinanceiro> {
+    const [newPlano] = await db.insert(planosFinanceiros).values(plano).returning();
+    return newPlano;
+  }
+
+  async updatePlanoFinanceiro(id: number, planoData: Partial<InsertPlanoFinanceiro>): Promise<PlanoFinanceiro> {
+    const [plano] = await db
+      .update(planosFinanceiros)
+      .set({ ...planoData, updatedAt: new Date() })
+      .where(eq(planosFinanceiros.id, id))
+      .returning();
+    return plano;
+  }
+
+  async deletePlanoFinanceiro(id: number): Promise<void> {
+    await db.update(planosFinanceiros).set({ ativo: false }).where(eq(planosFinanceiros.id, id));
   }
 
   // Dashboard metrics
@@ -819,8 +886,15 @@ export class DatabaseStorage implements IStorage {
     const [responsavel] = await db
       .select()
       .from(responsaveis)
-      .where(and(eq(responsaveis.email, email), eq(responsaveis.senha, senha)));
-    return responsavel || null;
+      .where(eq(responsaveis.email, email));
+    
+    if (!responsavel) return null;
+    
+    // Comparar senha usando bcrypt
+    const senhaValida = await bcrypt.compare(senha, responsavel.senha);
+    if (!senhaValida) return null;
+    
+    return responsavel;
   }
 
   async getResponsavelWithAlunos(id: number): Promise<ResponsavelWithAlunos | undefined> {
@@ -941,6 +1015,13 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Presenças operations
+  async getPresencas(): Promise<Presenca[]> {
+    return await db
+      .select()
+      .from(presencas)
+      .orderBy(desc(presencas.createdAt));
+  }
+
   async getPresencasByTurmaData(turmaId: number, data: string): Promise<Presenca[]> {
     return await db
       .select()
@@ -1021,6 +1102,14 @@ export class DatabaseStorage implements IStorage {
     return novasPresencas;
   }
 
+  async createPresenca(presencaData: InsertPresenca): Promise<Presenca> {
+    const [presenca] = await db
+      .insert(presencas)
+      .values(presencaData)
+      .returning();
+    return presenca;
+  }
+
   // Uniformes operations
   async getUniformes(): Promise<Uniforme[]> {
     return await db.select().from(uniformes);
@@ -1060,9 +1149,51 @@ export class DatabaseStorage implements IStorage {
     return compra;
   }
 
+  async updateUniforme(id: number, uniformeData: Partial<InsertUniforme>): Promise<Uniforme> {
+    const [uniforme] = await db
+      .update(uniformes)
+      .set({ ...uniformeData, updatedAt: new Date() })
+      .where(eq(uniformes.id, id))
+      .returning();
+    return uniforme;
+  }
+
+  async deleteUniforme(id: number): Promise<void> {
+    await db.delete(uniformes).where(eq(uniformes.id, id));
+  }
+
+  async createCompraUniforme(compraData: InsertCompraUniforme): Promise<CompraUniforme> {
+    const [compra] = await db
+      .insert(comprasUniformes)
+      .values(compraData)
+      .returning();
+    return compra;
+  }
+
   // Eventos operations  
   async getInscricoesEventos(): Promise<InscricaoEvento[]> {
     return await db.select().from(inscricoesEventos);
+  }
+
+  async createInscricaoEvento(inscricaoData: InsertInscricaoEvento): Promise<InscricaoEvento> {
+    const [inscricao] = await db
+      .insert(inscricoesEventos)
+      .values(inscricaoData)
+      .returning();
+    return inscricao;
+  }
+
+  async updateEvento(id: number, eventoData: Partial<InsertEvento>): Promise<Evento> {
+    const [evento] = await db
+      .update(eventos)
+      .set({ ...eventoData, updatedAt: new Date() })
+      .where(eq(eventos.id, id))
+      .returning();
+    return evento;
+  }
+
+  async deleteEvento(id: number): Promise<void> {
+    await db.delete(eventos).where(eq(eventos.id, id));
   }
 
   // Pacotes de treino operations
@@ -1076,6 +1207,27 @@ export class DatabaseStorage implements IStorage {
       .values(pacoteData)
       .returning();
     return pacote;
+  }
+
+  async updatePacoteTreino(id: number, pacoteData: Partial<InsertPacoteTreino>): Promise<PacoteTreino> {
+    const [pacote] = await db
+      .update(pacotesTreino)
+      .set({ ...pacoteData, updatedAt: new Date() })
+      .where(eq(pacotesTreino.id, id))
+      .returning();
+    return pacote;
+  }
+
+  async deletePacoteTreino(id: number): Promise<void> {
+    await db.delete(pacotesTreino).where(eq(pacotesTreino.id, id));
+  }
+
+  async createAssinaturaPacote(assinaturaData: InsertAssinaturaPacote): Promise<AssinaturaPacote> {
+    const [assinatura] = await db
+      .insert(assinaturasPacotes)
+      .values(assinaturaData)
+      .returning();
+    return assinatura;
   }
 
   async getAssinaturasPacotes(): Promise<AssinaturaPacoteComplete[]> {
@@ -1690,6 +1842,30 @@ export class DatabaseStorage implements IStorage {
       .from(inscricoesEventos)
       .where(eq(inscricoesEventos.alunoId, alunoId))
       .orderBy(desc(inscricoesEventos.id));
+  }
+
+  // System configuration methods
+  async getConfiguracoes(): Promise<ConfiguracoesSistema | null> {
+    const result = await db.select().from(configuracoesSistema).limit(1);
+    return result[0] || null;
+  }
+
+  async updateConfiguracoes(data: Partial<InsertConfiguracoesSistema>): Promise<ConfiguracoesSistema> {
+    const existing = await this.getConfiguracoes();
+    if (existing) {
+      const [updated] = await db
+        .update(configuracoesSistema)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(configuracoesSistema.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [created] = await db
+        .insert(configuracoesSistema)
+        .values(data)
+        .returning();
+      return created;
+    }
   }
 }
 

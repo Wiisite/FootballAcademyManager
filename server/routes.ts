@@ -1,15 +1,19 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { db } from "./db";
 import { 
   adminLoginSchema,
   updateAlunoContactSchema,
   guardianInscricaoEventoSchema,
-  guardianCompraUniformeSchema
+  guardianCompraUniformeSchema,
+  notificacoes,
+  responsaveis
 } from "@shared/schema";
 import { addToSync } from "./sync";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
+import { desc, eq } from "drizzle-orm";
 
 // Extend session type for all authentication types
 declare module "express-session" {
@@ -57,7 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   const sessionStore = new PostgresSessionStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
+    createTableIfMissing: false,
     ttl: 7 * 24 * 60 * 60, // 7 days
   });
 
@@ -204,6 +208,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Rota completa para cadastrar aluno + responsável
+  app.post("/api/alunos-completo", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const { aluno: alunoData, responsavel: responsavelData } = req.body;
+
+      // If it's a unit manager, ensure filialId matches their unit
+      if (isGestor && !isAdmin) {
+        alunoData.filialId = req.session.filialId;
+      }
+
+      // Criar aluno com dados do responsável para criar acesso ao portal
+      const aluno = await storage.createAluno({
+        ...alunoData,
+        nomeResponsavel: responsavelData.nome,
+        telefoneResponsavel: responsavelData.telefone,
+        cpfResponsavel: responsavelData.cpf,
+        emailResponsavel: responsavelData.email,
+        senhaResponsavel: responsavelData.senha,
+      });
+
+      res.status(201).json(aluno);
+    } catch (error: any) {
+      console.error("Error creating aluno completo:", error);
+      if (error.code === '23505') {
+        return res.status(400).json({ message: "Email ou CPF do responsável já cadastrado" });
+      }
+      res.status(500).json({ message: "Failed to create aluno" });
+    }
+  });
+
   app.post("/api/alunos", async (req, res) => {
     try {
       // Check if it's admin or unit manager auth
@@ -313,6 +354,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST professor
+  app.post("/api/professores", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const professorData = req.body;
+
+      // If it's a unit manager, ensure filialId matches their unit
+      if (isGestor && !isAdmin) {
+        professorData.filialId = req.session.filialId;
+      }
+
+      const professor = await storage.createProfessor(professorData);
+      res.status(201).json(professor);
+    } catch (error) {
+      console.error("Error creating professor:", error);
+      res.status(500).json({ message: "Failed to create professor" });
+    }
+  });
+
+  // PUT professor
+  app.put("/api/professores/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const professorData = req.body;
+
+      const professor = await storage.updateProfessor(id, professorData);
+      res.json(professor);
+    } catch (error) {
+      console.error("Error updating professor:", error);
+      res.status(500).json({ message: "Failed to update professor" });
+    }
+  });
+
+  // DELETE professor
+  app.delete("/api/professores/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteProfessor(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting professor:", error);
+      res.status(500).json({ message: "Failed to delete professor" });
+    }
+  });
+
   // Turmas routes - protected by admin or unit manager authentication
   app.get("/api/turmas", async (req, res) => {
     try {
@@ -335,6 +441,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching turmas:", error);
       res.status(500).json({ message: "Failed to fetch turmas" });
+    }
+  });
+
+  // POST turma
+  app.post("/api/turmas", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const turmaData = req.body;
+
+      // If it's a unit manager, ensure filialId matches their unit
+      if (isGestor && !isAdmin) {
+        turmaData.filialId = req.session.filialId;
+      }
+
+      const turma = await storage.createTurma(turmaData);
+      res.status(201).json(turma);
+    } catch (error) {
+      console.error("Error creating turma:", error);
+      res.status(500).json({ message: "Failed to create turma" });
+    }
+  });
+
+  // PUT turma
+  app.put("/api/turmas/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const turmaData = req.body;
+
+      const turma = await storage.updateTurma(id, turmaData);
+      res.json(turma);
+    } catch (error) {
+      console.error("Error updating turma:", error);
+      res.status(500).json({ message: "Failed to update turma" });
+    }
+  });
+
+  // DELETE turma
+  app.delete("/api/turmas/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteTurma(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting turma:", error);
+      res.status(500).json({ message: "Failed to delete turma" });
     }
   });
 
@@ -387,6 +558,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // POST filial
+  app.post("/api/filiais", requireAdminAuth, async (req, res) => {
+    try {
+      const filialData = req.body;
+      const filial = await storage.createFilial(filialData);
+      res.status(201).json(filial);
+    } catch (error) {
+      console.error("Error creating filial:", error);
+      res.status(500).json({ message: "Failed to create filial" });
+    }
+  });
+
+  // PUT filial
+  app.put("/api/filiais/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const filialData = req.body;
+      const filial = await storage.updateFilial(id, filialData);
+      res.json(filial);
+    } catch (error) {
+      console.error("Error updating filial:", error);
+      res.status(500).json({ message: "Failed to update filial" });
+    }
+  });
+
+  // DELETE filial
+  app.delete("/api/filiais/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deleteFilial(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting filial:", error);
+      res.status(500).json({ message: "Failed to delete filial" });
+    }
+  });
+
   app.get("/api/sync/status", requireAdminAuth, async (req, res) => {
     try {
       // Return sync status for portal
@@ -398,6 +606,211 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching sync status:", error);
       res.status(500).json({ message: "Failed to fetch sync status" });
+    }
+  });
+
+  // Planos Financeiros routes
+  app.get("/api/planos-financeiros", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      let planos = await storage.getPlanosFinanceiros();
+      
+      // If it's a unit manager, filter plans by their filial or global plans (filialId = null)
+      if (isGestor && !isAdmin) {
+        planos = planos.filter(p => !p.filialId || p.filialId === req.session.filialId);
+      }
+      
+      res.json(planos);
+    } catch (error) {
+      console.error("Error fetching planos financeiros:", error);
+      res.status(500).json({ message: "Failed to fetch planos financeiros" });
+    }
+  });
+
+  app.get("/api/planos-financeiros/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      
+      const plano = await storage.getPlanoFinanceiro(parseInt(req.params.id));
+      if (!plano) {
+        return res.status(404).json({ message: "Plano not found" });
+      }
+      res.json(plano);
+    } catch (error) {
+      console.error("Error fetching plano financeiro:", error);
+      res.status(500).json({ message: "Failed to fetch plano financeiro" });
+    }
+  });
+
+  app.post("/api/planos-financeiros", requireAdminAuth, async (req, res) => {
+    try {
+      const { insertPlanoFinanceiroSchema } = await import("@shared/schema");
+      const validationResult = insertPlanoFinanceiroSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid plano data", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const plano = await storage.createPlanoFinanceiro(validationResult.data);
+      res.status(201).json(plano);
+    } catch (error) {
+      console.error("Error creating plano financeiro:", error);
+      res.status(500).json({ message: "Failed to create plano financeiro" });
+    }
+  });
+
+  app.put("/api/planos-financeiros/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const { insertPlanoFinanceiroSchema } = await import("@shared/schema");
+      const validationResult = insertPlanoFinanceiroSchema.partial().safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid plano data", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const plano = await storage.updatePlanoFinanceiro(parseInt(req.params.id), validationResult.data);
+      res.json(plano);
+    } catch (error) {
+      console.error("Error updating plano financeiro:", error);
+      res.status(500).json({ message: "Failed to update plano financeiro" });
+    }
+  });
+
+  app.delete("/api/planos-financeiros/:id", requireAdminAuth, async (req, res) => {
+    try {
+      await storage.deletePlanoFinanceiro(parseInt(req.params.id));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting plano financeiro:", error);
+      res.status(500).json({ message: "Failed to delete plano financeiro" });
+    }
+  });
+
+  // Notificações routes - Admin can send notifications to guardians
+  app.get("/api/notificacoes", requireAdminAuth, async (req, res) => {
+    try {
+      // Get all notifications (admin view)
+      const allNotificacoes = await db.select().from(notificacoes).orderBy(desc(notificacoes.createdAt));
+      res.json(allNotificacoes);
+    } catch (error) {
+      console.error("Error fetching notificacoes:", error);
+      res.status(500).json({ message: "Failed to fetch notificacoes" });
+    }
+  });
+
+  app.post("/api/notificacoes", requireAdminAuth, async (req, res) => {
+    try {
+      const { responsavelId, titulo, mensagem, tipo, dataVencimento } = req.body;
+      
+      const notificacao = await storage.createNotificacao({
+        responsavelId,
+        titulo,
+        mensagem,
+        tipo: tipo || "geral",
+        dataVencimento,
+      });
+      
+      res.status(201).json(notificacao);
+    } catch (error) {
+      console.error("Error creating notificacao:", error);
+      res.status(500).json({ message: "Failed to create notificacao" });
+    }
+  });
+
+  // Send notification to all guardians
+  app.post("/api/notificacoes/enviar-todos", requireAdminAuth, async (req, res) => {
+    try {
+      const { titulo, mensagem, tipo, dataVencimento } = req.body;
+      
+      // Get all responsaveis
+      const todosResponsaveis = await db.select().from(responsaveis);
+      
+      const notificacoesCriadas = [];
+      for (const resp of todosResponsaveis) {
+        const notificacao = await storage.createNotificacao({
+          responsavelId: resp.id,
+          titulo,
+          mensagem,
+          tipo: tipo || "geral",
+          dataVencimento,
+        });
+        notificacoesCriadas.push(notificacao);
+      }
+      
+      res.status(201).json({ 
+        message: `Notificação enviada para ${notificacoesCriadas.length} responsáveis`,
+        count: notificacoesCriadas.length 
+      });
+    } catch (error) {
+      console.error("Error sending notifications:", error);
+      res.status(500).json({ message: "Failed to send notifications" });
+    }
+  });
+
+  // Send notification to guardians with pending payments
+  app.post("/api/notificacoes/enviar-inadimplentes", requireAdminAuth, async (req, res) => {
+    try {
+      const { titulo, mensagem, dataVencimento } = req.body;
+      
+      // Get all students with their payment status
+      const alunos = await storage.getAlunos();
+      const responsaveisInadimplentes = new Set<number>();
+      
+      for (const aluno of alunos) {
+        if (aluno.responsavelId) {
+          const status = await storage.calcularStatusPagamento(aluno.id);
+          if (!status.emDia) {
+            responsaveisInadimplentes.add(aluno.responsavelId);
+          }
+        }
+      }
+      
+      const notificacoesCriadas = [];
+      for (const respId of responsaveisInadimplentes) {
+        const notificacao = await storage.createNotificacao({
+          responsavelId: respId,
+          titulo: titulo || "Mensalidade Pendente",
+          mensagem: mensagem || "Você possui mensalidades pendentes. Por favor, regularize sua situação.",
+          tipo: "pagamento",
+          dataVencimento,
+        });
+        notificacoesCriadas.push(notificacao);
+      }
+      
+      res.status(201).json({ 
+        message: `Notificação enviada para ${notificacoesCriadas.length} responsáveis inadimplentes`,
+        count: notificacoesCriadas.length 
+      });
+    } catch (error) {
+      console.error("Error sending notifications to inadimplentes:", error);
+      res.status(500).json({ message: "Failed to send notifications" });
+    }
+  });
+
+  app.delete("/api/notificacoes/:id", requireAdminAuth, async (req, res) => {
+    try {
+      await db.delete(notificacoes).where(eq(notificacoes.id, parseInt(req.params.id)));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting notificacao:", error);
+      res.status(500).json({ message: "Failed to delete notificacao" });
     }
   });
 
@@ -503,6 +916,574 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Matrículas routes
+  app.get("/api/matriculas", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const matriculas = await storage.getMatriculas();
+      res.json(matriculas);
+    } catch (error) {
+      console.error("Error fetching matriculas:", error);
+      res.status(500).json({ message: "Failed to fetch matriculas" });
+    }
+  });
+
+  app.post("/api/matriculas", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const matricula = await storage.createMatricula(req.body);
+      res.status(201).json(matricula);
+    } catch (error) {
+      console.error("Error creating matricula:", error);
+      res.status(500).json({ message: "Failed to create matricula" });
+    }
+  });
+
+  app.delete("/api/matriculas/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteMatricula(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting matricula:", error);
+      res.status(500).json({ message: "Failed to delete matricula" });
+    }
+  });
+
+  // Eventos routes
+  app.get("/api/eventos", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const eventos = await storage.getEventos();
+      res.json(eventos);
+    } catch (error) {
+      console.error("Error fetching eventos:", error);
+      res.status(500).json({ message: "Failed to fetch eventos" });
+    }
+  });
+
+  app.post("/api/eventos", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const evento = await storage.createEvento(req.body);
+      res.status(201).json(evento);
+    } catch (error) {
+      console.error("Error creating evento:", error);
+      res.status(500).json({ message: "Failed to create evento" });
+    }
+  });
+
+  app.put("/api/eventos/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const evento = await storage.updateEvento(id, req.body);
+      res.json(evento);
+    } catch (error) {
+      console.error("Error updating evento:", error);
+      res.status(500).json({ message: "Failed to update evento" });
+    }
+  });
+
+  app.delete("/api/eventos/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteEvento(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting evento:", error);
+      res.status(500).json({ message: "Failed to delete evento" });
+    }
+  });
+
+  // Uniformes routes
+  app.get("/api/uniformes", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const uniformes = await storage.getUniformes();
+      res.json(uniformes);
+    } catch (error) {
+      console.error("Error fetching uniformes:", error);
+      res.status(500).json({ message: "Failed to fetch uniformes" });
+    }
+  });
+
+  app.post("/api/uniformes", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const uniforme = await storage.createUniforme(req.body);
+      res.status(201).json(uniforme);
+    } catch (error) {
+      console.error("Error creating uniforme:", error);
+      res.status(500).json({ message: "Failed to create uniforme" });
+    }
+  });
+
+  app.put("/api/uniformes/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const uniforme = await storage.updateUniforme(id, req.body);
+      res.json(uniforme);
+    } catch (error) {
+      console.error("Error updating uniforme:", error);
+      res.status(500).json({ message: "Failed to update uniforme" });
+    }
+  });
+
+  app.delete("/api/uniformes/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteUniforme(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting uniforme:", error);
+      res.status(500).json({ message: "Failed to delete uniforme" });
+    }
+  });
+
+  // Compras de uniformes routes
+  app.get("/api/compras-uniformes", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const compras = await storage.getComprasUniformes();
+      res.json(compras);
+    } catch (error) {
+      console.error("Error fetching compras uniformes:", error);
+      res.status(500).json({ message: "Failed to fetch compras uniformes" });
+    }
+  });
+
+  app.post("/api/compras-uniformes", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const compra = await storage.createCompraUniforme(req.body);
+      res.status(201).json(compra);
+    } catch (error) {
+      console.error("Error creating compra uniforme:", error);
+      res.status(500).json({ message: "Failed to create compra uniforme" });
+    }
+  });
+
+  // Inscrições em eventos routes
+  app.get("/api/inscricoes-eventos", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const inscricoes = await storage.getInscricoesEventos();
+      res.json(inscricoes);
+    } catch (error) {
+      console.error("Error fetching inscricoes eventos:", error);
+      res.status(500).json({ message: "Failed to fetch inscricoes eventos" });
+    }
+  });
+
+  app.post("/api/inscricoes-eventos", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const inscricao = await storage.createInscricaoEvento(req.body);
+      res.status(201).json(inscricao);
+    } catch (error) {
+      console.error("Error creating inscricao evento:", error);
+      res.status(500).json({ message: "Failed to create inscricao evento" });
+    }
+  });
+
+  // Pacotes de treino routes
+  app.get("/api/pacotes-treino", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const pacotes = await storage.getPacotesTreino();
+      res.json(pacotes);
+    } catch (error) {
+      console.error("Error fetching pacotes treino:", error);
+      res.status(500).json({ message: "Failed to fetch pacotes treino" });
+    }
+  });
+
+  app.post("/api/pacotes-treino", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const pacote = await storage.createPacoteTreino(req.body);
+      res.status(201).json(pacote);
+    } catch (error) {
+      console.error("Error creating pacote treino:", error);
+      res.status(500).json({ message: "Failed to create pacote treino" });
+    }
+  });
+
+  app.put("/api/pacotes-treino/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const pacote = await storage.updatePacoteTreino(id, req.body);
+      res.json(pacote);
+    } catch (error) {
+      console.error("Error updating pacote treino:", error);
+      res.status(500).json({ message: "Failed to update pacote treino" });
+    }
+  });
+
+  app.delete("/api/pacotes-treino/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deletePacoteTreino(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting pacote treino:", error);
+      res.status(500).json({ message: "Failed to delete pacote treino" });
+    }
+  });
+
+  // Assinaturas de pacotes routes
+  app.get("/api/assinaturas-pacotes", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const assinaturas = await storage.getAssinaturasPacotes();
+      res.json(assinaturas);
+    } catch (error) {
+      console.error("Error fetching assinaturas pacotes:", error);
+      res.status(500).json({ message: "Failed to fetch assinaturas pacotes" });
+    }
+  });
+
+  app.post("/api/assinaturas-pacotes", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const assinatura = await storage.createAssinaturaPacote(req.body);
+      res.status(201).json(assinatura);
+    } catch (error) {
+      console.error("Error creating assinatura pacote:", error);
+      res.status(500).json({ message: "Failed to create assinatura pacote" });
+    }
+  });
+
+  // Presenças routes
+  app.get("/api/presencas", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const presencas = await storage.getPresencas();
+      res.json(presencas);
+    } catch (error) {
+      console.error("Error fetching presencas:", error);
+      res.status(500).json({ message: "Failed to fetch presencas" });
+    }
+  });
+
+  app.post("/api/presencas", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const presenca = await storage.createPresenca(req.body);
+      res.status(201).json(presenca);
+    } catch (error) {
+      console.error("Error creating presenca:", error);
+      res.status(500).json({ message: "Failed to create presenca" });
+    }
+  });
+
+  // Avaliações físicas routes
+  app.get("/api/avaliacoes-fisicas", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const avaliacoes = await storage.getAvaliacoesFisicas();
+      res.json(avaliacoes);
+    } catch (error) {
+      console.error("Error fetching avaliacoes fisicas:", error);
+      res.status(500).json({ message: "Failed to fetch avaliacoes fisicas" });
+    }
+  });
+
+  app.post("/api/avaliacoes-fisicas", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const avaliacao = await storage.createAvaliacaoFisica(req.body);
+      res.status(201).json(avaliacao);
+    } catch (error) {
+      console.error("Error creating avaliacao fisica:", error);
+      res.status(500).json({ message: "Failed to create avaliacao fisica" });
+    }
+  });
+
+  app.put("/api/avaliacoes-fisicas/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const avaliacao = await storage.updateAvaliacaoFisica(id, req.body);
+      res.json(avaliacao);
+    } catch (error) {
+      console.error("Error updating avaliacao fisica:", error);
+      res.status(500).json({ message: "Failed to update avaliacao fisica" });
+    }
+  });
+
+  // Pagamentos por aluno
+  app.get("/api/pagamentos/aluno/:alunoId", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const alunoId = parseInt(req.params.alunoId);
+      const pagamentos = await storage.getPagamentosByAluno(alunoId);
+      res.json(pagamentos);
+    } catch (error) {
+      console.error("Error fetching pagamentos by aluno:", error);
+      res.status(500).json({ message: "Failed to fetch pagamentos" });
+    }
+  });
+
+  // Combos de Aulas routes
+  app.get("/api/combos-aulas", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const combos = await storage.getCombosAulas();
+      res.json(combos);
+    } catch (error) {
+      console.error("Error fetching combos aulas:", error);
+      res.status(500).json({ message: "Failed to fetch combos aulas" });
+    }
+  });
+
+  app.post("/api/combos-aulas", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const combo = await storage.createComboAulas(req.body);
+      res.status(201).json(combo);
+    } catch (error) {
+      console.error("Error creating combo aulas:", error);
+      res.status(500).json({ message: "Failed to create combo aulas" });
+    }
+  });
+
+  app.put("/api/combos-aulas/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const combo = await storage.updateComboAulas(id, req.body);
+      res.json(combo);
+    } catch (error) {
+      console.error("Error updating combo aulas:", error);
+      res.status(500).json({ message: "Failed to update combo aulas" });
+    }
+  });
+
+  app.delete("/api/combos-aulas/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      await storage.deleteComboAulas(id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting combo aulas:", error);
+      res.status(500).json({ message: "Failed to delete combo aulas" });
+    }
+  });
+
+  // PUT pagamento (update)
+  app.put("/api/pagamentos/:id", async (req, res) => {
+    try {
+      const isAdmin = req.session.adminId;
+      const isGestor = req.session.gestorUnidadeId && req.session.filialId;
+      
+      if (!isAdmin && !isGestor) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+
+      const id = parseInt(req.params.id);
+      const pagamento = await storage.updatePagamento(id, req.body);
+      res.json(pagamento);
+    } catch (error) {
+      console.error("Error updating pagamento:", error);
+      res.status(500).json({ message: "Failed to update pagamento" });
+    }
+  });
+
   // Unit management authentication routes
   app.post("/api/unidade/login", async (req, res) => {
     try {
@@ -582,8 +1563,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Guardian authentication routes
-  app.post("/api/responsavel/login", async (req, res) => {
+  // Guardian authentication routes (suporta ambas as rotas: com e sem 's')
+  const handleResponsavelLogin = async (req: Request, res: Response) => {
     try {
       const { email, senha } = req.body;
       const responsavel = await storage.authenticateResponsavel(email, senha);
@@ -594,19 +1575,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       req.session.responsavelId = responsavel.id;
 
-      res.json({
-        success: true,
-        responsavel: {
-          id: responsavel.id,
-          nome: responsavel.nome,
-          email: responsavel.email
+      // Salvar sessão explicitamente antes de responder
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return res.status(500).json({ message: "Erro ao salvar sessão" });
         }
+        
+        res.json({
+          success: true,
+          responsavel: {
+            id: responsavel.id,
+            nome: responsavel.nome,
+            email: responsavel.email
+          }
+        });
       });
     } catch (error) {
       console.error("Guardian login error:", error);
       res.status(500).json({ message: "Erro interno do servidor" });
     }
-  });
+  };
+
+  // Registrar ambas as rotas de login
+  app.post("/api/responsavel/login", handleResponsavelLogin);
+  app.post("/api/responsaveis/login", handleResponsavelLogin);
 
   app.post("/api/responsavel/logout", (req, res) => {
     req.session.destroy((err) => {
@@ -679,6 +1672,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching pagamentos:", error);
       res.status(500).json({ message: "Erro ao buscar pagamentos" });
+    }
+  });
+
+  // Get notifications for guardian
+  app.get("/api/portal/notificacoes", requireResponsavelAuth, async (req, res) => {
+    try {
+      const responsavelId = req.session.responsavelId!;
+      const notificacoes = await storage.getNotificacoesByResponsavel(responsavelId);
+      res.json(notificacoes);
+    } catch (error) {
+      console.error("Error fetching notificacoes:", error);
+      res.status(500).json({ message: "Erro ao buscar notificações" });
+    }
+  });
+
+  // Mark notification as read
+  app.patch("/api/portal/notificacoes/:id/lida", requireResponsavelAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.marcarNotificacaoLida(id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "Erro ao marcar notificação como lida" });
     }
   });
 
@@ -755,6 +1772,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create payment from guardian portal
+  app.post("/api/portal/pagamentos", requireResponsavelAuth, async (req, res) => {
+    try {
+      const responsavelId = req.session.responsavelId!;
+      const { alunoId, valor, mesReferencia, dataPagamento, formaPagamento, observacoes } = req.body;
+      
+      // Verify the student belongs to this guardian
+      const responsavel = await storage.getResponsavelWithAlunos(responsavelId);
+      if (!responsavel) {
+        return res.status(404).json({ message: "Responsável não encontrado" });
+      }
+      
+      const alunoDoResponsavel = responsavel.alunos?.find(a => a.id === alunoId);
+      if (!alunoDoResponsavel) {
+        return res.status(403).json({ message: "Aluno não pertence a este responsável" });
+      }
+
+      // Create the payment
+      const pagamento = await storage.createPagamento({
+        alunoId,
+        valor,
+        mesReferencia,
+        dataPagamento,
+        formaPagamento,
+        observacoes: observacoes || "Pagamento via Portal do Responsável",
+      });
+
+      res.status(201).json(pagamento);
+    } catch (error) {
+      console.error("Error creating payment from portal:", error);
+      res.status(500).json({ message: "Erro ao processar pagamento" });
+    }
+  });
+
   // Purchase uniform
   app.post("/api/portal/uniformes/:uniformeId/compras", requireResponsavelAuth, async (req, res) => {
     try {
@@ -782,6 +1833,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error purchasing uniform:", error);
       res.status(500).json({ message: "Erro ao comprar uniforme" });
+    }
+  });
+
+  // System configuration routes
+  app.get('/api/configuracoes', async (req, res) => {
+    try {
+      const config = await storage.getConfiguracoes();
+      res.json(config);
+    } catch (error) {
+      console.error("Error fetching config:", error);
+      res.status(500).json({ message: "Erro ao buscar configurações" });
+    }
+  });
+
+  app.put('/api/configuracoes', requireAdminAuth, async (req, res) => {
+    try {
+      const config = await storage.updateConfiguracoes(req.body);
+      res.json(config);
+    } catch (error) {
+      console.error("Error updating config:", error);
+      res.status(500).json({ message: "Erro ao atualizar configurações" });
+    }
+  });
+
+  // Upload logo route
+  app.post('/api/configuracoes/logo', requireAdminAuth, async (req, res) => {
+    try {
+      const { logoUrl } = req.body;
+      const config = await storage.updateConfiguracoes({ logoUrl });
+      res.json(config);
+    } catch (error) {
+      console.error("Error updating logo:", error);
+      res.status(500).json({ message: "Erro ao atualizar logo" });
     }
   });
 

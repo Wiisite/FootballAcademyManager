@@ -1,0 +1,106 @@
+2025-06-13 17:40:55,624 - semgrep.notifications - WARNING - METRICS: Using configs from the Registry (like --config=p/ci) reports pseudonymous rule metrics to semgrep.dev.
+To disable Registry rule metrics, use "--metrics=off".
+Using configs only from local files (like --config=xyz.yml) does not enable metrics.
+
+More information: https://semgrep.dev/docs/metrics
+
+2025-06-13 17:40:55,625 - semgrep.run_scan - DEBUG - semgrep version 1.4.0
+2025-06-13 17:40:55,630 - semgrep.config_resolver - DEBUG - Loading local config from /home/runner/workspace/.config/.semgrep/semgrep_rules.json
+2025-06-13 17:40:55,631 - semgrep.config_resolver - DEBUG - Done loading local config from /home/runner/workspace/.config/.semgrep/semgrep_rules.json
+2025-06-13 17:40:55,635 - semgrep.config_resolver - DEBUG - Saving rules to /tmp/semgrep-fyw5he_f.rules
+2025-06-13 17:40:56,195 - semgrep.rule_lang - DEBUG - semgrep-core validation response: valid=True
+2025-06-13 17:40:56,195 - semgrep.rule_lang - DEBUG - semgrep-core validation succeeded
+2025-06-13 17:40:56,195 - semgrep.rule_lang - DEBUG - RPC validation succeeded
+2025-06-13 17:40:56,196 - semgrep.config_resolver - DEBUG - loaded 1 configs in 0.5663161277770996
+2025-06-13 17:40:56,258 - semgrep.run_scan - VERBOSE - running 712 rules from 1 config /home/runner/workspace/.config/.semgrep/semgrep_rules.json_0
+2025-06-13 17:40:56,258 - semgrep.run_scan - VERBOSE - No .semgrepignore found. Using default .semgrepignore rules. See the docs for the list of default ignores: https://semgrep.dev/docs/cli-usage/#ignore-files
+2025-06-13 17:40:56,260 - semgrep.run_scan - VERBOSE - Rules:
+2025-06-13 17:40:56,260 - semgrep.run_scan - VERBOSE - <SKIPPED DATA (too many entries; use --max-log-list-entries)>
+2025-06-13 17:40:56,817 - semgrep.core_runner - DEBUG - Passing whole rules directly to semgrep_core
+2025-06-13 17:40:57,002 - semgrep.core_runner - DEBUG - Running Semgrep engine with command:
+2025-06-13 17:40:57,002 - semgrep.core_runner - DEBUG - /tmp/_MEI5XlAPE/semgrep/bin/opengrep-core -json -rules /tmp/tmp_19nlk6s.json -j 8 -targets /tmp/tmp94x60rj8 -timeout 5 -timeout_threshold 3 -max_memory 0 -fast
+2025-06-13 17:41:10,921 - semgrep.core_runner - DEBUG - --- semgrep-core stderr ---
+[00.07][[34mINFO[0m]: Executed as: /tmp/_MEI5XlAPE/semgrep/bin/opengrep-core -json -rules /tmp/tmp_19nlk6s.json -j 8 -targets /tmp/tmp94x60rj8 -timeout 5 -timeout_threshold 3 -max_memory 0 -fast
+[00.07][[34mINFO[0m]: Version: 1.4.0
+[00.07][[34mINFO[0m]: Parsing rules in /tmp/tmp_19nlk6s.json
+[00.48][[34mINFO[0m]: scan: processing 447 files (skipping 0), with 454 rules (skipping 0 )
+[01.91][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.injection.tainted-sql-string file: client/src/pages/DashboardUnidades.tsx func: DashboardUnidades:5893]
+[0m[03.94][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.require-request file: client/src/pages/PainelUnidade.tsx func: PainelUnidade:22247]
+[0m[04.07][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.cors-misconfiguration file: client/src/pages/PainelUnidade.tsx func: PainelUnidade:22247]
+[0m[04.27][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.audit.remote-property-injection file: client/src/pages/AlunosUnidade.tsx func: AlunosUnidade:34619]
+[0m[05.79][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.x-frame-options-misconfiguration file: client/src/pages/GestaoUnidades.tsx func: GestaoUnidades:51403]
+[0m[05.81][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.cors-misconfiguration file: client/src/pages/RelatorioPresencas.tsx func: RelatorioPresencas:51504]
+[0m[08.35][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.lang.security.audit.detect-non-literal-require file: client/src/components/forms/AlunoFormResponsavel.tsx func: AlunoFormResponsavel:103270]
+[0m[08.83][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.lang.security.audit.detect-non-literal-require file: client/src/components/forms/AlunoForm.tsx func: AlunoForm:113012]
+[0m[10.17][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.lang.security.audit.detect-non-literal-require file: client/src/pages/FinanceiroCompleto.tsx func: FinanceiroCompleto:147613]
+[0m[10.68][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.lang.security.detect-eval-with-expression file: client/src/pages/ResponsavelPortalSimples.tsx func: ResponsavelPortal:148693]
+[0m[10.81][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.injection.raw-html-format file: client/src/pages/FinanceiroCompleto.tsx func: FinanceiroCompleto:147613]
+[0m[11.00][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.injection.raw-html-format file: client/src/pages/ResponsavelPortalSimples.tsx func: ResponsavelPortal:148693]
+[0m[11.01][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.audit.remote-property-injection file: client/src/pages/FinanceiroCompleto.tsx func: FinanceiroCompleto:147613]
+[0m[11.24][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.x-frame-options-misconfiguration file: client/src/pages/FinanceiroCompleto.tsx func: FinanceiroCompleto:147613]
+[0m[11.44][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.lang.security.audit.unsafe-formatstring file: server/routes-old.ts func: registerRoutes:156486]
+[0m[11.63][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.lang.security.audit.detect-non-literal-require file: server/routes-old.ts func: registerRoutes:156486]
+[0m[11.96][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.injection.tainted-sql-string file: server/routes-old.ts func: registerRoutes:156486]
+[0m[12.24][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.injection.raw-html-format file: server/routes-old.ts func: registerRoutes:156486]
+[0m[12.62][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.audit.xss.direct-response-write file: server/routes-old.ts func: registerRoutes:156486]
+[0m[12.97][[33mWARNING[0m]: Fixpoint timeout while performing taint analysis [rule: config..semgrep.vendored-rules.javascript.express.security.require-request file: server/routes-old.ts func: registerRoutes:156486]
+[0m--- end semgrep-core stderr ---
+2025-06-13 17:41:10,928 - semgrep.rule_match - DEBUG - match_key = ('', PosixPath('client/index.html'), 'config..semgrep.vendored-rules.html.security.audit.missing-integrity') match_id = 0ee74fd49637bebe183eca7188dbde26e386314e62cc2e7ba1ee60b377b638243fcd84e6c6fa04886198ccacfa6a711bfbcc61a28f9ddc913d5b3c53083cbc90_0
+2025-06-13 17:41:10,928 - semgrep.rule_match - DEBUG - match_key = (' type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js" (?is).*integrity= (google-analytics\\.com|fonts\\.googleapis\\.com|fonts\\.gstatic\\.com|googletagmanager\\.com) .*rel\\s*=\\s*[\'"]?preconnect.* href="... :// ..." href="//..." href=\'... :// ...\' href=\'//...\' src="... :// ..." src="//..." src=\'... :// ...\' src=\'//...\' <link  type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js" > <script  type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js" >...</script>', PosixPath('client/index.html'), 'config..semgrep.vendored-rules.html.security.audit.missing-integrity') match_id = 0728b64e224596592d04447ba8a642ff94e1fb9fcc07be26d49dc7e7f6898e638ad16ffcaca086932c58f4c6400fe32603323afef02cf9bfebcb0e4a53562a40_0
+2025-06-13 17:41:10,929 - semgrep.rule_match - DEBUG - match_key = (' type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js" (?is).*integrity= (google-analytics\\.com|fonts\\.googleapis\\.com|fonts\\.gstatic\\.com|googletagmanager\\.com) .*rel\\s*=\\s*[\'"]?preconnect.* href="... :// ..." href="//..." href=\'... :// ...\' href=\'//...\' src="... :// ..." src="//..." src=\'... :// ...\' src=\'//...\' <link  type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js" > <script  type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js" >...</script>', PosixPath('client/index.html'), 'config..semgrep.vendored-rules.html.security.audit.missing-integrity') match_id = 0728b64e224596592d04447ba8a642ff94e1fb9fcc07be26d49dc7e7f6898e638ad16ffcaca086932c58f4c6400fe32603323afef02cf9bfebcb0e4a53562a40_0
+2025-06-13 17:41:10,929 - semgrep.rule_match - DEBUG - match_key = (' type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js" (?is).*integrity= (google-analytics\\.com|fonts\\.googleapis\\.com|fonts\\.gstatic\\.com|googletagmanager\\.com) .*rel\\s*=\\s*[\'"]?preconnect.* href="... :// ..." href="//..." href=\'... :// ...\' href=\'//...\' src="... :// ..." src="//..." src=\'... :// ...\' src=\'//...\' <link  type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js" > <script  type="text/javascript" src="https://replit.com/public/js/replit-dev-banner.js" >...</script>', PosixPath('client/index.html'), 'config..semgrep.vendored-rules.html.security.audit.missing-integrity') match_id = 0728b64e224596592d04447ba8a642ff94e1fb9fcc07be26d49dc7e7f6898e638ad16ffcaca086932c58f4c6400fe32603323afef02cf9bfebcb0e4a53562a40_0
+2025-06-13 17:41:11,005 - semgrep.rule_match - DEBUG - match_key = ('', PosixPath('server/sync.ts'), 'config..semgrep.vendored-rules.javascript.lang.security.audit.unsafe-formatstring') match_id = 5c3193dd992fe5c19496048d21c749c768692e8ffb7cf3ad31f96d89433c0d16cc876a450fa5f97ca1760f15aa0f2b0e08bf6c822707041cc1759cf9eca6d7bd_0
+2025-06-13 17:41:11,006 - semgrep.rule_match - DEBUG - match_key = ('"..." + "..."\n $X + $Y $X.concat($Y) `...${...}...`\n $X.concat("...")\n ``[SYNC] Erro ao sincronizar: sync.tipo - sync.acao` $UTIL = require(\'util\')\n...\n $UTIL.format(``[SYNC] Erro ao sincronizar: sync.tipo - sync.acao`,error,...)\n console.error(``[SYNC] Erro ao sincronizar: sync.tipo - sync.acao`,error,...)\n', PosixPath('server/sync.ts'), 'config..semgrep.vendored-rules.javascript.lang.security.audit.unsafe-formatstring') match_id = 45bbc1955d30ad10bbd70addd7459a98b5a4bf468a0b34bb037b531c87b466488ab53e539a7eaee12a234ea0041026316feb088794458856ab7ca514f0a1b0d9_0
+2025-06-13 17:41:11,006 - semgrep.rule_match - DEBUG - match_key = ('"..." + "..."\n $X + $Y $X.concat($Y) `...${...}...`\n $X.concat("...")\n ``[SYNC] Erro ao sincronizar: sync.tipo - sync.acao` $UTIL = require(\'util\')\n...\n $UTIL.format(``[SYNC] Erro ao sincronizar: sync.tipo - sync.acao`,error,...)\n console.error(``[SYNC] Erro ao sincronizar: sync.tipo - sync.acao`,error,...)\n', PosixPath('server/sync.ts'), 'config..semgrep.vendored-rules.javascript.lang.security.audit.unsafe-formatstring') match_id = 45bbc1955d30ad10bbd70addd7459a98b5a4bf468a0b34bb037b531c87b466488ab53e539a7eaee12a234ea0041026316feb088794458856ab7ca514f0a1b0d9_0
+2025-06-13 17:41:11,007 - semgrep.rule_match - DEBUG - match_key = ('"..." + "..."\n $X + $Y $X.concat($Y) `...${...}...`\n $X.concat("...")\n ``[SYNC] Erro ao sincronizar: sync.tipo - sync.acao` $UTIL = require(\'util\')\n...\n $UTIL.format(``[SYNC] Erro ao sincronizar: sync.tipo - sync.acao`,error,...)\n console.error(``[SYNC] Erro ao sincronizar: sync.tipo - sync.acao`,error,...)\n', PosixPath('server/sync.ts'), 'config..semgrep.vendored-rules.javascript.lang.security.audit.unsafe-formatstring') match_id = 45bbc1955d30ad10bbd70addd7459a98b5a4bf468a0b34bb037b531c87b466488ab53e539a7eaee12a234ea0041026316feb088794458856ab7ca514f0a1b0d9_0
+2025-06-13 17:41:11,008 - semgrep.core_runner - DEBUG - semgrep ran in 0:00:14.191082 on 155 files
+2025-06-13 17:41:11,009 - semgrep.core_runner - DEBUG - findings summary: 1 warning, 0 error, 1 info
+2025-06-13 17:41:11,012 - semgrep.app.auth - DEBUG - Getting API token from settings file
+2025-06-13 17:41:11,012 - semgrep.app.auth - DEBUG - No API token found in settings file
+2025-06-13 17:41:11,124 - semgrep.output - VERBOSE - 
+========================================
+Files skipped:
+========================================
+
+  Always skipped by Opengrep:
+
+   • <none>
+
+  Skipped by .gitignore:
+  (Disable by passing --no-git-ignore)
+
+   • <all files not listed by `git ls-files` were skipped>
+
+  Skipped by .semgrepignore:
+  - https://semgrep.dev/docs/ignoring-files-folders-code/#understand-semgrep-defaults
+
+   • <none>
+
+  Skipped by --include patterns:
+
+   • <none>
+
+  Skipped by --exclude patterns:
+
+   • <none>
+
+  Files skipped due to insufficient read permissions:
+
+   • <none>
+
+  Skipped by limiting to files smaller than 1000000 bytes:
+  (Adjust with the --max-target-bytes flag)
+
+   • <none>
+
+  Partially analyzed due to parsing or internal Opengrep errors
+
+   • tailwind.config.ts (1 lines skipped)
+
+2025-06-13 17:41:11,126 - semgrep.output - INFO - Some files were skipped or only partially analyzed.
+  Scan was limited to files tracked by git.
+  Partially scanned: 1 files only partially analyzed due to parsing or internal Opengrep errors
+
+Ran 435 rules on 155 files: 2 findings.
+2025-06-13 17:41:11,126 - semgrep.app.version - DEBUG - Version cache does not exist
+2025-06-13 17:41:11,139 - semgrep.metrics - VERBOSE - Not sending pseudonymous metrics since metrics are configured to OFF and registry usage is False

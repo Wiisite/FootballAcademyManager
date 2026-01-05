@@ -61,9 +61,9 @@ export default function Sidebar() {
     },
     {
       name: "Unidades",
-      href: "/filiais",
+      href: "/unidades",
       icon: Building2,
-      active: location === "/filiais",
+      active: location === "/unidades" || location === "/filiais",
     },
     {
       name: "Financeiro",
@@ -96,16 +96,10 @@ export default function Sidebar() {
       active: location === "/avaliacao-fisica",
     },
     {
-      name: "Portal das Unidades",
-      href: "/portal-unidades",
-      icon: Building2,
-      active: location === "/portal-unidades",
-    },
-    {
-      name: "Gestão de Unidades",
-      href: "/gestao-unidades",
+      name: "Configurações",
+      href: "/configuracoes",
       icon: Settings,
-      active: location === "/gestao-unidades",
+      active: location === "/configuracoes",
     },
   ];
 

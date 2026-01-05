@@ -111,6 +111,8 @@ export const filiais = pgTable("filiais", {
   senha: varchar("senha", { length: 255 }), // Hash da senha para acesso ao painel
   telefone: varchar("telefone", { length: 20 }),
   responsavel: varchar("responsavel", { length: 100 }),
+  horarioFuncionamento: varchar("horario_funcionamento", { length: 100 }),
+  isMatriz: boolean("is_matriz").default(false),
   ativa: boolean("ativa").default(true),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -157,14 +159,34 @@ export const matriculas = pgTable("matriculas", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Planos Financeiros table
+export const planosFinanceiros = pgTable("planos_financeiros", {
+  id: serial("id").primaryKey(),
+  nome: varchar("nome", { length: 100 }).notNull(), // Ex: "Mensal", "Trimestral", "Semestral", "Anual"
+  descricao: text("descricao"),
+  valorMensal: decimal("valor_mensal", { precision: 10, scale: 2 }).notNull(),
+  quantidadeMeses: integer("quantidade_meses").notNull().default(1), // 1, 3, 6, 12
+  descontoPercentual: decimal("desconto_percentual", { precision: 5, scale: 2 }).default("0"), // Desconto para planos maiores
+  valorTotal: decimal("valor_total", { precision: 10, scale: 2 }), // Valor total com desconto
+  diaVencimento: integer("dia_vencimento").default(10), // Dia do mês para vencimento
+  taxaMatricula: decimal("taxa_matricula", { precision: 10, scale: 2 }).default("0"),
+  filialId: integer("filial_id").references(() => filiais.id), // Plano específico por filial ou null para todas
+  ativo: boolean("ativo").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Pagamentos table
 export const pagamentos = pgTable("pagamentos", {
   id: serial("id").primaryKey(),
   alunoId: integer("aluno_id").references(() => alunos.id),
+  planoId: integer("plano_id").references(() => planosFinanceiros.id), // Referência ao plano
   valor: decimal("valor", { precision: 10, scale: 2 }).notNull(),
   mesReferencia: varchar("mes_referencia", { length: 7 }).notNull(), // "2024-01"
   dataPagamento: date("data_pagamento").notNull(),
+  dataVencimento: date("data_vencimento"), // Data de vencimento da mensalidade
   formaPagamento: varchar("forma_pagamento", { length: 50 }).notNull(), // Dinheiro, PIX, Cartão
+  status: varchar("status", { length: 20 }).default("pago"), // pago, pendente, atrasado, cancelado
   observacoes: text("observacoes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
@@ -678,6 +700,13 @@ export const insertComboAulasSchema = createInsertSchema(combosAulas).omit({
   updatedAt: true,
 });
 
+// Planos Financeiros schemas
+export const insertPlanoFinanceiroSchema = createInsertSchema(planosFinanceiros).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Physical evaluation schemas
 export const insertCategoriaTesteSchema = createInsertSchema(categoriasTestes).omit({
   id: true,
@@ -810,6 +839,12 @@ export type Matricula = typeof matriculas.$inferSelect;
 export type InsertPagamento = z.infer<typeof insertPagamentoSchema>;
 export type Pagamento = typeof pagamentos.$inferSelect;
 
+export type InsertPlanoFinanceiro = z.infer<typeof insertPlanoFinanceiroSchema>;
+export type PlanoFinanceiro = typeof planosFinanceiros.$inferSelect;
+export type PlanoFinanceiroWithFilial = PlanoFinanceiro & {
+  filial: Filial | null;
+};
+
 export type InsertFilial = z.infer<typeof insertFilialSchema>;
 export type Filial = typeof filiais.$inferSelect;
 
@@ -932,3 +967,29 @@ export type MetaAlunoComplete = MetaAluno & {
   teste: TesteWithCategoria;
   definidoPorProfessor: Professor | null;
 };
+
+// System configuration table for logo and colors
+export const configuracoesSistema = pgTable("configuracoes_sistema", {
+  id: serial("id").primaryKey(),
+  logoUrl: text("logo_url"),
+  corPrimaria: varchar("cor_primaria", { length: 7 }).default("#3b82f6"),
+  corSecundaria: varchar("cor_secundaria", { length: 7 }).default("#1e40af"),
+  corAcento: varchar("cor_acento", { length: 7 }).default("#10b981"),
+  corFundo: varchar("cor_fundo", { length: 7 }).default("#f8fafc"),
+  corTexto: varchar("cor_texto", { length: 7 }).default("#1e293b"),
+  nomeEscola: varchar("nome_escola", { length: 255 }).default("Escola de Futebol"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertConfiguracoesSistemaSchema = createInsertSchema(configuracoesSistema, {
+  corPrimaria: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Cor inválida").optional(),
+  corSecundaria: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Cor inválida").optional(),
+  corAcento: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Cor inválida").optional(),
+  corFundo: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Cor inválida").optional(),
+  corTexto: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Cor inválida").optional(),
+  nomeEscola: z.string().min(1, "Nome é obrigatório").optional(),
+});
+
+export type InsertConfiguracoesSistema = z.infer<typeof insertConfiguracoesSistemaSchema>;
+export type ConfiguracoesSistema = typeof configuracoesSistema.$inferSelect;
