@@ -23,11 +23,12 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (vite is needed at runtime for this app)
+RUN npm ci
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/client/dist ./client/dist
 
 # Expose port
 EXPOSE 5000
@@ -35,5 +36,5 @@ EXPOSE 5000
 # Set environment variable
 ENV NODE_ENV=production
 
-# Start the application (without cross-env)
+# Start the application directly (without cross-env or npm start)
 CMD ["node", "dist/index.js"]
