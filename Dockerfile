@@ -28,7 +28,6 @@ RUN npm ci
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/client/dist ./client/dist
 
 # Expose port
 EXPOSE 5000
