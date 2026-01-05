@@ -28,6 +28,8 @@ RUN npm ci
 
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/shared ./shared
 
 # Expose port
 EXPOSE 5000
