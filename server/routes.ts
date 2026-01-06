@@ -128,6 +128,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(req.session.adminUser);
   });
 
+  // Temporary endpoint to create admin user - REMOVE AFTER USE
+  app.get('/api/setup-admin', async (req, res) => {
+    try {
+      const existingAdmin = await storage.getAdminUserByEmail('admin@escolafut.com');
+      if (existingAdmin) {
+        return res.json({ message: 'Admin já existe', email: 'admin@escolafut.com' });
+      }
+      
+      const admin = await storage.createAdminUser({
+        nome: 'Administrador',
+        email: 'admin@escolafut.com',
+        senha: 'admin123',
+        ativo: true,
+        papel: 'admin'
+      });
+      
+      res.json({ 
+        success: true, 
+        message: 'Admin criado com sucesso!',
+        email: 'admin@escolafut.com',
+        senha: 'admin123'
+      });
+    } catch (error) {
+      console.error('Erro ao criar admin:', error);
+      res.status(500).json({ message: 'Erro ao criar admin', error: String(error) });
+    }
+  });
+
   // Dashboard routes - protected by admin authentication
   app.get("/api/dashboard/metrics", requireAdminAuth, async (req, res) => {
     try {
